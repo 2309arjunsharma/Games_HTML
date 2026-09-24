@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crown & Sterling: Capital Manager</title>
+  <style>
+    :root {
+      --bg-dark: #070b14;
+      --card-bg: #0f172a;
+      --card-border: #1e293b;
+      --card-hover: #1e2942;
+      --gold-primary: #d4af37;
+      --gold-hover: #f3c644;
+      --gold-dim: rgba(212, 175, 55, 0.15);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --profit-green: #10b981;
+      --profit-bg: rgba(16, 185, 129, 0.1);
+      --loss-red: #f43f5e;
+      --loss-bg: rgba(244, 63, 94, 0.1);
+      --blue-accent: #38bdf8;
+      --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      line-height: 1.4;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #070b14; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    /* Top Terminal Ribbon */
+    header {
+      background: linear-gradient(180deg, #111c33 0%, #0c1424 100%);
+      border-bottom: 1px solid #1e293b;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .crest {
+      width: 36px;
+      height: 36px;
+      border: 1.5px solid var(--gold-primary);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: rgba(212, 175, 55, 0.08);
+      font-weight: 800;
+      color: var(--gold-primary);
+      font-family: serif;
+      font-size: 18px;
+      box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+    }
+
+    .brand-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .badge-tag {
+      font-size: 0.65rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--gold-dim);
+      color: var(--gold-primary);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      font-weight: 600;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .audio-btn, .theme-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .audio-btn:hover { background: #334155; }
+
+    /* Macro Marquee Bar */
+    .market-ticker {
+      background: #090e1a;
+      border-bottom: 1px solid #1e293b;
+      padding: 6px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .ticker-group {
+      display: flex;
+      gap: 22px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .ticker-item {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .ticker-val {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .up { color: var(--profit-green) !important; }
+    .down { color: var(--loss-red) !important; }
+    .gold-text { color: var(--gold-primary) !important; }
+
+    /* Main Grid Layout */
+    .dashboard-container {
+      display: grid;
+      grid-template-columns: 320px 1fr 340px;
+      gap: 16px;
+      padding: 16px 20px;
+      flex: 1;
+      max-width: 1720px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    @media (max-width: 1300px) {
+      .dashboard-container {
+        grid-template-columns: 300px 1fr;
+      }
+      .right-column {
+        grid-column: span 2;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .dashboard-container {
+        grid-template-columns: 1fr;
+      }
+      .right-column {
+        grid-column: span 1;
+      }
+    }
+
+    /* Cards */
+    .panel-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      position: relative;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding-bottom: 8px;
+    }
+
+    .panel-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--gold-primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Key KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .kpi-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 10px 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi-card.warning {
+      border-color: rgba(244, 63, 94, 0.4);
+      background: rgba(244, 63, 94, 0.06);
+    }
+
+    .kpi-card.good {
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .kpi-label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .kpi-value {
+      font-size: 1.15rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      margin-top: 2px;
+    }
+
+    .kpi-sub {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Sliders & Form elements */
+    .control-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .control-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+    }
+
+    .control-labels span:first-child {
+      color: var(--text-muted);
+    }
+
+    .control-labels span:last-child {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--gold-primary);
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #1e293b;
+      outline: none;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--gold-primary);
+      cursor: pointer;
+      border: 2px solid #070b14;
+      box-shadow: 0 0 6px rgba(212, 175, 55, 0.6);
+      transition: transform 0.1s;
+    }
+
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    /* Segmented Buttons */
+    .segmented-control {
+      display: flex;
+      background: #090e1a;
+      border-radius: 6px;
+      border: 1px solid #1e293b;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .segment-btn {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      padding: 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+
+    .segment-btn.active {
+      background: var(--gold-primary);
+      color: #070b14;
+      font-weight: 700;
+    }
+
+    /* Balance Sheet Bar Chart */
+    .bs-bar-wrapper {
+      margin-top: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .bs-stacked-bar {
+      height: 20px;
+      width: 100%;
+      border-radius: 4px;
+      display: flex;
+      overflow: hidden;
+      background: #090e1a;
+      border: 1px solid #1e293b;
+    }
+
+    .bs-segment {
+      height: 100%;
+      transition: width 0.4s ease;
+      position: relative;
+    }
+
+    .bs-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .legend-color {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+    }
+
+    /* P&L Statement Table */
+    .ledger-table {
+      width: 100%;
+      font-size: 0.75rem;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+    }
+
+    .ledger-table td {
+      padding: 5px 0;
+      border-bottom: 1px dashed rgba(255,255,255,0.06);
+    }
+
+    .ledger-table tr.total td {
+      border-bottom: 1px solid var(--gold-primary);
+      border-top: 1px solid var(--gold-primary);
+      font-weight: 700;
+      padding: 8px 0;
+      color: #fff;
+    }
+
+    .text-right { text-align: right; }
+
+    /* Upgrades List */
+    .upgrade-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .upgrade-card {
+      background: #090e1a;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: border-color 0.2s;
+    }
+
+    .upgrade-card.purchased {
+      border-color: rgba(16, 185, 129, 0.4);
+      background: rgba(16, 185, 129, 0.03);
+    }
+
+    .upgrade-info h4 {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .upgrade-info p {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .btn-buy {
+      background: var(--gold-dim);
+      border: 1px solid var(--gold-primary);
+      color: var(--gold-primary);
+      font-size: 0.72rem;
+      padding: 6px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .btn-buy:hover:not(:disabled) {
+      background: var(--gold-primary);
+      color: #000;
+    }
+
+    .btn-buy:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      border-color: #334155;
+      color: #64748b;
+    }
+
+    /* Execute Quarter Button */
+    .execute-btn {
+      background: linear-gradient(135deg, #d4af37 0%, #aa8210 100%);
+      color: #070b14;
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      border: none;
+      border-radius: 8px;
+      padding: 14px 20px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    .execute-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 22px rgba(212, 175, 55, 0.45);
+      background: linear-gradient(135deg, #f3c644 0%, #bb9015 100%);
+    }
+
+    .execute-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Event & Feed Log */
+    .log-feed {
+      height: 180px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      padding-right: 4px;
+    }
+
+    .log-item {
+      padding: 6px 8px;
+      border-radius: 4px;
+      background: #090e1a;
+      border-left: 3px solid #334155;
+    }
+
+    .log-item.crisis {
+      border-left-color: var(--loss-red);
+      background: rgba(244, 63, 94, 0.08);
+    }
+
+    .log-item.success {
+      border-left-color: var(--profit-green);
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    .log-item.gold {
+      border-left-color: var(--gold-primary);
+      background: rgba(212, 175, 55, 0.08);
+    }
+
+    /* Modal / Popups */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(4px);
+      display: none;
+      place-items: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-box {
+      background: #0f172a;
+      border: 1.5px solid var(--gold-primary);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+      border-radius: 12px;
+      max-width: 540px;
+      width: 100%;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal-title {
+      font-size: 1.2rem;
+      color: var(--gold-primary);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .modal-options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .modal-choice-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 6px;
+      text-align: left;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .modal-choice-btn:hover {
+      border-color: var(--gold-primary);
+      background: #25334c;
+    }
+
+    /* Notification Toast */
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      border-left: 4px solid var(--gold-primary);
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+      animation: slideIn 0.3s forwards;
+      pointer-events: auto;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="crest">CS</div>
+      <div>
+        <div class="brand-title">
+          CROWN & STERLING
+          <span class="badge-tag">BANK PLC</span>
+        </div>
+        <div class="brand-sub">Basel III Capital Management & Treasury Suite</div>
+      </div>
+    </div>
+    
+    <div class="top-actions">
+      <div style="font-size:0.8rem; text-align:right;">
+        <span style="color:var(--text-muted);">Quarter:</span>
+        <strong id="hdr-quarter" style="color:var(--gold-primary); font-family:var(--font-mono); margin-left:4px;">Q1 Year 1</strong>
+      </div>
+      <button class="audio-btn" id="soundToggleBtn">
+        <span id="soundIcon">🔊</span> Audio: ON
+      </button>
+      <button class="audio-btn" id="restartGameBtn" style="border-color:rgba(244,63,94,0.4);">
+        🔄 Reset
+      </button>
+    </div>
+  </header>
+
+  <!-- Macro Marquee / Central Bank Indicators -->
+  <div class="market-ticker">
+    <div class="ticker-group">
+      <div class="ticker-item">
+        <span>CENTRAL BANK RATE:</span>
+        <span class="ticker-val gold-text" id="macro-cb-rate">4.50%</span>
+      </div>
+      <div class="ticker-item">
+        <span>ECONOMIC CYCLE:</span>
+        <span class="ticker-val" id="macro-cycle" style="color:var(--blue-accent);">EXPANSION</span>
+      </div>
+      <div class="ticker-item">
+        <span>CREDIT RATING:</span>
+        <span class="ticker-val up" id="kpi-rating">AA+</span>
+      </div>
+      <div class="ticker-item">
+        <span>STOCK PRICE:</span>
+        <span class="ticker-val" id="kpi-stock-price">$42.80</span>
+      </div>
+      <div class="ticker-item">
+        <span>MARKET CAP:</span>
+        <span class="ticker-val" id="kpi-market-cap">$4.28B</span>
+      </div>
+    </div>
+    <div class="ticker-item" style="display:none; md:flex;">
+      <span>REGULATORY AUDIT STATUS:</span>
+      <span class="ticker-val up" id="macro-reg-status">INSPECTION PASSED</span>
+    </div>
+  </div>
+
+  <main class="dashboard-container">
+
+    <!-- LEFT COLUMN: Policy, Rates, & Portfolio Allocations -->
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      
+      <!-- Policy Sliders -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">🏛️ Rate & Risk Policy</div>
+          <span style="font-size:0.7rem; color:var(--text-muted);">Quarterly Mandate</span>
+        </div>
+
+        <!-- Deposit Rate Slider -->
+        <div class="control-row">
+          <div class="control-labels">
+            <span>Customer Deposit Rate</span>
+            <span id="lbl-deposit-rate">3.20%</span>
+          </div>
+          <input type="range" id="slider-deposit-rate" min="0.5" max="8.0" step="0.1" value="3.2">
+          <div style="font-size:0.65rem; color:var(--text-muted); display:flex; justify-content:space-between;">
+            <span>Outflows</span>
+            <span>Spread Margin</span>
+            <span>Sticky Inflows</span>
+          </div>
+        </div>
+
+        <!-- Loan Prime Rate Slider -->
+        <div class="control-row">
+          <div class="control-labels">
+            <span>Loan Lending Prime Rate</span>
+            <span id="lbl-lending-rate">7.50%</span>
+          </div>
+          <input type="range" id="slider-lending-rate" min="3.0" max="15.0" step="0.25" value="7.5">
+          <div style="font-size:0.65rem; color:var(--text-muted); display:flex; justify-content:space-between;">
+            <span>High Demand</span>
+            <span>Balanced</span>
+            <span>Low Origination</span>
+          </div>
+        </div>
+
+        <!-- Underwriting Risk -->
+        <div class="control-row">
+          <div class="control-labels">
+            <span>Credit Underwriting Standards</span>
+            <span id="lbl-risk-mode" style="color:var(--profit-green);">Moderate</span>
+          </div>
+          <div class="segmented-control" id="risk-selector">
+            <button class="segment-btn" data-risk="conservative">Conservative</button>
+            <button class="segment-btn active" data-risk="moderate">Moderate</button>
+            <button class="segment-btn" data-risk="aggressive">Aggressive</button>
+          </div>
+        </div>
+
+        <!-- Interbank Borrowing Facility -->
+        <div class="control-row">
+          <div class="control-labels">
+            <span>Interbank Overnight Repo Borrowing</span>
+            <span id="lbl-repo-borrow">$0M</span>
+          </div>
+          <input type="range" id="slider-repo-borrow" min="0" max="2500" step="100" value="0">
+          <div style="font-size:0.65rem; color:var(--text-muted);">
+            Emergency overnight liquidity at Central Bank rate + 0.75%.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Asset Portfolio Allocation -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">⚖️ Capital Asset Mix</div>
+          <span style="font-size:0.68rem; color:var(--text-muted);" id="lbl-allocation-sum">100% Allocated</span>
+        </div>
+
+        <!-- Cash Reserve -->
+        <div class="control-row">
+          <div class="control-labels">
+            <span>Vault Cash & Liquidity Reserves</span>
+            <span id="lbl-alloc-cash">15%</span>
+          </div>
+          <input type="range" id="slider-alloc-cash" min="5" max="50" step="1" value="15">
+        </div>
+
+        <!-- Sovereign Bonds -->
+        <div class="control-row">
+          <div class="control-labels">
+            <span>Sovereign Treasury Gilts (0% Risk-Weight)</span>
+            <span id="lbl-alloc-bonds">35%</span>
+          </div>
+          <input type="range" id="slider-alloc-bonds" min="10" max="70" step="1" value="35">
+        </div>
+
+        <!-- Commercial Corporate Loans -->
+        <div class="control-row">
+          <div class="control-labels">
+            <span>Corporate Commercial Loans (100% RW)</span>
+            <span id="lbl-alloc-loans">35%</span>
+          </div>
+          <input type="range" id="slider-alloc-loans" min="10" max="70" step="1" value="35">
+        </div>
+
+        <!-- Leveraged Private Debt -->
+        <div class="control-row">
+          <div class="control-labels">
+            <span>High-Yield Leveraged Debt (150% RW)</span>
+            <span id="lbl-alloc-spec">15%</span>
+          </div>
+          <input type="range" id="slider-alloc-spec" min="0" max="40" step="1" value="15">
+        </div>
+
+        <div style="font-size:0.68rem; color:var(--text-muted); background:rgba(255,255,255,0.02); padding:6px; border-radius:4px;">
+          💡 <em>Basel III mandates higher Tier 1 equity against risk-weighted assets (RWA). Leveraged debt generates high yields but accelerates capital exhaustion.</em>
+        </div>
+
+      </div>
+
+      <!-- Execute Turn Button -->
+      <button class="execute-btn" id="btn-end-quarter">
+        <span>PROCEED TO NEXT QUARTER</span>
+        <span>➔</span>
+      </button>
+
+    </div>
+
+    <!-- MIDDLE COLUMN: Core Balance Sheet, Ratios, & P&L Statement -->
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      
+      <!-- Key Ratios & Basell III Metrics -->
+      <div class="kpi-grid">
+        <div class="kpi-card" id="card-car">
+          <div class="kpi-label">Capital Adequacy Ratio (CAR)</div>
+          <div class="kpi-value gold-text" id="val-car">14.80%</div>
+          <div class="kpi-sub" id="sub-car">Regulatory Min: 10.50%</div>
+        </div>
+
+        <div class="kpi-card" id="card-nim">
+          <div class="kpi-label">Net Interest Margin (NIM)</div>
+          <div class="kpi-value up" id="val-nim">3.12%</div>
+          <div class="kpi-sub">Spread Efficiency</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Non-Performing Loans (NPL)</div>
+          <div class="kpi-value" id="val-npl" style="color:var(--blue-accent);">1.40%</div>
+          <div class="kpi-sub">Loan Default Provision</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Return on Equity (ROE)</div>
+          <div class="kpi-value up" id="val-roe">16.4%</div>
+          <div class="kpi-sub">Shareholder Value Target: 15%</div>
+        </div>
+      </div>
+
+      <!-- Balance Sheet Snapshot Visualizer -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">📊 Balance Sheet Structure</div>
+          <span style="font-size:0.75rem; font-family:var(--font-mono); color:var(--gold-primary);" id="lbl-total-assets">Total Assets: $10,000M</span>
+        </div>
+
+        <div class="bs-bar-wrapper">
+          <div style="font-size:0.7rem; color:var(--text-muted); display:flex; justify-content:space-between;">
+            <span>Asset Composition:</span>
+            <span id="bs-assets-summary">Cash | Gilts | Corp Loans | Leveraged</span>
+          </div>
+          <div class="bs-stacked-bar">
+            <div id="bar-cash" class="bs-segment" style="width: 15%; background: #38bdf8;" title="Cash Reserves"></div>
+            <div id="bar-bonds" class="bs-segment" style="width: 35%; background: #10b981;" title="Sovereign Gilts"></div>
+            <div id="bar-loans" class="bs-segment" style="width: 35%; background: #f59e0b;" title="Corporate Loans"></div>
+            <div id="bar-spec" class="bs-segment" style="width: 15%; background: #ef4444;" title="Leveraged Debt"></div>
+          </div>
+
+          <div class="bs-legend">
+            <div class="legend-item"><div class="legend-color" style="background:#38bdf8;"></div> Cash: <span id="leg-cash" style="color:#fff; margin-left:2px;">$1,500M</span></div>
+            <div class="legend-item"><div class="legend-color" style="background:#10b981;"></div> Gilts: <span id="leg-bonds" style="color:#fff; margin-left:2px;">$3,500M</span></div>
+            <div class="legend-item"><div class="legend-color" style="background:#f59e0b;"></div> Corp Loans: <span id="leg-loans" style="color:#fff; margin-left:2px;">$3,500M</span></div>
+            <div class="legend-item"><div class="legend-color" style="background:#ef4444;"></div> Leveraged: <span id="leg-spec" style="color:#fff; margin-left:2px;">$1,500M</span></div>
+          </div>
+        </div>
+
+        <hr style="border:0; border-top:1px solid #1e293b; margin:4px 0;">
+
+        <!-- Liabilities Breakdown -->
+        <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-family:var(--font-mono);">
+          <div>
+            <span style="color:var(--text-muted);">Deposits (Retail+Inst):</span>
+            <strong id="lbl-deposits" style="color:#fff; margin-left:4px;">$8,200M</strong>
+          </div>
+          <div>
+            <span style="color:var(--text-muted);">Repo Debt:</span>
+            <strong id="lbl-repo-debt" style="color:var(--loss-red); margin-left:4px;">$0M</strong>
+          </div>
+          <div>
+            <span style="color:var(--text-muted);">Tier 1 Equity:</span>
+            <strong id="lbl-equity" style="color:var(--gold-primary); margin-left:4px;">$1,800M</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quarterly Income Statement (P&L Ledger) -->
+      <div class="panel-card" style="flex:1;">
+        <div class="panel-header">
+          <div class="panel-title">📑 Quarterly P&L Statement</div>
+          <span style="font-size:0.7rem; color:var(--text-muted);">All figures in USD ($M)</span>
+        </div>
+
+        <table class="ledger-table">
+          <tbody>
+            <tr>
+              <td>Loan Interest & Yield Income</td>
+              <td class="text-right up" id="pl-loan-income">+$142.5M</td>
+            </tr>
+            <tr>
+              <td>Sovereign Bond Coupon Yield</td>
+              <td class="text-right up" id="pl-bond-income">+$35.0M</td>
+            </tr>
+            <tr>
+              <td>Trading Desk & Advisory Fees</td>
+              <td class="text-right up" id="pl-fee-income">+$12.0M</td>
+            </tr>
+            <tr style="color:var(--text-muted);">
+              <td>Less: Customer Deposit Interest Expense</td>
+              <td class="text-right down" id="pl-dep-expense">-$65.6M</td>
+            </tr>
+            <tr style="color:var(--text-muted);">
+              <td>Less: Overnight Repo Financing Cost</td>
+              <td class="text-right down" id="pl-repo-expense">-$0.0M</td>
+            </tr>
+            <tr style="font-weight:600; color:#fff;">
+              <td>= Net Interest Income (NII)</td>
+              <td class="text-right" id="pl-nii">+$123.9M</td>
+            </tr>
+            <tr>
+              <td>Loan Loss Provisions (Default Write-Downs)</td>
+              <td class="text-right down" id="pl-provisions">-$14.5M</td>
+            </tr>
+            <tr>
+              <td>Bank Operating Overhead & Branches</td>
+              <td class="text-right down" id="pl-opex">-$32.0M</td>
+            </tr>
+            <tr class="total">
+              <td>NET QUARTERLY PROFIT / (LOSS)</td>
+              <td class="text-right up" id="pl-net-profit" style="font-size:1rem;">+$77.4M</td>
+            </tr>
+            <tr>
+              <td>Dividend Payout to Shareholders (25%)</td>
+              <td class="text-right" style="color:var(--gold-primary);" id="pl-dividends">-$19.35M</td>
+            </tr>
+            <tr>
+              <td>Retained Earnings Addition to Tier 1 Capital</td>
+              <td class="text-right" style="color:var(--blue-accent);" id="pl-retained">+$58.05M</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: Bank Upgrades & Board Log -->
+    <div class="right-column" style="display: flex; flex-direction: column; gap: 16px;">
+      
+      <!-- Desk Upgrades -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">🏢 Capital Investments</div>
+          <span style="font-size:0.7rem; color:var(--text-muted);">Division Upgrades</span>
+        </div>
+
+        <div class="upgrade-list">
+          
+          <div class="upgrade-card" id="upg-card-mobile">
+            <div class="upgrade-info">
+              <h4>📱 Mobile Neobank App</h4>
+              <p>+12% Retail Deposits, cuts Branch OpEx by $5M/Qtr.</p>
+            </div>
+            <button class="btn-buy" id="btn-upg-mobile" onclick="buyUpgrade('mobile')">$80M</button>
+          </div>
+
+          <div class="upgrade-card" id="upg-card-hft">
+            <div class="upgrade-info">
+              <h4>⚡ Algorithmic HFT Floor</h4>
+              <p>Generates +$25M-$45M high-margin fee revenue per Qtr.</p>
+            </div>
+            <button class="btn-buy" id="btn-upg-hft" onclick="buyUpgrade('hft')">$140M</button>
+          </div>
+
+          <div class="upgrade-card" id="upg-card-wealth">
+            <div class="upgrade-info">
+              <h4>💎 Ultra-HNW Wealth Desk</h4>
+              <p>Attracts $1.2B sticky low-cost deposits from billionaires.</p>
+            </div>
+            <button class="btn-buy" id="btn-upg-wealth" onclick="buyUpgrade('wealth')">$200M</button>
+          </div>
+
+          <div class="upgrade-card" id="upg-card-compliance">
+            <div class="upgrade-info">
+              <h4>🛡️ AI Forensic Compliance</h4>
+              <p>Reduces NPL write-downs by 25% and repels regulatory fines.</p>
+            </div>
+            <button class="btn-buy" id="btn-upg-compliance" onclick="buyUpgrade('compliance')">$110M</button>
+          </div>
+
+          <div class="upgrade-card" id="upg-card-lobby">
+            <div class="upgrade-info">
+              <h4>🏛️ Central Bank Advisory Firm</h4>
+              <p>Lowers Basel III regulatory capital surcharge scrutiny.</p>
+            </div>
+            <button class="btn-buy" id="btn-upg-lobby" onclick="buyUpgrade('lobby')">$175M</button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Regulatory & Market Feed -->
+      <div class="panel-card" style="flex: 1;">
+        <div class="panel-header">
+          <div class="panel-title">📜 Executive Intelligence Feed</div>
+          <span style="font-size:0.68rem; color:var(--text-muted);">Realtime Dispatches</span>
+        </div>
+
+        <div class="log-feed" id="event-feed">
+          <div class="log-item gold">
+            <strong>[BOARD APPOINTMENT]</strong> Welcome Managing Director. Your mandate is to maintain Basel III capital compliance (CAR &ge; 10.5%) and maximize shareholder equity.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Crisis Dilemma Modal -->
+  <div class="modal-overlay" id="crisis-modal">
+    <div class="modal-box">
+      <div class="modal-title" id="modal-title">🚨 Boardroom Crisis</div>
+      <div class="modal-desc" id="modal-desc">
+        A major corporate client is approaching bankruptcy. You must choose how to manage exposure.
+      </div>
+      <div class="modal-options" id="modal-options">
+        <!-- Dynamic Option Buttons inserted here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- End Game / Win / Loss Screen -->
+  <div class="modal-overlay" id="endgame-modal">
+    <div class="modal-box" style="text-align:center; align-items:center;">
+      <div style="font-size:3rem;" id="endgame-icon">🏆</div>
+      <div class="modal-title" id="endgame-title" style="font-size:1.5rem; justify-content:center;">Managing Director of the Decade</div>
+      <div class="modal-desc" id="endgame-desc" style="margin-top:8px;">
+        Crown & Sterling Bank has achieved sovereign prominence and historic profitability under your tenure.
+      </div>
+      <div style="background:#090e1a; padding:12px; border-radius:8px; width:100%; font-family:var(--font-mono); font-size:0.8rem; margin:10px 0; text-align:left;">
+        <div>Final Tier 1 Capital: <span id="stat-final-equity" style="color:var(--gold-primary);">$3,420M</span></div>
+        <div>Final ROE: <span id="stat-final-roe" style="color:var(--profit-green);">18.2%</span></div>
+        <div>Final Bank Credit Rating: <span id="stat-final-rating" style="color:var(--blue-accent);">AAA</span></div>
+        <div>Cumulative Dividends Paid: <span id="stat-final-divs" style="color:#fff;">$480M</span></div>
+      </div>
+      <div style="display:flex; gap:10px; width:100%;">
+        <button class="execute-btn" id="btn-endless-mode" style="flex:1;">CONTINUE IN ENDLESS MODE</button>
+        <button class="execute-btn" id="btn-restart-game" style="flex:1; background:#1e293b; color:#fff; border:1px solid #334155;">RESTART</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script>
+    /* Audio Synthesizer via Web Audio API (Zero External Files) */
+    class BankSoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+      }
+
+      playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.08) {
+        if (this.muted) return;
+        try {
+          this.init();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch(e) {}
+      }
+
+      playCashChime() {
+        if (this.muted) return;
+        this.playTone(987.77, 'triangle', 0.25, 0.07);
+        setTimeout(() => this.playTone(1318.51, 'triangle', 0.35, 0.08), 90);
+      }
+
+      playAlert() {
+        if (this.muted) return;
+        this.playTone(220, 'sawtooth', 0.2, 0.1);
+        setTimeout(() => this.playTone(180, 'sawtooth', 0.3, 0.12), 120);
+      }
+
+      playClick() {
+        this.playTone(600, 'sine', 0.05, 0.03);
+      }
+    }
+
+    const sound = new BankSoundEngine();
+
+    /* =========================================================
+       BANK ENGINE STATE DEFINITION
+       ========================================================= */
+    const BankGame = {
+      quarter: 1,
+      year: 1,
+      endless: false,
+      consecutiveLosses: 0,
+      carWarningCount: 0,
+
+      // Macro Environment
+      macro: {
+        cbRate: 4.50, // Central Bank overnight policy rate
+        cycle: 'Expansion', // 'Expansion', 'Peak', 'Recession', 'Recovery'
+        inflation: 2.8,
+        eventPending: false
+      },
+
+      // Balance Sheet ($ Millions)
+      assets: {
+        cash: 1500,
+        bonds: 3500,
+        corpLoans: 3500,
+        specLoans: 1500
+      },
+      liabilities: {
+        deposits: 8200,
+        repoDebt: 0
+      },
+      equity: 1800, // Tier 1 Capital
+      
+      // Allocations (%)
+      allocations: {
+        cash: 15,
+        bonds: 35,
+        loans: 35,
+        spec: 15
+      },
+
+      // Policy Decisions
+      policy: {
+        depositRate: 3.20,
+        lendingRate: 7.50,
+        riskTolerance: 'moderate', // conservative, moderate, aggressive
+        repoBorrowTarget: 0
+      },
+
+      // Desks & Upgrades
+      upgrades: {
+        mobile: false,
+        hft: false,
+        wealth: false,
+        compliance: false,
+        lobby: false
+      },
+
+      // Performance Tracking
+      metrics: {
+        car: 14.8,
+        nim: 3.12,
+        npl: 1.4,
+        roe: 16.4,
+        creditRating: 'AA+',
+        stockPrice: 42.80,
+        marketCap: 4280,
+        cumulativeDividends: 0
+      }
+    };
+
+    function formatMoney(num) {
+      return '$' + Math.round(num).toLocaleString('en-US') + 'M';
+    }
+
+    function calculateRWA() {
+      // Basel III Risk Weighted Assets
+      // Cash: 0%, Gilts: 0%, Corp Loans: 100%, Leveraged/Spec: 150%
+      const rwa = (BankGame.assets.corpLoans * 1.0) + (BankGame.assets.specLoans * 1.5);
+      return Math.max(rwa, 500); // Floor
+    }
+
+    function calculateCAR() {
+      const rwa = calculateRWA();
+      const car = (BankGame.equity / rwa) * 100;
+      return parseFloat(car.toFixed(2));
+    }
+
+    function getCreditRating(car, npl, roe) {
+      if (car < 8.0) return 'D';
+      if (car < 10.5) return 'CCC';
+      if (car < 11.5) return 'BBB-';
+      if (car < 12.5) return 'BBB';
+      if (npl > 5.0) return 'BBB+';
+      if (car >= 15.0 && npl < 2.0 && roe > 12.0) return 'AAA';
+      if (car >= 13.5 && npl < 3.0) return 'AA+';
+      return 'A+';
+    }
+
+    /* Update All Sliders & UI Displays */
+    function updateUI() {
+      // Header Quarter
+      document.getElementById('hdr-quarter').innerText = `Q${BankGame.quarter} Year ${BankGame.year}`;
+
+      // Macro Bar
+      document.getElementById('macro-cb-rate').innerText = BankGame.macro.cbRate.toFixed(2) + '%';
+      const cycleEl = document.getElementById('macro-cycle');
+      cycleEl.innerText = BankGame.macro.cycle.toUpperCase();
+      if (BankGame.macro.cycle === 'Expansion' || BankGame.macro.cycle === 'Recovery') {
+        cycleEl.style.color = 'var(--profit-green)';
+      } else if (BankGame.macro.cycle === 'Recession') {
+        cycleEl.style.color = 'var(--loss-red)';
+      } else {
+        cycleEl.style.color = 'var(--gold-primary)';
+      }
+
+      // Slider Values Labels
+      document.getElementById('lbl-deposit-rate').innerText = BankGame.policy.depositRate.toFixed(2) + '%';
+      document.getElementById('lbl-lending-rate').innerText = BankGame.policy.lendingRate.toFixed(2) + '%';
+      document.getElementById('lbl-repo-borrow').innerText = formatMoney(BankGame.policy.repoBorrowTarget);
+
+      // Allocations
+      document.getElementById('lbl-alloc-cash').innerText = BankGame.allocations.cash + '%';
+      document.getElementById('lbl-alloc-bonds').innerText = BankGame.allocations.bonds + '%';
+      document.getElementById('lbl-alloc-loans').innerText = BankGame.allocations.loans + '%';
+      document.getElementById('lbl-alloc-spec').innerText = BankGame.allocations.spec + '%';
+
+      const totalAlloc = BankGame.allocations.cash + BankGame.allocations.bonds + BankGame.allocations.loans + BankGame.allocations.spec;
+      const allocSumEl = document.getElementById('lbl-allocation-sum');
+      allocSumEl.innerText = `${totalAlloc}% Allocated`;
+      allocSumEl.style.color = (totalAlloc === 100) ? 'var(--profit-green)' : 'var(--loss-red)';
+
+      // KPIs
+      const car = calculateCAR();
+      BankGame.metrics.car = car;
+      const carEl = document.getElementById('val-car');
+      carEl.innerText = car.toFixed(2) + '%';
+      const carCard = document.getElementById('card-car');
+
+      if (car < 10.5) {
+        carEl.className = 'kpi-value down';
+        carCard.className = 'kpi-card warning';
+        document.getElementById('sub-car').innerText = 'BREACH: Basel III Min 10.50%!';
+      } else {
+        carEl.className = 'kpi-value gold-text';
+        carCard.className = 'kpi-card good';
+        document.getElementById('sub-car').innerText = 'Regulatory Min: 10.50%';
+      }
+
+      document.getElementById('val-nim').innerText = BankGame.metrics.nim.toFixed(2) + '%';
+      document.getElementById('val-npl').innerText = BankGame.metrics.npl.toFixed(2) + '%';
+      
+      const roeEl = document.getElementById('val-roe');
+      roeEl.innerText = BankGame.metrics.roe.toFixed(1) + '%';
+      roeEl.className = BankGame.metrics.roe >= 0 ? 'kpi-value up' : 'kpi-value down';
+
+      const rating = getCreditRating(car, BankGame.metrics.npl, BankGame.metrics.roe);
+      BankGame.metrics.creditRating = rating;
+      const ratEl = document.getElementById('kpi-rating');
+      ratEl.innerText = rating;
+      ratEl.className = rating.startsWith('A') ? 'ticker-val up' : 'ticker-val down';
+
+      document.getElementById('kpi-stock-price').innerText = '$' + BankGame.metrics.stockPrice.toFixed(2);
+      document.getElementById('kpi-market-cap').innerText = formatMoney(BankGame.metrics.marketCap);
+
+      // Balance Sheet Visualizer
+      const totalAssets = BankGame.assets.cash + BankGame.assets.bonds + BankGame.assets.corpLoans + BankGame.assets.specLoans;
+      document.getElementById('lbl-total-assets').innerText = 'Total Assets: ' + formatMoney(totalAssets);
+
+      const cashPct = (BankGame.assets.cash / totalAssets) * 100;
+      const bondPct = (BankGame.assets.bonds / totalAssets) * 100;
+      const loanPct = (BankGame.assets.corpLoans / totalAssets) * 100;
+      const specPct = (BankGame.assets.specLoans / totalAssets) * 100;
+
+      document.getElementById('bar-cash').style.width = cashPct + '%';
+      document.getElementById('bar-bonds').style.width = bondPct + '%';
+      document.getElementById('bar-loans').style.width = loanPct + '%';
+      document.getElementById('bar-spec').style.width = specPct + '%';
+
+      document.getElementById('leg-cash').innerText = formatMoney(BankGame.assets.cash);
+      document.getElementById('leg-bonds').innerText = formatMoney(BankGame.assets.bonds);
+      document.getElementById('leg-loans').innerText = formatMoney(BankGame.assets.corpLoans);
+      document.getElementById('leg-spec').innerText = formatMoney(BankGame.assets.specLoans);
+
+      // Liabilities & Equity
+      document.getElementById('lbl-deposits').innerText = formatMoney(BankGame.liabilities.deposits);
+      document.getElementById('lbl-repo-debt').innerText = formatMoney(BankGame.liabilities.repoDebt);
+      document.getElementById('lbl-equity').innerText = formatMoney(BankGame.equity);
+
+      // Upgrades Buttons state
+      updateUpgradeUI();
+    }
+
+    function updateUpgradeUI() {
+      const upgradeCosts = { mobile: 80, hft: 140, wealth: 200, compliance: 110, lobby: 175 };
+      for (const [key, cost] of Object.entries(upgradeCosts)) {
+        const btn = document.getElementById(`btn-upg-${key}`);
+        const card = document.getElementById(`upg-card-${key}`);
+        if (BankGame.upgrades[key]) {
+          btn.innerText = 'ACTIVE';
+          btn.disabled = true;
+          card.classList.add('purchased');
+        } else {
+          btn.disabled = BankGame.equity < (cost + 100); // Must maintain buffer
+          if (btn.disabled) {
+            btn.title = "Requires excess Tier 1 Capital";
+          }
+        }
+      }
+    }
+
+    function addLog(text, type = 'normal') {
+      const feed = document.getElementById('event-feed');
+      const item = document.createElement('div');
+      item.className = `log-item ${type}`;
+      item.innerHTML = `<strong>[Q${BankGame.quarter} Y${BankGame.year}]</strong> ${text}`;
+      feed.insertBefore(item, feed.firstChild);
+    }
+
+    function showToast(title, message, isDanger = false) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      if (isDanger) toast.style.borderLeftColor = 'var(--loss-red)';
+      toast.innerHTML = `<strong style="display:block; margin-bottom:2px;">${title}</strong><span style="font-size:0.75rem; color:#cbd5e1;">${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    /* Upgrade purchase logic */
+    window.buyUpgrade = function(type) {
+      const upgradeCosts = { mobile: 80, hft: 140, wealth: 200, compliance: 110, lobby: 175 };
+      const cost = upgradeCosts[type];
+      if (BankGame.equity - cost < 500) {
+        showToast('Capital Inadequate', 'Tier 1 Capital is too low to invest in capital expenditures right now.', true);
+        sound.playAlert();
+        return;
+      }
+
+      BankGame.equity -= cost;
+      BankGame.upgrades[type] = true;
+      sound.playCashChime();
+
+      if (type === 'mobile') {
+        BankGame.liabilities.deposits += 800;
+        addLog('Completed Mobile Neobank roll-out! +$800M in immediate retail deposits.', 'success');
+        showToast('Desk Upgrade Completed', 'Mobile Neobank deployed!');
+      } else if (type === 'wealth') {
+        BankGame.liabilities.deposits += 1200;
+        addLog('Wealth Management desk launched: Attracted $1.2B institutional private capital.', 'gold');
+        showToast('Private Wealth Active', 'Billionaire family offices deposited $1.2B.');
+      } else {
+        addLog(`Investment in ${type.toUpperCase()} finalized. Capitalized at $${cost}M.`, 'gold');
+        showToast('Investment Finalized', `Desk upgraded.`);
+      }
+
+      // Rebalance assets based on new liabilities
+      rebalanceBalanceSheet();
+      updateUI();
+    };
+
+    function rebalanceBalanceSheet() {
+      // Total funding = Deposits + Interbank Repo + Equity
+      const totalFunding = BankGame.liabilities.deposits + BankGame.policy.repoBorrowTarget + BankGame.equity;
+      BankGame.liabilities.repoDebt = BankGame.policy.repoBorrowTarget;
+
+      // Normalize allocation sum if not 100%
+      let sum = BankGame.allocations.cash + BankGame.allocations.bonds + BankGame.allocations.loans + BankGame.allocations.spec;
+      if (sum <= 0) sum = 1;
+
+      const factor = totalFunding / sum;
+      BankGame.assets.cash = Math.round(BankGame.allocations.cash * factor);
+      BankGame.assets.bonds = Math.round(BankGame.allocations.bonds * factor);
+      BankGame.assets.corpLoans = Math.round(BankGame.allocations.loans * factor);
+      BankGame.assets.specLoans = Math.round(BankGame.allocations.spec * factor);
+    }
+
+    function runQuarter() {
+      sound.playClick();
+
+      // Check allocation validity
+      const sumAlloc = BankGame.allocations.cash + BankGame.allocations.bonds + BankGame.allocations.loans + BankGame.allocations.spec;
+      if (sumAlloc !== 100) {
+        showToast('Allocation Error', 'Asset allocation must equal exactly 100%. Adjust your sliders.', true);
+        sound.playAlert();
+        return;
+      }
+
+      // 1. Advance Macroeconomic Cycle
+      progressMacro();
+
+      // 2. Deposit dynamics (Flows based on rate vs Central Bank rate)
+      const rateDiff = BankGame.policy.depositRate - BankGame.macro.cbRate;
+      let depositFlow = rateDiff * 250; // Every 100bps above CB rate attracts +$250M
+      if (BankGame.upgrades.mobile) depositFlow += 120;
+      if (BankGame.upgrades.wealth) depositFlow += 80;
+
+      // Flight to safety / Run risk if rating is poor
+      if (BankGame.metrics.creditRating === 'CCC' || BankGame.metrics.creditRating === 'D') {
+        depositFlow -= 600;
+        addLog('PANIC WITHDRAWALS: Depositors flee following credit downgrade!', 'crisis');
+      }
+
+      BankGame.liabilities.deposits = Math.max(1000, BankGame.liabilities.deposits + depositFlow);
+
+      // Rebalance assets to reflect balance sheet
+      rebalanceBalanceSheet();
+
+      // 3. Asset Yields & Income Calculation
+      // Sovereign Bond yield = CB rate * 0.9
+      const bondYieldRate = (BankGame.macro.cbRate * 0.9) / 100 / 4;
+      const bondIncome = BankGame.assets.bonds * bondYieldRate;
+
+      // Corporate Loan yield = Prime rate
+      const corpLoanYieldRate = (BankGame.policy.lendingRate) / 100 / 4;
+      const corpIncome = BankGame.assets.corpLoans * corpLoanYieldRate;
+
+      // Leveraged Subprime Debt yield = Prime rate + 5.5%
+      const specYieldRate = (BankGame.policy.lendingRate + 5.5) / 100 / 4;
+      const specIncome = BankGame.assets.specLoans * specYieldRate;
+
+      const totalLoanIncome = corpIncome + specIncome;
+
+      // Trading Desk Fee Income
+      let feeIncome = 12.0;
+      if (BankGame.upgrades.hft) {
+        // High frequency volatile returns
+        feeIncome += 25.0 + (Math.random() * 20.0);
+      }
+      if (BankGame.macro.cycle === 'Expansion') feeIncome += 8.0;
+
+      // 4. Interest Expenses
+      const depExpRate = (BankGame.policy.depositRate) / 100 / 4;
+      const depositExpense = BankGame.liabilities.deposits * depExpRate;
+
+      const repoExpRate = (BankGame.macro.cbRate + 0.75) / 100 / 4;
+      const repoExpense = BankGame.liabilities.repoDebt * repoExpRate;
+
+      const netInterestIncome = (totalLoanIncome + bondIncome) - (depositExpense + repoExpense);
+
+      // 5. Loan Loss Provisions & Non-Performing Loans (NPL)
+      let baseNplRate = 1.2;
+      if (BankGame.macro.cycle === 'Recession') baseNplRate += 2.8;
+      if (BankGame.macro.cycle === 'Peak') baseNplRate += 0.6;
+      if (BankGame.policy.riskTolerance === 'aggressive') baseNplRate *= 1.8;
+      if (BankGame.policy.riskTolerance === 'conservative') baseNplRate *= 0.6;
+      if (BankGame.upgrades.compliance) baseNplRate *= 0.75;
+
+      BankGame.metrics.npl = parseFloat(baseNplRate.toFixed(2));
+      
+      // Provisions write-off = default rate * loans portfolio
+      const totalLoans = BankGame.assets.corpLoans + BankGame.assets.specLoans;
+      const loanLossProvisions = totalLoans * (baseNplRate / 100) * 0.25;
+
+      // 6. Operating Expenses (OpEx)
+      let opex = 32.0;
+      if (BankGame.upgrades.mobile) opex -= 5.0; // Branch cost reduction
+      if (BankGame.upgrades.compliance) opex += 4.0; // Compliance team overhead
+
+      // 7. Net Profit & Dividend Distribution
+      const netProfit = (netInterestIncome + feeIncome) - (loanLossProvisions + opex);
+      
+      let dividend = 0;
+      let retained = 0;
+      if (netProfit > 0) {
+        dividend = netProfit * 0.25; // 25% payout
+        retained = netProfit - dividend;
+        BankGame.consecutiveLosses = 0;
+      } else {
+        retained = netProfit; // Full absorption by Tier 1 capital
+        BankGame.consecutiveLosses++;
+      }
+
+      // Add retained earnings to Tier 1 Capital
+      BankGame.equity += retained;
+      BankGame.metrics.cumulativeDividends += Math.max(0, dividend);
+
+      // 8. Update Metrics & P&L UI
+      const totalInterestEarningAssets = BankGame.assets.bonds + BankGame.assets.corpLoans + BankGame.assets.specLoans;
+      BankGame.metrics.nim = ((netInterestIncome * 4) / Math.max(totalInterestEarningAssets, 1)) * 100;
+      BankGame.metrics.roe = ((netProfit * 4) / Math.max(BankGame.equity, 1)) * 100;
+
+      // Stock Price & Market Cap model
+      const pbRatio = Math.max(0.4, (BankGame.metrics.roe / 12) * (BankGame.metrics.car / 12));
+      BankGame.metrics.marketCap = BankGame.equity * pbRatio;
+      BankGame.metrics.stockPrice = (BankGame.metrics.marketCap / 100);
+
+      // Render P&L
+      updatePLDisplay({
+        loanIncome: totalLoanIncome,
+        bondIncome: bondIncome,
+        feeIncome: feeIncome,
+        depExpense: depositExpense,
+        repoExpense: repoExpense,
+        nii: netInterestIncome,
+        provisions: loanLossProvisions,
+        opex: opex,
+        netProfit: netProfit,
+        dividend: dividend,
+        retained: retained
+      });
+
+      // Sound notification
+      if (netProfit > 0) {
+        sound.playCashChime();
+        addLog(`Quarter closed with strong profitability: +${formatMoney(netProfit)}. Retained: +${formatMoney(retained)}.`, 'success');
+      } else {
+        sound.playAlert();
+        addLog(`Quarter closed with deficit: ${formatMoney(netProfit)}. Absorbed by Tier 1 Equity.`, 'crisis');
+      }
+
+      // 9. Advance Quarter and Year
+      BankGame.quarter++;
+      if (BankGame.quarter > 4) {
+        BankGame.quarter = 1;
+        BankGame.year++;
+        addLog(`--- END OF FISCAL YEAR ${BankGame.year - 1} ANNUAL REPORT SUBMITTED ---`, 'gold');
+      }
+
+      // 10. Check Basel III Compliance & Game Over Triggers
+      checkRegulatoryHealth();
+
+      // 11. Random Market Events
+      triggerRandomMarketEvents();
+
+      // Refresh complete view
+      updateUI();
+    }
+
+    function updatePLDisplay(pl) {
+      document.getElementById('pl-loan-income').innerText = '+' + formatMoney(pl.loanIncome);
+      document.getElementById('pl-bond-income').innerText = '+' + formatMoney(pl.bondIncome);
+      document.getElementById('pl-fee-income').innerText = '+' + formatMoney(pl.feeIncome);
+      document.getElementById('pl-dep-expense').innerText = '-' + formatMoney(pl.depExpense);
+      document.getElementById('pl-repo-expense').innerText = '-' + formatMoney(pl.repoExpense);
+
+      const niiEl = document.getElementById('pl-nii');
+      niiEl.innerText = (pl.nii >= 0 ? '+' : '-') + formatMoney(Math.abs(pl.nii));
+      niiEl.className = pl.nii >= 0 ? 'text-right up' : 'text-right down';
+
+      document.getElementById('pl-provisions').innerText = '-' + formatMoney(pl.provisions);
+      document.getElementById('pl-opex').innerText = '-' + formatMoney(pl.opex);
+
+      const npEl = document.getElementById('pl-net-profit');
+      npEl.innerText = (pl.netProfit >= 0 ? '+' : '-') + formatMoney(Math.abs(pl.netProfit));
+      npEl.className = pl.netProfit >= 0 ? 'text-right up' : 'text-right down';
+
+      document.getElementById('pl-dividends').innerText = '-' + formatMoney(pl.dividend);
+      
+      const retEl = document.getElementById('pl-retained');
+      retEl.innerText = (pl.retained >= 0 ? '+' : '-') + formatMoney(Math.abs(pl.retained));
+      retEl.className = pl.retained >= 0 ? 'text-right up' : 'text-right down';
+    }
+
+    /* Macroeconomics progression */
+    function progressMacro() {
+      const cycles = ['Expansion', 'Peak', 'Recession', 'Recovery'];
+      const cycleIdx = cycles.indexOf(BankGame.macro.cycle);
+
+      // 30% chance to progress cycle
+      if (Math.random() < 0.35) {
+        BankGame.macro.cycle = cycles[(cycleIdx + 1) % cycles.length];
+        showToast('Economic Shift', `Economy entered ${BankGame.macro.cycle} phase.`);
+        addLog(`Macro update: Economic cycle transitioned to ${BankGame.macro.cycle}.`, 'gold');
+      }
+
+      // Central Bank Rate adjustments
+      if (BankGame.macro.cycle === 'Expansion' || BankGame.macro.cycle === 'Peak') {
+        if (Math.random() < 0.4 && BankGame.macro.cbRate < 7.5) {
+          BankGame.macro.cbRate += 0.25;
+          addLog(`Central Bank rate hike: +25 bps to ${BankGame.macro.cbRate.toFixed(2)}% to curb inflation.`, 'crisis');
+        }
+      } else if (BankGame.macro.cycle === 'Recession') {
+        if (Math.random() < 0.5 && BankGame.macro.cbRate > 1.5) {
+          BankGame.macro.cbRate -= 0.50;
+          addLog(`Central Bank emergency rate cut: -50 bps to ${BankGame.macro.cbRate.toFixed(2)}% to stimulate liquidity.`, 'gold');
+        }
+      }
+    }
+
+    const crisisScenarios = [
+      {
+        id: 'fintech_run',
+        title: 'Run on Rival Digital Bank',
+        desc: 'A major fintech competitor suffered a sudden liquidity run. $1.5B in institutional flight-to-safety deposits are seeking immediate refuge at Crown & Sterling, but short-term yield demands are tight.',
+        options: [
+          {
+            text: 'Accept deposits and park 100% in safe Sovereign Gilts (Safe, steady spread)',
+            action: () => {
+              BankGame.liabilities.deposits += 1500;
+              BankGame.assets.bonds += 1500;
+              addLog('Absorbed $1.5B flight-to-safety deposits into Sovereign Gilts.', 'success');
+              showToast('Capital Inflow', 'Flight-to-safety absorbed successfully.');
+            }
+          },
+          {
+            text: 'Leverage the deposits into high-yield syndicated loans (High margin, elevated default risk)',
+            action: () => {
+              BankGame.liabilities.deposits += 1500;
+              BankGame.assets.specLoans += 1500;
+              addLog('Aggressively deployed $1.5B flight capital into high-yield leveraged debt.', 'crisis');
+              showToast('Aggressive Allocation', 'Capital deployed into leveraged syndicate.');
+            }
+          },
+          {
+            text: 'Turn down deposits due to Basel III leverage ratio constraints',
+            action: () => {
+              addLog('Declined flight capital to maintain pristine balance sheet leverage ratio.', 'normal');
+            }
+          }
+        ]
+      },
+      {
+        id: 'auditor_scrutiny',
+        title: 'Central Bank Forensic Stress Audit',
+        desc: 'Regulators have launched an unannounced examination into commercial loan classifications. You must determine your audit posture.',
+        options: [
+          {
+            text: 'Full disclosure: Voluntarily write down $80M in doubtful corporate loans',
+            action: () => {
+              BankGame.equity -= 80;
+              BankGame.assets.corpLoans -= 80;
+              addLog('Voluntary $80M loan write-down earned high regulatory praise and protected reputation.', 'gold');
+              showToast('Audit Cleared', 'Pristine transparency acknowledged by regulators.');
+            }
+          },
+          {
+            text: 'Contest classifications and deploy lobbying firm to delay enforcement',
+            action: () => {
+              if (BankGame.upgrades.lobby) {
+                addLog('Central Bank lobbying desk successfully quashed regulatory scrutiny.', 'success');
+                showToast('Audit Mitigated', 'Lobbying connections defused regulatory friction.');
+              } else {
+                BankGame.equity -= 150;
+                addLog('Regulatory penalty: Regulators levied a $150M disciplinary surcharge!', 'crisis');
+                showToast('Heavy Regulatory Penalty', '$150M fine imposed.', true);
+              }
+            }
+          }
+        ]
+      },
+      {
+        id: 'hedge_fund_margin',
+        title: 'Black Swan: Prime Brokerage Margin Call',
+        desc: 'A prominent London hedge fund client defaulted on collateralized leverage positions following sudden currency volatility.',
+        options: [
+          {
+            text: 'Liquidate collateral immediately at a $45M discount',
+            action: () => {
+              BankGame.equity -= 45;
+              addLog('Liquidated defaulted prime broker collateral with $45M realized loss.', 'crisis');
+              showToast('Collateral Liquidated', '$45M liquidation loss recorded.', true);
+            }
+          },
+          {
+            text: 'Take custody of illiquid venture assets and work them out over time',
+            action: () => {
+              BankGame.assets.specLoans += 60;
+              addLog('Absorbed illiquid venture assets into high-risk portfolio desk.', 'normal');
+              showToast('Assets Transferred', 'Holding illiquid assets.');
+            }
+          }
+        ]
+      }
+    ];
+
+    function triggerRandomMarketEvents() {
+      // 25% chance of triggering an executive boardroom crisis per quarter
+      if (Math.random() < 0.28) {
+        const scenario = crisisScenarios[Math.floor(Math.random() * crisisScenarios.length)];
+        openCrisisModal(scenario);
+      }
+    }
+
+    function openCrisisModal(scenario) {
+      sound.playAlert();
+      const modal = document.getElementById('crisis-modal');
+      document.getElementById('modal-title').innerText = '🚨 ' + scenario.title;
+      document.getElementById('modal-desc').innerText = scenario.desc;
+
+      const optContainer = document.getElementById('modal-options');
+      optContainer.innerHTML = '';
+
+      scenario.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'modal-choice-btn';
+        btn.innerText = opt.text;
+        btn.onclick = () => {
+          opt.action();
+          modal.style.display = 'none';
+          updateUI();
+        };
+        optContainer.appendChild(btn);
+      });
+
+      modal.style.display = 'grid';
+    }
+
+    /* Check Game Win and Loss Conditions */
+    function checkRegulatoryHealth() {
+      const car = BankGame.metrics.car;
+
+      // Regulatory CAR threshold enforcement
+      if (car < 8.0) {
+        BankGame.carWarningCount++;
+        if (BankGame.carWarningCount >= 2) {
+          triggerGameOver(
+            'BANK SEIZED BY REGULATORS (BAIL-IN)',
+            'Your Capital Adequacy Ratio (CAR) remained critically below Basel III legal minimums (8%) for two consecutive quarters. Regulators have revoked Crown & Sterling’s banking charter.'
+          );
+          return;
+        } else {
+          showToast('URGENT REGULATORY WARNING', 'CAR below 8%! Immediate capital restoration required or bank will be seized next quarter.', true);
+          addLog('CRITICAL: Central Bank issued formal cease-and-desist warning for capital non-compliance.', 'crisis');
+        }
+      } else {
+        BankGame.carWarningCount = 0;
+      }
+
+      // Board Ouster due to consecutive losses
+      if (BankGame.consecutiveLosses >= 4) {
+        triggerGameOver(
+          'OUSTED BY SHAREHOLDERS & BOARD',
+          'Four consecutive quarters of heavy financial losses led the Board of Directors to unanimously vote for your immediate termination as Managing Director.'
+        );
+        return;
+      }
+
+      // Insolvency (Negative Cash or Equity)
+      if (BankGame.equity <= 0 || BankGame.assets.cash < 0) {
+        triggerGameOver(
+          'INSOLVENCY & BANK COLLAPSE',
+          'Crown & Sterling exhausted its Tier 1 capital reserve and entered balance-sheet insolvency. The bank was forced into emergency receivership.'
+        );
+        return;
+      }
+
+      // Check Victory at Q12 (End of Year 3)
+      if (BankGame.year === 4 && BankGame.quarter === 1 && !BankGame.endless) {
+        triggerVictory();
+      }
+    }
+
+    function triggerGameOver(title, message) {
+      sound.playAlert();
+      document.getElementById('endgame-icon').innerText = '🛑';
+      document.getElementById('endgame-title').innerText = title;
+      document.getElementById('endgame-title').style.color = 'var(--loss-red)';
+      document.getElementById('endgame-desc').innerText = message;
+      populateEndgameStats();
+      document.getElementById('btn-endless-mode').style.display = 'none';
+      document.getElementById('endgame-modal').style.display = 'grid';
+    }
+
+    function triggerVictory() {
+      sound.playCashChime();
+      document.getElementById('endgame-icon').innerText = '🏆';
+      document.getElementById('endgame-title').innerText = 'CENTRAL BANKER OF THE YEAR';
+      document.getElementById('endgame-title').style.color = 'var(--gold-primary)';
+      document.getElementById('endgame-desc').innerText = 
+        'You have steered Crown & Sterling Bank through 12 rigorous quarters of market fluctuations, achieving exemplary Basel III capital adequacy, high shareholder returns, and sovereign acclaim.';
+      populateEndgameStats();
+      document.getElementById('btn-endless-mode').style.display = 'block';
+      document.getElementById('endgame-modal').style.display = 'grid';
+    }
+
+    function populateEndgameStats() {
+      document.getElementById('stat-final-equity').innerText = formatMoney(BankGame.equity);
+      document.getElementById('stat-final-roe').innerText = BankGame.metrics.roe.toFixed(1) + '%';
+      document.getElementById('stat-final-rating').innerText = BankGame.metrics.creditRating;
+      document.getElementById('stat-final-divs').innerText = formatMoney(BankGame.metrics.cumulativeDividends);
+    }
+
+    function setupEventListeners() {
+      // Policy Sliders
+      document.getElementById('slider-deposit-rate').addEventListener('input', (e) => {
+        BankGame.policy.depositRate = parseFloat(e.target.value);
+        updateUI();
+      });
+
+      document.getElementById('slider-lending-rate').addEventListener('input', (e) => {
+        BankGame.policy.lendingRate = parseFloat(e.target.value);
+        updateUI();
+      });
+
+      document.getElementById('slider-repo-borrow').addEventListener('input', (e) => {
+        BankGame.policy.repoBorrowTarget = parseInt(e.target.value, 10);
+        rebalanceBalanceSheet();
+        updateUI();
+      });
+
+      // Risk Tolerance Buttons
+      const riskButtons = document.querySelectorAll('#risk-selector .segment-btn');
+      riskButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          riskButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          BankGame.policy.riskTolerance = btn.dataset.risk;
+          const lbl = document.getElementById('lbl-risk-mode');
+          lbl.innerText = btn.dataset.risk.charAt(0).toUpperCase() + btn.dataset.risk.slice(1);
+          if (btn.dataset.risk === 'conservative') lbl.style.color = 'var(--blue-accent)';
+          if (btn.dataset.risk === 'moderate') lbl.style.color = 'var(--profit-green)';
+          if (btn.dataset.risk === 'aggressive') lbl.style.color = 'var(--loss-red)';
+          sound.playClick();
+        });
+      });
+
+      // Asset Allocation Sliders
+      const setupAllocSlider = (id, key) => {
+        document.getElementById(id).addEventListener('input', (e) => {
+          BankGame.allocations[key] = parseInt(e.target.value, 10);
+          updateUI();
+        });
+      };
+
+      setupAllocSlider('slider-alloc-cash', 'cash');
+      setupAllocSlider('slider-alloc-bonds', 'bonds');
+      setupAllocSlider('slider-alloc-loans', 'loans');
+      setupAllocSlider('slider-alloc-spec', 'spec');
+
+      // Next Quarter Button
+      document.getElementById('btn-end-quarter').addEventListener('click', runQuarter);
+
+      // Sound Toggle
+      document.getElementById('soundToggleBtn').addEventListener('click', () => {
+        sound.muted = !sound.muted;
+        const icon = document.getElementById('soundIcon');
+        const btn = document.getElementById('soundToggleBtn');
+        if (sound.muted) {
+          btn.innerHTML = '<span>🔇</span> Audio: OFF';
+        } else {
+          btn.innerHTML = '<span>🔊</span> Audio: ON';
+          sound.playClick();
+        }
+      });
+
+      // Reset / Restart
+      const resetGame = () => {
+        if (confirmReset()) {
+          location.reload();
+        }
+      };
+
+      document.getElementById('restartGameBtn').addEventListener('click', resetGame);
+      document.getElementById('btn-restart-game').addEventListener('click', () => location.reload());
+
+      document.getElementById('btn-endless-mode').addEventListener('click', () => {
+        BankGame.endless = true;
+        document.getElementById('endgame-modal').style.display = 'none';
+        showToast('Endless Mode', 'Endless capital manager mode activated. Continue expanding!');
+      });
+    }
+
+    function confirmReset() {
+      return window.confirm ? window.confirm("Reset game back to Q1 Year 1?") : true;
+    }
+
+    window.onload = function() {
+      rebalanceBalanceSheet();
+      setupEventListeners();
+      updateUI();
+      addLog('Crown & Sterling trading terminal initiated. Ready for Q1 operations.', 'gold');
+    };
+  </script>
+</body>
+</html>
