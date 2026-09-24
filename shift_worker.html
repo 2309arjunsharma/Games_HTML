@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Shift Worker: Cyber Clean</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,600;0,700;1,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg-dark: #070913;
+            --neon-cyan: #006aff80;
+            --neon-magenta: #ff0077;
+            --neon-amber: #ffaa00;
+            --neon-green: #00ff88b1;
+            --neon-purple: #9d4edd;
+            --panel-bg: rgba(13, 17, 34, 0.88);
+            --panel-border: rgb(0, 238, 255);
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-dark);
+            font-family: 'Chakra Petch', sans-serif;
+            color: #ffffff;
+        }
+
+        #game-wrapper {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: radial-gradient(circle at center, #11162d 0%, #060811 100%);
+        }
+
+        canvas#gameCanvas {
+            display: block;
+            background-color: #0b0e1b;
+            box-shadow: 0 0 50px rgba(0, 240, 255, 0.15);
+        }
+
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .hud-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            backdrop-filter: blur(8px);
+            padding: 10px 18px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,240,255,0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .hud-title {
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #7b8ba5;
+            font-weight: 600;
+        }
+
+        .hud-value {
+            font-size: 22px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px rgba(0,240,255,0.5);
+        }
+
+        .hud-bar-container {
+            width: 130px;
+            height: 8px;
+            background: #1b213b;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+            margin-top: 4px;
+        }
+
+        .hud-bar-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #00f0ff, #00ff88);
+            border-radius: 4px;
+            transition: width 0.15s ease-out;
+            box-shadow: 0 0 8px #00ff88;
+        }
+
+        .hud-center-alert {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--neon-amber);
+            text-shadow: 0 0 12px var(--neon-amber);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 25;
+            white-space: nowrap;
+        }
+
+        #ability-bar {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 16px;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .ability-badge {
+            background: var(--panel-bg);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 8px 14px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            pointer-events: auto;
+            cursor: pointer;
+            transition: transform 0.1s, border-color 0.2s;
+        }
+
+        .ability-badge.ready {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 12px rgba(0,240,255,0.4);
+        }
+
+        .ability-badge .key-tag {
+            background: #1e2646;
+            padding: 2px 7px;
+            border-radius: 5px;
+            color: #00f0ff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            border: 1px solid rgba(0,240,255,0.3);
+        }
+
+        .overlay-screen {
+            position: absolute;
+            inset: 0;
+            background: rgba(4, 7, 16, 0.88);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            padding: 24px;
+            text-align: center;
+            transition: opacity 0.25s ease;
+        }
+
+        .overlay-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .neon-heading {
+            font-size: clamp(32px, 6vw, 56px);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: #ffffff;
+            margin-bottom: 8px;
+            text-shadow: 0 0 20px var(--neon-cyan), 0 0 40px rgba(0,240,255,0.4);
+        }
+
+        .neon-subheading {
+            font-size: 16px;
+            color: #8da4ca;
+            max-width: 520px;
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            justify-content: center;
+        }
+
+        .cyber-btn {
+            font-family: 'Chakra Petch', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 14px 32px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 1px solid var(--neon-cyan);
+            background: rgba(0, 240, 255, 0.12);
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.25);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .cyber-btn:hover {
+            background: var(--neon-cyan);
+            color: #050813;
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.7);
+            transform: translateY(-2px);
+        }
+
+        .cyber-btn.btn-secondary {
+            border-color: rgba(255,255,255,0.25);
+            background: rgba(255,255,255,0.05);
+            color: #c8d3e6;
+            box-shadow: none;
+        }
+
+        .cyber-btn.btn-secondary:hover {
+            background: rgba(255,255,255,0.15);
+            border-color: #ffffff;
+            color: #ffffff;
+        }
+
+        .top-ctrl-btn {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-family: 'Chakra Petch', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            pointer-events: auto;
+            backdrop-filter: blur(8px);
+            transition: background 0.2s;
+        }
+        .top-ctrl-btn:hover {
+            background: rgba(0, 240, 255, 0.2);
+        }
+
+        #touch-stick-zone {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px dashed rgba(0, 240, 255, 0.3);
+            display: none;
+            z-index: 30;
+            touch-action: none;
+        }
+
+        #touch-stick-nub {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            margin-left: -25px;
+            margin-top: -25px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--neon-cyan) 0%, rgba(0, 240, 255, 0.4) 100%);
+            box-shadow: 0 0 15px var(--neon-cyan);
+            pointer-events: none;
+        }
+
+        .instructions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+            max-width: 600px;
+            width: 100%;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+
+        .inst-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .inst-item strong {
+            color: var(--neon-cyan);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        @media (max-width: 768px) {
+            #touch-stick-zone {
+                display: block;
+            }
+            .hud-card {
+                padding: 6px 12px;
+            }
+            .hud-value {
+                font-size: 18px;
+            }
+            #ability-bar {
+                bottom: 20px;
+                right: 20px;
+                left: auto;
+                transform: none;
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-wrapper">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Top HUD Elements -->
+        <div id="hud">
+            <div class="hud-card">
+                <span class="hud-title">CLEAN METER</span>
+                <div class="hud-bar-container">
+                    <div id="cleanBar" class="hud-bar-fill"></div>
+                </div>
+                <span id="shiftTimer" style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #a0aec0; margin-top:2px;">SHIFT: 02:00</span>
+            </div>
+
+            <div class="hud-card" style="align-items: center;">
+                <span class="hud-title">SCORE / MULTIPLIER</span>
+                <div style="display: flex; align-items: baseline; gap: 6px;">
+                    <span id="hudScore" class="hud-value">0</span>
+                    <span id="hudMultiplier" style="color: var(--neon-amber); font-weight: 700; font-size: 15px;">x1.0</span>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+                <button id="soundToggleBtn" class="top-ctrl-btn">🔊 SFX ON</button>
+                <button id="pauseBtn" class="top-ctrl-btn">⏸ PAUSE</button>
+            </div>
+        </div>
+
+        <div id="centerAlert" class="hud-center-alert">LAYOUT SHIFTING IN 10s!</div>
+
+        <!-- Ability triggers & visual indicators -->
+        <div id="ability-bar">
+            <div id="dashBadge" class="ability-badge ready" onclick="triggerDash()">
+                <span class="key-tag">SPACE / TAP</span>
+                <span>CYBER DASH</span>
+            </div>
+            <div id="empBadge" class="ability-badge ready" onclick="triggerEmp()">
+                <span class="key-tag">E / EMP</span>
+                <span id="empLabel">EMP BLAST (3)</span>
+            </div>
+        </div>
+
+        <!-- Touch Controls -->
+        <div id="touch-stick-zone">
+            <div id="touch-stick-nub"></div>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="startScreen" class="overlay-screen">
+            <h1 class="neon-heading">SHIFT WORKER</h1>
+            <p style="color: var(--neon-cyan); letter-spacing: 2px; font-weight:700; margin-bottom: 8px;">NIGHT SHIFT PROTOCOL: OVERDRIVE</p>
+            <p class="neon-subheading">
+                The office shifts dynamically every 45 seconds! Evade rogue security drones, suck up hazardous coffee spills, hack data terminals, and survive your bureaucratic graveyard shift.
+            </p>
+
+            <div class="instructions-grid">
+                <div class="inst-item">
+                    <strong>WASD / ARROWS / STICK</strong>
+                    <span>Move your cleaner droid smoothly across zones.</span>
+                </div>
+                <div class="inst-item">
+                    <strong>SPACE / TAP DASH</strong>
+                    <span>Dash forward through danger with brief invulnerability.</span>
+                </div>
+                <div class="inst-item">
+                    <strong>E / EMP BUTTON</strong>
+                    <span>Stun all active security drones in the sector.</span>
+                </div>
+                <div class="inst-item">
+                    <strong>VACUUM SPILLS</strong>
+                    <span>Stand close to radioactive spills to clean them for combos.</span>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button id="startBtn" class="cyber-btn">START CLOCK-IN</button>
+            </div>
+        </div>
+
+        <!-- Pause Screen -->
+        <div id="pauseScreen" class="overlay-screen hidden">
+            <h2 class="neon-heading" style="font-size: 38px;">SHIFT PAUSED</h2>
+            <p class="neon-subheading">Take a breather, check your route, then punch back in.</p>
+            <div class="btn-group">
+                <button id="resumeBtn" class="cyber-btn">RESUME SHIFT</button>
+                <button id="restartFromPauseBtn" class="cyber-btn btn-secondary">RESTART</button>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="overlay-screen hidden">
+            <h2 class="neon-heading" style="color: var(--neon-magenta); text-shadow: 0 0 25px var(--neon-magenta);">CONTRACT TERMINATED</h2>
+            <p id="deathReason" style="color: #cad5e8; margin-bottom: 12px; font-size: 16px;">Apprehended by rogue patrol drone.</p>
+
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 18px 30px; margin-bottom: 24px;">
+                <div style="font-size: 13px; color: #7686a6; letter-spacing: 1px;">FINAL SCORE</div>
+                <div id="finalScoreVal" style="font-size: 38px; font-weight: 700; color: var(--neon-cyan); font-family: 'JetBrains Mono'; margin: 4px 0 10px 0;">0</div>
+                <div style="font-size: 13px; color: #7686a6; letter-spacing: 1px;">ALL-TIME HIGH SCORE: <span id="bestScoreVal" style="color: #fff; font-weight: 700;">0</span></div>
+            </div>
+
+            <div class="btn-group">
+                <button id="restartBtn" class="cyber-btn">CLOCK IN AGAIN</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SoundSystem = {
+            ctx: null,
+            enabled: true,
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            },
+
+            playClean() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                const now = this.ctx.currentTime;
+                osc.frequency.setValueAtTime(420, now);
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.12);
+            },
+
+            playDash() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                const now = this.ctx.currentTime;
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.exponentialRampToValueAtTime(520, now + 0.18);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.18);
+            },
+
+            playEmp() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                const now = this.ctx.currentTime;
+                osc.frequency.setValueAtTime(900, now);
+                osc.frequency.exponentialRampToValueAtTime(80, now + 0.45);
+                gain.gain.setValueAtTime(0.35, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.45);
+            },
+
+            playAlert() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                const now = this.ctx.currentTime;
+                osc.frequency.setValueAtTime(320, now);
+                osc.frequency.setValueAtTime(440, now + 0.08);
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.22);
+            },
+
+            playCrash() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                const now = this.ctx.currentTime;
+                osc.frequency.setValueAtTime(140, now);
+                osc.frequency.exponentialRampToValueAtTime(30, now + 0.5);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            },
+
+            playHack() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                const now = this.ctx.currentTime;
+                osc.frequency.setValueAtTime(587.33, now);
+                osc.frequency.setValueAtTime(880.00, now + 0.08);
+                osc.frequency.setValueAtTime(1174.66, now + 0.16);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.28);
+            }
+        };
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const WORLD = {
+            width: 2200,
+            height: 1600,
+            gridSize: 80
+        };
+
+        let gameState = 'START'; // 'START' | 'PLAYING' | 'PAUSED' | 'GAMEOVER'
+        let score = 0;
+        let multiplier = 1.0;
+        let comboTimer = 0;
+        let shiftTimeRemaining = 120; // in seconds
+        let layoutShiftCountdown = 45; // Office alters every 45s
+        let screenShake = 0;
+        let bestScore = parseInt(localStorage.getItem('shift_worker_high_score') || '0', 10);
+
+        // Player configuration
+        const player = {
+            x: 400,
+            y: 400,
+            radius: 18,
+            speed: 260,
+            angle: 0,
+            vx: 0,
+            vy: 0,
+            health: 100,
+            maxHealth: 100,
+            dashCooldown: 0,
+            dashDuration: 0,
+            isDashing: false,
+            empsAvailable: 3,
+            vacuumRadius: 90
+        };
+
+        let walls = [];
+        let spills = [];
+        let servers = [];
+        let drones = [];
+        let particles = [];
+        let floatingTexts = [];
+
+        // Camera
+        const camera = {
+            x: 0,
+            y: 0,
+            targetX: 0,
+            targetY: 0,
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight
+        };
+
+        function generateProceduralOffice() {
+            walls = [];
+            spills = [];
+            servers = [];
+            drones = [];
+
+            // Outer perimeter walls
+            const t = 30; // Wall thickness
+            walls.push({ x: 0, y: 0, w: WORLD.width, h: t });
+            walls.push({ x: 0, y: WORLD.height - t, w: WORLD.width, h: t });
+            walls.push({ x: 0, y: 0, w: t, h: WORLD.height });
+            walls.push({ x: WORLD.width - t, y: 0, w: t, h: WORLD.height });
+
+            // Generate modular office cubicle clusters & corridors
+            const cols = 5;
+            const rows = 4;
+            const cellW = (WORLD.width - 200) / cols;
+            const cellH = (WORLD.height - 200) / rows;
+
+            for (let c = 0; c < cols; c++) {
+                for (let r = 0; r < rows; r++) {
+                    const ox = 100 + c * cellW;
+                    const oy = 100 + r * cellH;
+
+                    // Randomized room archetypes
+                    const type = Math.random();
+                    if (type < 0.35) {
+                        // Cubicle pod
+                        walls.push({ x: ox + 40, y: oy + 40, w: cellW - 120, h: 20 });
+                        walls.push({ x: ox + 40, y: oy + 40, w: 20, h: cellH - 100 });
+                    } else if (type < 0.65) {
+                        // Server corridor column
+                        walls.push({ x: ox + cellW * 0.4, y: oy + 30, w: 24, h: cellH * 0.7 });
+                    } else {
+                        // Central block obstacle
+                        walls.push({ x: ox + cellW * 0.3, y: oy + cellH * 0.3, w: cellW * 0.4, h: 24 });
+                    }
+
+                    // Place Coffee Spills
+                    if (Math.random() < 0.75) {
+                        spills.push({
+                            x: ox + 60 + Math.random() * (cellW - 140),
+                            y: oy + 60 + Math.random() * (cellH - 140),
+                            radius: 20 + Math.random() * 14,
+                            cleanedProgress: 0,
+                            maxProgress: 1.0,
+                            hue: Math.random() > 0.3 ? 340 : 170 // Neon magenta or cyan goo
+                        });
+                    }
+
+                    // Place Server Data Stacks to hack
+                    if (Math.random() < 0.35) {
+                        servers.push({
+                            x: ox + cellW * 0.5,
+                            y: oy + cellH * 0.5,
+                            w: 38,
+                            h: 38,
+                            hacked: false,
+                            hackProgress: 0
+                        });
+                    }
+                }
+            }
+
+            // Spawn patrolling security drones
+            const droneCount = 5 + Math.floor(score / 1500);
+            for (let i = 0; i < droneCount; i++) {
+                const px = 200 + Math.random() * (WORLD.width - 400);
+                const py = 200 + Math.random() * (WORLD.height - 400);
+                // Keep away from player start
+                const distToPlayer = Math.hypot(px - player.x, py - player.y);
+                if (distToPlayer > 300) {
+                    drones.push({
+                        x: px,
+                        y: py,
+                        radius: 16,
+                        speed: 130 + Math.random() * 45,
+                        patrolAngle: Math.random() * Math.PI * 2,
+                        alertTimer: 0,
+                        stunTimer: 0,
+                        detectionRange: 260
+                    });
+                }
+            }
+        }
+
+        const keys = {};
+        window.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            if (e.code === 'Space') {
+                e.preventDefault();
+                triggerDash();
+            }
+            if (e.code === 'KeyE') {
+                triggerEmp();
+            }
+            if (e.code === 'KeyP' || e.code === 'Escape') {
+                togglePause();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        // Touch Virtual Joystick
+        const stickZone = document.getElementById('touch-stick-zone');
+        const stickNub = document.getElementById('touch-stick-nub');
+        let touchStick = { active: false, startX: 0, startY: 0, dx: 0, dy: 0 };
+
+        stickZone.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = stickZone.getBoundingClientRect();
+            touchStick.active = true;
+            touchStick.startX = rect.left + rect.width / 2;
+            touchStick.startY = rect.top + rect.height / 2;
+        }, { passive: false });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!touchStick.active) return;
+            const touch = Array.from(e.touches).find(t => t.target === stickZone || stickZone.contains(t.target)) || e.touches[0];
+            const maxDist = 45;
+            let dx = touch.clientX - touchStick.startX;
+            let dy = touch.clientY - touchStick.startY;
+            const dist = Math.hypot(dx, dy);
+
+            if (dist > maxDist) {
+                dx = (dx / dist) * maxDist;
+                dy = (dy / dist) * maxDist;
+            }
+
+            touchStick.dx = dx / maxDist;
+            touchStick.dy = dy / maxDist;
+            stickNub.style.transform = `translate(${dx}px, ${dy}px)`;
+        });
+
+        const resetStick = () => {
+            touchStick.active = false;
+            touchStick.dx = 0;
+            touchStick.dy = 0;
+            stickNub.style.transform = `translate(0px, 0px)`;
+        };
+        window.addEventListener('touchend', resetStick);
+        window.addEventListener('touchcancel', resetStick);
+
+        function triggerDash() {
+            if (gameState !== 'PLAYING') return;
+            if (player.dashCooldown <= 0) {
+                player.isDashing = true;
+                player.dashDuration = 0.22;
+                player.dashCooldown = 1.6;
+                screenShake = 10;
+                SoundSystem.playDash();
+
+                // Dash blast wave particles
+                for (let i = 0; i < 16; i++) {
+                    const ang = Math.random() * Math.PI * 2;
+                    particles.push({
+                        x: player.x,
+                        y: player.y,
+                        vx: Math.cos(ang) * (80 + Math.random() * 120),
+                        vy: Math.sin(ang) * (80 + Math.random() * 120),
+                        size: 3 + Math.random() * 3,
+                        color: '#00f0ff',
+                        life: 0.35,
+                        maxLife: 0.35
+                    });
+                }
+            }
+        }
+
+        function triggerEmp() {
+            if (gameState !== 'PLAYING') return;
+            if (player.empsAvailable > 0) {
+                player.empsAvailable--;
+                updateEmpUI();
+                SoundSystem.playEmp();
+                screenShake = 18;
+
+                // Stun all drones on screen
+                drones.forEach(d => {
+                    d.stunTimer = 6.0;
+                    for (let i = 0; i < 8; i++) {
+                        particles.push({
+                            x: d.x,
+                            y: d.y,
+                            vx: (Math.random() - 0.5) * 160,
+                            vy: (Math.random() - 0.5) * 160,
+                            size: 3,
+                            color: '#9d4edd',
+                            life: 0.6,
+                            maxLife: 0.6
+                        });
+                    }
+                });
+
+                showFloatingText(player.x, player.y - 20, "EMP SYSTEM DISCHARGE!", "#9d4edd");
+            }
+        }
+
+        function updateEmpUI() {
+            const empLabel = document.getElementById('empLabel');
+            const empBadge = document.getElementById('empBadge');
+            empLabel.innerText = `EMP BLAST (${player.empsAvailable})`;
+            if (player.empsAvailable > 0) {
+                empBadge.classList.add('ready');
+            } else {
+                empBadge.classList.remove('ready');
+            }
+        }
+
+        function addSparkles(x, y, color, count = 8) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 40 + Math.random() * 90;
+                particles.push({
+                    x,
+                    y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size: 2 + Math.random() * 3,
+                    color,
+                    life: 0.4 + Math.random() * 0.3,
+                    maxLife: 0.7
+                });
+            }
+        }
+
+        function showFloatingText(x, y, text, color = '#00f0ff') {
+            floatingTexts.push({
+                x,
+                y,
+                text,
+                color,
+                life: 1.0,
+                maxLife: 1.0
+            });
+        }
+
+        function circleRectCollide(cx, cy, radius, rx, ry, rw, rh) {
+            const testX = Math.max(rx, Math.min(cx, rx + rw));
+            const testY = Math.max(ry, Math.min(cy, ry + rh));
+            const distX = cx - testX;
+            const distY = cy - testY;
+            return (distX * distX + distY * distY) <= (radius * radius);
+        }
+
+        function resolveWallCollisions(entity) {
+            walls.forEach(w => {
+                // Find closest point on rectangle to circle
+                const closestX = Math.max(w.x, Math.min(entity.x, w.x + w.w));
+                const closestY = Math.max(w.y, Math.min(entity.y, w.y + w.h));
+                const dx = entity.x - closestX;
+                const dy = entity.y - closestY;
+                const distSqr = dx * dx + dy * dy;
+
+                if (distSqr < entity.radius * entity.radius) {
+                    const dist = Math.sqrt(distSqr) || 0.001;
+                    const overlap = entity.radius - dist;
+                    entity.x += (dx / dist) * overlap;
+                    entity.y += (dy / dist) * overlap;
+                }
+            });
+        }
+
+        function update(dt) {
+            if (gameState !== 'PLAYING') return;
+
+            // Timer and Layout Shift countdown
+            shiftTimeRemaining -= dt;
+            layoutShiftCountdown -= dt;
+
+            if (layoutShiftCountdown <= 10 && layoutShiftCountdown > 0) {
+                const alertEl = document.getElementById('centerAlert');
+                alertEl.innerText = `OFFICE RESTRUCTURING IN ${Math.ceil(layoutShiftCountdown)}s!`;
+                alertEl.style.opacity = '1';
+                if (Math.floor(layoutShiftCountdown * 2) % 2 === 0) {
+                    SoundSystem.playAlert();
+                }
+            } else {
+                document.getElementById('centerAlert').style.opacity = '0';
+            }
+
+            // Procedural rearrangement trigger
+            if (layoutShiftCountdown <= 0) {
+                layoutShiftCountdown = 45;
+                screenShake = 22;
+                SoundSystem.playCrash();
+                generateProceduralOffice();
+                showFloatingText(player.x, player.y - 30, "OFFICE RECONFIGURED!", "#ffaa00");
+            }
+
+            // Shift Clock expiration
+            if (shiftTimeRemaining <= 0) {
+                endGame("Shift expired! Stellar corporate productivity reached.");
+                return;
+            }
+
+            // Dash ability timer
+            if (player.dashCooldown > 0) {
+                player.dashCooldown -= dt;
+                const badge = document.getElementById('dashBadge');
+                if (player.dashCooldown <= 0) badge.classList.add('ready');
+                else badge.classList.remove('ready');
+            }
+
+            let currentSpeed = player.speed;
+            if (player.isDashing) {
+                player.dashDuration -= dt;
+                currentSpeed *= 2.8;
+                if (player.dashDuration <= 0) {
+                    player.isDashing = false;
+                }
+            }
+
+            // Movement inputs
+            let moveX = 0;
+            let moveY = 0;
+
+            if (keys['KeyW'] || keys['ArrowUp']) moveY -= 1;
+            if (keys['KeyS'] || keys['ArrowDown']) moveY += 1;
+            if (keys['KeyA'] || keys['ArrowLeft']) moveX -= 1;
+            if (keys['KeyD'] || keys['ArrowRight']) moveX += 1;
+
+            if (touchStick.active) {
+                moveX = touchStick.dx;
+                moveY = touchStick.dy;
+            }
+
+            const moveLen = Math.hypot(moveX, moveY);
+            if (moveLen > 0.05) {
+                const nx = moveX / (moveLen > 1 ? moveLen : 1);
+                const ny = moveY / (moveLen > 1 ? moveLen : 1);
+                player.x += nx * currentSpeed * dt;
+                player.y += ny * currentSpeed * dt;
+                player.angle = Math.atan2(ny, nx);
+
+                // Movement dust particles
+                if (Math.random() < 0.3) {
+                    particles.push({
+                        x: player.x,
+                        y: player.y,
+                        vx: -nx * 40 + (Math.random() - 0.5) * 20,
+                        vy: -ny * 40 + (Math.random() - 0.5) * 20,
+                        size: 2,
+                        color: 'rgba(0, 240, 255, 0.4)',
+                        life: 0.3,
+                        maxLife: 0.3
+                    });
+                }
+            }
+
+            resolveWallCollisions(player);
+
+            // Combo drain
+            if (comboTimer > 0) {
+                comboTimer -= dt;
+                if (comboTimer <= 0) {
+                    multiplier = 1.0;
+                }
+            }
+
+            // Coffee Spills vacuum interaction
+            spills.forEach(spill => {
+                const dist = Math.hypot(player.x - spill.x, player.y - spill.y);
+                if (dist < player.vacuumRadius + spill.radius) {
+                    spill.cleanedProgress += dt * 1.35;
+                    // Vacuum suction particle
+                    particles.push({
+                        x: spill.x + (Math.random() - 0.5) * spill.radius,
+                        y: spill.y + (Math.random() - 0.5) * spill.radius,
+                        vx: (player.x - spill.x) * 4,
+                        vy: (player.y - spill.y) * 4,
+                        size: 2,
+                        color: spill.hue === 340 ? '#ff0077' : '#00f0ff',
+                        life: 0.2,
+                        maxLife: 0.2
+                    });
+
+                    if (spill.cleanedProgress >= spill.maxProgress) {
+                        SoundSystem.playClean();
+                        multiplier = Math.min(4.0, +(multiplier + 0.2).toFixed(1));
+                        comboTimer = 4.0;
+                        const pts = Math.round(150 * multiplier);
+                        score += pts;
+                        showFloatingText(spill.x, spill.y, `+${pts}`, '#00ff88');
+                        addSparkles(spill.x, spill.y, '#00ff88', 12);
+                    }
+                }
+            });
+            spills = spills.filter(s => s.cleanedProgress < s.maxProgress);
+
+            // Server stacks hack interaction
+            servers.forEach(srv => {
+                if (srv.hacked) return;
+                const dist = Math.hypot(player.x - (srv.x + srv.w / 2), player.y - (srv.y + srv.h / 2));
+                if (dist < 65) {
+                    srv.hackProgress += dt * 0.7;
+                    if (srv.hackProgress >= 1.0) {
+                        srv.hacked = true;
+                        SoundSystem.playHack();
+                        const pts = Math.round(500 * multiplier);
+                        score += pts;
+                        showFloatingText(srv.x, srv.y - 15, `DATA BREACH! +${pts}`, '#ffaa00');
+                        addSparkles(srv.x + srv.w / 2, srv.y + srv.h / 2, '#ffaa00', 20);
+                        // Chance to restore EMP charge
+                        if (player.empsAvailable < 3 && Math.random() < 0.6) {
+                            player.empsAvailable++;
+                            updateEmpUI();
+                            showFloatingText(player.x, player.y - 45, "+1 EMP FOUND", '#9d4edd');
+                        }
+                    }
+                }
+            });
+
+            // Patrol Drones AI
+            drones.forEach(drone => {
+                if (drone.stunTimer > 0) {
+                    drone.stunTimer -= dt;
+                    return;
+                }
+
+                const dx = player.x - drone.x;
+                const dy = player.y - drone.y;
+                const distToPlayer = Math.hypot(dx, dy);
+
+                // Detection logic
+                if (distToPlayer < drone.detectionRange) {
+                    // Aggro chase mode
+                    const angle = Math.atan2(dy, dx);
+                    drone.x += Math.cos(angle) * drone.speed * 1.15 * dt;
+                    drone.y += Math.sin(angle) * drone.speed * 1.15 * dt;
+                } else {
+                    // Normal wandering patrol
+                    drone.x += Math.cos(drone.patrolAngle) * drone.speed * 0.6 * dt;
+                    drone.y += Math.sin(drone.patrolAngle) * drone.speed * 0.6 * dt;
+                    if (Math.random() < 0.02) {
+                        drone.patrolAngle += (Math.random() - 0.5) * 1.5;
+                    }
+                }
+
+                resolveWallCollisions(drone);
+
+                // Player collision with drone
+                if (distToPlayer < player.radius + drone.radius) {
+                    if (player.isDashing) {
+                        // Dash destroys or repels drone
+                        drone.stunTimer = 4.0;
+                        drone.x -= Math.cos(player.angle) * 60;
+                        drone.y -= Math.sin(player.angle) * 60;
+                        SoundSystem.playCrash();
+                        screenShake = 12;
+                        score += 300;
+                        showFloatingText(drone.x, drone.y, "DRONE DISRUPTED! +300", "#00f0ff");
+                    } else {
+                        // Player caught
+                        SoundSystem.playCrash();
+                        endGame("Security drone confiscated your custodian badge!");
+                    }
+                }
+            });
+
+            particles.forEach(p => {
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                p.life -= dt;
+            });
+            particles = particles.filter(p => p.life > 0);
+
+            floatingTexts.forEach(ft => {
+                ft.y -= 35 * dt;
+                ft.life -= dt;
+            });
+            floatingTexts = floatingTexts.filter(ft => ft.life > 0);
+
+            // Screen shake dampening
+            if (screenShake > 0) {
+                screenShake = Math.max(0, screenShake - dt * 35);
+            }
+
+            // Update UI elements
+            document.getElementById('hudScore').innerText = score;
+            document.getElementById('hudMultiplier').innerText = `x${multiplier.toFixed(1)}`;
+            const mins = Math.floor(shiftTimeRemaining / 60);
+            const secs = Math.floor(shiftTimeRemaining % 60);
+            document.getElementById('shiftTimer').innerText = `SHIFT: ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            
+            const cleanPercentage = Math.max(0, Math.min(100, (comboTimer / 4.0) * 100));
+            document.getElementById('cleanBar').style.width = `${cleanPercentage}%`;
+
+            // Smooth Camera Follow
+            camera.viewportWidth = canvas.width;
+            camera.viewportHeight = canvas.height;
+            camera.targetX = player.x - camera.viewportWidth / 2;
+            camera.targetY = player.y - camera.viewportHeight / 2;
+
+            camera.x += (camera.targetX - camera.x) * 0.12;
+            camera.y += (camera.targetY - camera.y) * 0.12;
+
+            // Clamping camera to world
+            camera.x = Math.max(0, Math.min(camera.x, WORLD.width - camera.viewportWidth));
+            camera.y = Math.max(0, Math.min(camera.y, WORLD.height - camera.viewportHeight));
+        }
+
+        function render() {
+            ctx.save();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Screen Shake offset
+            if (screenShake > 0) {
+                const sx = (Math.random() - 0.5) * screenShake;
+                const sy = (Math.random() - 0.5) * screenShake;
+                ctx.translate(sx, sy);
+            }
+
+            // Camera offset
+            ctx.translate(-Math.floor(camera.x), -Math.floor(camera.y));
+
+            // Cyber office grid background
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
+            const startX = Math.floor(camera.x / WORLD.gridSize) * WORLD.gridSize;
+            const startY = Math.floor(camera.y / WORLD.gridSize) * WORLD.gridSize;
+
+            for (let x = startX; x < camera.x + camera.viewportWidth; x += WORLD.gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, camera.y);
+                ctx.lineTo(x, camera.y + camera.viewportHeight);
+                ctx.stroke();
+            }
+            for (let y = startY; y < camera.y + camera.viewportHeight; y += WORLD.gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(camera.x, y);
+                ctx.lineTo(camera.x + camera.viewportWidth, y);
+                ctx.stroke();
+            }
+
+            // Draw Office Walls
+            walls.forEach(w => {
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(w.x, w.y, w.w, w.h);
+                ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(w.x, w.y, w.w, w.h);
+            });
+
+            // Draw Server Stacks
+            servers.forEach(srv => {
+                ctx.fillStyle = srv.hacked ? '#1e293b' : '#111827';
+                ctx.fillRect(srv.x, srv.y, srv.w, srv.h);
+                ctx.strokeStyle = srv.hacked ? '#475569' : '#ffaa00';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(srv.x, srv.y, srv.w, srv.h);
+
+                // Blinking server lights
+                const lightColor = srv.hacked ? '#00ff88' : (Math.floor(Date.now() / 200) % 2 === 0 ? '#ffaa00' : '#ff0077');
+                ctx.fillStyle = lightColor;
+                ctx.fillRect(srv.x + 6, srv.y + 8, 6, 6);
+                ctx.fillRect(srv.x + 16, srv.y + 8, 6, 6);
+
+                if (!srv.hacked && srv.hackProgress > 0) {
+                    ctx.fillStyle = 'rgba(255, 170, 0, 0.3)';
+                    ctx.fillRect(srv.x, srv.y + srv.h - 6, srv.w * srv.hackProgress, 6);
+                }
+            });
+
+            // Draw Coffee Spills
+            spills.forEach(spill => {
+                const remainFactor = 1.0 - (spill.cleanedProgress / spill.maxProgress);
+                const curRadius = spill.radius * remainFactor;
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(spill.x, spill.y, curRadius, 0, Math.PI * 2);
+                ctx.fillStyle = spill.hue === 340 ? 'rgba(255, 0, 119, 0.65)' : 'rgba(0, 240, 255, 0.65)';
+                ctx.shadowColor = spill.hue === 340 ? '#ff0077' : '#00f0ff';
+                ctx.shadowBlur = 12;
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // Draw Patrol Drones
+            drones.forEach(drone => {
+                ctx.save();
+                ctx.translate(drone.x, drone.y);
+
+                // Detection Cone / Aura
+                if (drone.stunTimer <= 0) {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, drone.detectionRange, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 0, 80, 0.035)';
+                    ctx.fill();
+                }
+
+                // Drone Body
+                ctx.beginPath();
+                ctx.arc(0, 0, drone.radius, 0, Math.PI * 2);
+                ctx.fillStyle = drone.stunTimer > 0 ? '#64748b' : '#ff0055';
+                ctx.shadowColor = drone.stunTimer > 0 ? '#9d4edd' : '#ff0055';
+                ctx.shadowBlur = 15;
+                ctx.fill();
+
+                // Scanner Eye
+                ctx.beginPath();
+                ctx.arc(0, 0, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+
+                ctx.restore();
+            });
+
+            // Draw Particles
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.life / p.maxLife;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // Draw Player Custodian
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            ctx.rotate(player.angle);
+
+            // Suction Range Ring
+            ctx.beginPath();
+            ctx.arc(0, 0, player.vacuumRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Vacuum Nozzle
+            ctx.fillStyle = '#00f0ff';
+            ctx.fillRect(10, -5, 14, 10);
+
+            // Cleaner Droid Chassis
+            ctx.beginPath();
+            ctx.arc(0, 0, player.radius, 0, Math.PI * 2);
+            ctx.fillStyle = player.isDashing ? '#ffffff' : '#00f0ff';
+            ctx.shadowColor = '#00f0ff';
+            ctx.shadowBlur = player.isDashing ? 25 : 12;
+            ctx.fill();
+
+            // Inner Droid Core
+            ctx.beginPath();
+            ctx.arc(0, 0, 7, 0, Math.PI * 2);
+            ctx.fillStyle = '#0b0e1b';
+            ctx.fill();
+
+            ctx.restore();
+
+            // Draw Floating Score / Alerts in world
+            floatingTexts.forEach(ft => {
+                ctx.save();
+                ctx.globalAlpha = ft.life / ft.maxLife;
+                ctx.font = "bold 16px 'JetBrains Mono', monospace";
+                ctx.fillStyle = ft.color;
+                ctx.shadowColor = ft.color;
+                ctx.shadowBlur = 8;
+                ctx.fillText(ft.text, ft.x - 20, ft.y);
+                ctx.restore();
+            });
+
+            ctx.restore();
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function startGame() {
+            SoundSystem.init();
+            score = 0;
+            multiplier = 1.0;
+            comboTimer = 0;
+            shiftTimeRemaining = 120;
+            layoutShiftCountdown = 45;
+            player.x = 400;
+            player.y = 400;
+            player.empsAvailable = 3;
+            player.dashCooldown = 0;
+            updateEmpUI();
+
+            generateProceduralOffice();
+
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('pauseScreen').classList.add('hidden');
+            gameState = 'PLAYING';
+        }
+
+        function endGame(reason) {
+            gameState = 'GAMEOVER';
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('shift_worker_high_score', bestScore.toString());
+            }
+            document.getElementById('deathReason').innerText = reason;
+            document.getElementById('finalScoreVal').innerText = score;
+            document.getElementById('bestScoreVal').innerText = bestScore;
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+        }
+
+        function togglePause() {
+            if (gameState === 'PLAYING') {
+                gameState = 'PAUSED';
+                document.getElementById('pauseScreen').classList.remove('hidden');
+            } else if (gameState === 'PAUSED') {
+                gameState = 'PLAYING';
+                document.getElementById('pauseScreen').classList.add('hidden');
+            }
+        }
+
+        // Button Event Listeners
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('restartBtn').addEventListener('click', startGame);
+        document.getElementById('resumeBtn').addEventListener('click', togglePause);
+        document.getElementById('restartFromPauseBtn').addEventListener('click', startGame);
+        document.getElementById('pauseBtn').addEventListener('click', togglePause);
+
+        const soundBtn = document.getElementById('soundToggleBtn');
+        soundBtn.addEventListener('click', () => {
+            SoundSystem.init();
+            SoundSystem.enabled = !SoundSystem.enabled;
+            soundBtn.innerText = SoundSystem.enabled ? '🔊 SFX ON' : '🔇 SFX MUTED';
+        });
+
+        let lastTime = performance.now();
+        function gameLoop(time) {
+            const dt = Math.min(0.1, (time - lastTime) / 1000);
+            lastTime = time;
+
+            update(dt);
+            render();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        window.onload = () => {
+            resizeCanvas();
+            bestScore = parseInt(localStorage.getItem('shift_worker_high_score') || '0', 10);
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>
