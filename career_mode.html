@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FC 27 Player Career Mode - European Super League (Seasonal OVR)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,600;0,700;1,700&family=Inter:wght@300;400;500;600;700;800&display=swap');
+    * { font-family: 'Inter', sans-serif; user-select: none; }
+    .heading-font { font-family: 'Chakra Petch', sans-serif; }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.8); border-radius: 9999px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(16, 185, 129, 0.6); }
+  </style>
+</head>
+<body class="bg-[#070b12] text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden selection:bg-emerald-500 selection:text-black">
+
+  <!-- TOP HUD -->
+  <header class="glass-card sticky top-0 z-40 border-b border-slate-800/80 px-4 sm:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center font-black text-black text-xl heading-font shadow-lg shadow-emerald-500/20">
+        27
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 id="hud-name" class="font-bold text-lg text-white tracking-wide">ALEX MERCER</h1>
+          <span id="hud-pos" class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-1.5 py-0.5 rounded">ST</span>
+          <span id="hud-role-status" class="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold px-1.5 py-0.5 rounded">Starter</span>
+        </div>
+        <p class="text-xs text-slate-400 flex items-center gap-2">
+          <span id="hud-club" class="font-semibold text-emerald-400">Real Madrid</span> &bull; 
+          <span id="hud-country">🏴󠁧󠁢󠁥󠁮󠁧󠁿 England</span> &bull; 
+          <span id="hud-stamina" class="text-emerald-400 font-medium">Stamina: 100%</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- SEASONAL OVR ENGINE SCOREBOARD -->
+    <div class="flex items-center gap-6 bg-slate-900/90 px-4 py-2 rounded-2xl border border-slate-800">
+      <div class="text-center">
+        <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Player OVR</span>
+        <div class="flex items-baseline justify-center gap-1">
+          <span id="hud-ovr" class="text-2xl font-black text-emerald-400 heading-font">75.0</span>
+          <span class="text-xs text-slate-500 font-bold">/ 99</span>
+        </div>
+      </div>
+      <div class="h-8 w-[1px] bg-slate-800"></div>
+      <div class="w-36 text-center">
+        <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">End-Season Growth</span>
+        <span id="hud-growth-est" class="text-xs font-bold text-emerald-400 block">+0.0 OVR (0 G+A)</span>
+        <span class="text-[9px] text-slate-500 block mt-0.5">Formula: (G + A) / 6</span>
+      </div>
+      <div class="h-8 w-[1px] bg-slate-800"></div>
+      <div class="text-center">
+        <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Release Clause</span>
+        <span id="hud-clause" class="text-sm font-bold text-amber-400 heading-font">€120M</span>
+      </div>
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="flex items-center gap-2">
+      <button onclick="saveGame(true)" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition border border-slate-700">
+        <i class="fa-solid fa-floppy-disk text-emerald-400"></i> Save
+      </button>
+      <button onclick="resetGameModal()" class="p-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold flex items-center gap-1.5 transition border border-rose-500/30">
+        <i class="fa-solid fa-rotate-left"></i> Reset
+      </button>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS -->
+  <nav class="bg-slate-900/60 border-b border-slate-800/80 px-4 sm:px-8 py-2 flex items-center gap-2 overflow-x-auto custom-scrollbar">
+    <button onclick="switchTab('dashboard')" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold tracking-wide uppercase transition flex items-center gap-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40" data-tab="dashboard">
+      <i class="fa-solid fa-gauge-high"></i> Dashboard
+    </button>
+    <button onclick="switchTab('league')" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold tracking-wide uppercase transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800" data-tab="league">
+      <i class="fa-solid fa-trophy"></i> European Super League
+    </button>
+    <button onclick="switchTab('rivalry')" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold tracking-wide uppercase transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800" data-tab="rivalry">
+      <i class="fa-solid fa-fire text-amber-400"></i> Golden Boot Duel
+    </button>
+    <button onclick="switchTab('rehab')" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold tracking-wide uppercase transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800" data-tab="rehab">
+      <i class="fa-solid fa-heart-pulse text-rose-400"></i> Medical & Rehab
+    </button>
+    <button onclick="switchTab('contracts')" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold tracking-wide uppercase transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800" data-tab="contracts">
+      <i class="fa-solid fa-file-signature text-amber-400"></i> Contract & Clause
+    </button>
+  </nav>
+
+  <!-- MAIN VIEW -->
+  <main class="flex-grow p-4 sm:p-8 max-w-7xl mx-auto w-full">
+
+    <!-- DASHBOARD -->
+    <div id="tab-dashboard" class="space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- SCHEDULE -->
+        <div class="glass-card p-5 rounded-2xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+              <span class="font-bold uppercase tracking-wider text-emerald-400">Matchday Schedule</span>
+              <span id="matchday-counter" class="bg-slate-800 px-2 py-0.5 rounded text-white font-semibold">MD 1 / 30</span>
+            </div>
+            <div class="flex items-center justify-between my-3 text-center">
+              <div class="flex-1 font-bold text-sm text-white" id="fixture-home-name">Real Madrid</div>
+              <div class="px-3 py-1 bg-slate-900 rounded-lg text-xs font-black text-slate-300 heading-font border border-slate-800">VS</div>
+              <div class="flex-1 font-bold text-sm text-white" id="fixture-away-name">Manchester City</div>
+            </div>
+          </div>
+          <div class="space-y-2 pt-2">
+            <button id="btn-play-match" onclick="launchMatchSimulation()" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 text-slate-950 font-bold text-xs tracking-wider uppercase transition shadow-lg shadow-emerald-500/20">
+              <i class="fa-solid fa-play"></i> Play Fixture
+            </button>
+            <button onclick="restAndRecover()" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition border border-slate-700">
+              <i class="fa-solid fa-bed"></i> Rest & Recover Stamina (+35%)
+            </button>
+          </div>
+        </div>
+
+        <!-- MANAGER TRUST & SQUAD ROLE -->
+        <div class="glass-card p-5 rounded-2xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+              <span class="font-bold uppercase tracking-wider text-indigo-400">Manager Trust & Status</span>
+              <span id="manager-trust-tag" class="bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded text-[11px] font-bold">80% Trust</span>
+            </div>
+            <p id="squad-role-desc" class="text-xs text-slate-300 font-medium mt-1 leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+              ⭐ <strong>Starting Role:</strong> Trusted in the first eleven. Keep stamina above 60% or risk starting as an Impact Sub!
+            </p>
+          </div>
+          <div class="pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+            <span class="text-slate-400">Matchday Role:</span>
+            <span id="matchday-role-label" class="text-emerald-400 font-bold">Starting XI</span>
+          </div>
+        </div>
+
+        <!-- MEDICAL SUMMARY -->
+        <div class="glass-card p-5 rounded-2xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+              <span class="font-bold uppercase tracking-wider text-rose-400">Medical Status</span>
+              <span id="dash-injury-badge" class="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded text-[11px] font-bold">Fit</span>
+            </div>
+            <div id="dash-injury-box" class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 text-xs text-slate-300">
+              <p class="text-slate-400">No active physical complications.</p>
+              <p class="text-[11px] text-amber-400/90 font-medium mt-1">Rule: Every missed game due to injury applies a strict -1.0 OVR downgrade.</p>
+            </div>
+          </div>
+          <div class="pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+            <span class="text-slate-400">Rehab Clinic:</span>
+            <span class="text-slate-300">Active</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEASON PERFORMANCE MATRIX -->
+      <div class="glass-card p-6 rounded-3xl">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+          <h2 class="font-bold text-sm text-white flex items-center gap-2">
+            <i class="fa-solid fa-chart-line text-emerald-400"></i> Season Performance Matrix (30 Matchdays)
+          </h2>
+          <span class="text-xs bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full font-bold">
+            Seasonal OVR Rule: (Goals + Assists) / 6 at Season End
+          </span>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 text-center">
+            <span class="text-slate-400 text-xs block">Matches Played</span>
+            <span id="stat-apps" class="text-2xl font-bold text-white heading-font">0</span>
+          </div>
+          <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 text-center">
+            <span class="text-slate-400 text-xs block">Goals Scored</span>
+            <span id="stat-goals" class="text-2xl font-bold text-emerald-400 heading-font">0</span>
+          </div>
+          <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 text-center">
+            <span class="text-slate-400 text-xs block">Assists</span>
+            <span id="stat-assists" class="text-2xl font-bold text-teal-400 heading-font">0</span>
+          </div>
+          <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 text-center">
+            <span class="text-slate-400 text-xs block">Total G+A Contribution</span>
+            <span id="stat-ga" class="text-2xl font-bold text-amber-400 heading-font">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEAGUE TABLE -->
+    <div id="tab-league" class="hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-white heading-font flex items-center gap-2">
+            <i class="fa-solid fa-trophy text-amber-400"></i> Top 16 European Super League
+          </h2>
+          <p class="text-xs text-slate-400">Dynamically sorted by Points, Goal Difference, and Goals Scored.</p>
+        </div>
+        <span class="bg-slate-800 px-3 py-1 rounded-full text-xs font-bold text-slate-300" id="league-current-md">Matchday 1 / 30</span>
+      </div>
+
+      <div class="glass-card p-5 rounded-3xl overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2">
+            <tr>
+              <th class="py-2.5 px-3">Pos</th>
+              <th class="py-2.5 px-3">Club</th>
+              <th class="py-2.5 px-3 text-center">P</th>
+              <th class="py-2.5 px-3 text-center">W</th>
+              <th class="py-2.5 px-3 text-center">D</th>
+              <th class="py-2.5 px-3 text-center">L</th>
+              <th class="py-2.5 px-3 text-center">GF</th>
+              <th class="py-2.5 px-3 text-center">GA</th>
+              <th class="py-2.5 px-3 text-center">GD</th>
+              <th class="py-2.5 px-3 text-center font-bold text-white">PTS</th>
+            </tr>
+          </thead>
+          <tbody id="league-table-body" class="divide-y divide-slate-800/50"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RIVALRY -->
+    <div id="tab-rivalry" class="hidden space-y-6">
+      <div class="glass-card p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+        <div class="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 text-center">
+          <div class="w-16 h-16 mx-auto rounded-full bg-emerald-500/20 border-2 border-emerald-400/40 flex items-center justify-center text-2xl mb-2">⚽</div>
+          <h3 id="rival-user-name" class="font-bold text-base text-white">Alex Mercer</h3>
+          <span id="rival-user-club" class="text-xs text-slate-400">Real Madrid</span>
+          <div class="mt-4 pt-3 border-t border-slate-800">
+            <span class="text-3xl font-black text-emerald-400 heading-font" id="rival-user-goals">0</span>
+            <span class="text-[10px] text-slate-500 block uppercase font-bold">Goals</span>
+          </div>
+        </div>
+        <div class="text-center space-y-3">
+          <span class="px-4 py-2 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-xs font-black heading-font tracking-widest">GOLDEN SHOE BATTLE</span>
+          <p id="rivalry-narrative" class="text-xs text-slate-300 font-medium leading-relaxed bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+            Season-long scoring duel against Erling Haaland.
+          </p>
+        </div>
+        <div class="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 text-center">
+          <div class="w-16 h-16 mx-auto rounded-full bg-sky-500/20 border-2 border-sky-400/40 flex items-center justify-center text-2xl mb-2">⚡</div>
+          <h3 class="font-bold text-base text-white">Erling Haaland</h3>
+          <span class="text-xs text-slate-400">Manchester City</span>
+          <div class="mt-4 pt-3 border-t border-slate-800">
+            <span class="text-3xl font-black text-sky-400 heading-font" id="rival-rival-goals">0</span>
+            <span class="text-[10px] text-slate-500 block uppercase font-bold">Goals</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REHAB CLINIC -->
+    <div id="tab-rehab" class="hidden space-y-6">
+      <div class="glass-card p-6 rounded-3xl space-y-4">
+        <h2 class="text-lg font-bold text-white heading-font flex items-center gap-2">
+          <i class="fa-solid fa-heart-pulse text-rose-400"></i> Physical Rehabilitation Center
+        </h2>
+        <p class="text-xs text-slate-400">If injured, manage your recovery pathway carefully:</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 flex flex-col justify-between">
+            <div>
+              <h4 class="font-bold text-sm text-amber-400 mb-1">Rush Back Early</h4>
+              <p class="text-xs text-slate-300">Shaves 1 match off the sideline duration, but incurs a 30% re-injury risk upon return.</p>
+            </div>
+            <button onclick="rushBackRehab()" class="mt-4 py-2 px-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl">
+              Rush Recovery
+            </button>
+          </div>
+          <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 flex flex-col justify-between">
+            <div>
+              <h4 class="font-bold text-sm text-emerald-400 mb-1">Full Physiotherapy Protocol</h4>
+              <p class="text-xs text-slate-300">Completes the medical timetable safely and restores match sharpness to 100%.</p>
+            </div>
+            <button onclick="standardRehab()" class="mt-4 py-2 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl">
+              Follow Standard Protocol
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTRACT & RELEASE CLAUSE -->
+    <div id="tab-contracts" class="hidden space-y-6">
+      <div class="glass-card p-6 rounded-3xl space-y-4">
+        <h2 class="text-lg font-bold text-white heading-font flex items-center gap-2">
+          <i class="fa-solid fa-file-signature text-amber-400"></i> Contract & Release Clause Management
+        </h2>
+        <p class="text-xs text-slate-400">European clubs can trigger this clause at mid-season (MD 15) or season end (MD 30).</p>
+
+        <div class="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-400">Current Release Clause:</span>
+            <span class="text-base font-bold text-amber-400" id="contract-clause-display">€120,000,000</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="number" id="input-new-clause" placeholder="Enter new clause in Millions (e.g. 150)" class="bg-slate-950 border border-slate-700 text-xs px-3 py-2 rounded-xl text-white flex-1 focus:outline-none focus:border-emerald-500" />
+            <button onclick="updateReleaseClause()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl">
+              Set Clause
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MATCH SIMULATION MODAL -->
+  <div id="modal-match" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-xl w-full rounded-3xl p-6 border border-emerald-500/30 flex flex-col max-h-[92vh]">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <span id="sim-role-pill" class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">Starting XI</span>
+          <span id="sim-match-title" class="font-bold text-xs uppercase text-slate-300">Matchday Simulation</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button onclick="setSimSpeed(1)" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-white">1x</button>
+          <button onclick="setSimSpeed(3)" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-white">3x</button>
+          <button onclick="instantSimMatch()" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Skip</button>
+        </div>
+      </div>
+
+      <!-- SCOREBOARD -->
+      <div class="my-4 p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex items-center justify-between text-center">
+        <div class="flex-1">
+          <h4 id="sim-home-name" class="font-bold text-sm text-white">Real Madrid</h4>
+          <span id="sim-home-score" class="text-3xl font-black text-white heading-font">0</span>
+        </div>
+        <div class="px-4">
+          <span id="sim-minute" class="text-xs font-black text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded-full border border-emerald-500/30">1'</span>
+        </div>
+        <div class="flex-1">
+          <h4 id="sim-away-name" class="font-bold text-sm text-white">Manchester City</h4>
+          <span id="sim-away-score" class="text-3xl font-black text-white heading-font">0</span>
+        </div>
+      </div>
+
+      <!-- COMMENTARY -->
+      <div id="sim-commentary" class="flex-grow overflow-y-auto space-y-2 text-xs p-3 bg-slate-950/60 rounded-2xl border border-slate-800/80 custom-scrollbar h-44"></div>
+
+      <!-- FOOTER -->
+      <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+        <div class="flex items-center gap-3">
+          <span>Rating: <strong id="sim-player-rating" class="text-amber-400 font-bold">6.5</strong></span>
+          <span>Goals: <strong id="sim-player-goals" class="text-emerald-400 font-bold">0</strong></span>
+          <span>Assists: <strong id="sim-player-assists" class="text-teal-400 font-bold">0</strong></span>
+        </div>
+        <button id="btn-close-sim" onclick="finishMatchSimulation()" class="hidden px-5 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition">
+          Post-Match Press &gt;
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- POST-MATCH PRESS CONFERENCE -->
+  <div id="modal-press" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-lg w-full rounded-3xl p-6 border border-purple-500/30 space-y-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-microphone-lines"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-white text-base">Post-Match Press Conference</h3>
+          <p class="text-xs text-slate-400">Journalists ask about your match impact</p>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-200 bg-slate-900/80 p-3 rounded-xl border border-slate-800 italic" id="press-question-text">
+        "How do you evaluate today's performance on the pitch?"
+      </p>
+
+      <div class="space-y-2">
+        <button onclick="handlePressChoice('humble')" class="w-full text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs">
+          <strong class="text-emerald-400 block mb-0.5">A. Team-First / Humble:</strong>
+          <span class="text-slate-300">"The collective effort of the squad is what matters most." (+5% Manager Trust)</span>
+        </button>
+        <button onclick="handlePressChoice('maverick')" class="w-full text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs">
+          <strong class="text-purple-400 block mb-0.5">B. Confident / Maverick:</strong>
+          <span class="text-slate-300">"I'm at the top of my game and ready for any challenge." (+20,000 Followers)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BALLON D'OR & END OF SEASON CEREMONY -->
+  <div id="modal-ballon" class="fixed inset-0 bg-black/90 backdrop-blur-lg z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-xl w-full rounded-3xl p-6 border border-amber-500/40 text-center space-y-4">
+      <div class="w-16 h-16 mx-auto rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 text-3xl">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+      <div>
+        <h2 class="text-2xl font-black text-white heading-font uppercase">Ballon d'Or & Season Gala</h2>
+        <p class="text-xs text-slate-400 mt-1">Official voting results & Seasonal OVR upgrade calculation</p>
+      </div>
+
+      <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 text-left text-xs space-y-2">
+        <div class="flex justify-between py-1 border-b border-slate-800">
+          <span class="text-slate-400">League Champion:</span>
+          <span id="gala-champ-name" class="font-bold text-white">Real Madrid</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-800">
+          <span class="text-slate-400">Ballon d'Or Recipient:</span>
+          <span id="gala-ballon-winner" class="font-bold text-amber-400">Alex Mercer</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-800">
+          <span class="text-slate-400">Season Contributions:</span>
+          <span id="gala-stats-summary" class="font-bold text-emerald-400">0 G + 0 A = 0 Total</span>
+        </div>
+        <div class="flex justify-between py-1.5 bg-emerald-500/10 px-2 rounded-lg border border-emerald-500/20">
+          <span class="text-emerald-300 font-bold">Seasonal OVR Boost Applied:</span>
+          <span id="gala-ovr-boost" class="font-black text-emerald-400 heading-font text-sm">+0.0 OVR</span>
+        </div>
+        <div class="flex justify-between py-1">
+          <span class="text-slate-400">New Overall OVR:</span>
+          <span id="gala-new-ovr" class="font-black text-white heading-font text-sm">75.0 / 99</span>
+        </div>
+      </div>
+
+      <button onclick="advanceNextSeason()" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 text-slate-950 font-bold text-xs uppercase tracking-wider">
+        Commence Next Season
+      </button>
+    </div>
+  </div>
+
+  <!-- RELEASE CLAUSE BUYOUT POPUP -->
+  <div id="modal-clause-buyout" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-md w-full rounded-3xl p-6 border border-amber-500/40 text-center space-y-4">
+      <div class="w-12 h-12 mx-auto rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl">
+        <i class="fa-solid fa-bell"></i>
+      </div>
+      <h3 class="font-bold text-white text-base">Release Clause Triggered!</h3>
+      <p id="clause-buyout-desc" class="text-xs text-slate-300 leading-relaxed">
+        Manchester City has formally activated your release clause! Do you want to accept their offer?
+      </p>
+      <div class="grid grid-cols-2 gap-2 pt-2">
+        <button onclick="acceptBuyoutTransfer()" class="py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl">
+          Accept Transfer
+        </button>
+        <button onclick="rejectBuyoutTransfer()" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl">
+          Stay at Club
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       1. EUROPEAN SUPER LEAGUE TEAMS
+       ========================================================================== */
+    const TOP_16_EUROPE = [
+      { name: "Real Madrid", abbr: "RMA", strength: 91 },
+      { name: "Manchester City", abbr: "MCI", strength: 91 },
+      { name: "Bayern Munich", abbr: "BAY", strength: 89 },
+      { name: "Paris Saint-Germain", abbr: "PSG", strength: 88 },
+      { name: "Arsenal", abbr: "ARS", strength: 87 },
+      { name: "Barcelona", abbr: "BAR", strength: 88 },
+      { name: "Inter Milan", abbr: "INT", strength: 87 },
+      { name: "Liverpool", abbr: "LIV", strength: 88 },
+      { name: "Bayer Leverkusen", abbr: "B04", strength: 86 },
+      { name: "Atlético Madrid", abbr: "ATM", strength: 85 },
+      { name: "Borussia Dortmund", abbr: "BVB", strength: 84 },
+      { name: "Juventus", abbr: "JUV", strength: 83 },
+      { name: "AC Milan", abbr: "ACM", strength: 83 },
+      { name: "Sporting CP", abbr: "SCP", strength: 82 },
+      { name: "Aston Villa", abbr: "AVL", strength: 82 },
+      { name: "Benfica", abbr: "SLB", strength: 81 }
+    ];
+
+    /* ==========================================================================
+       2. INITIAL STATE
+       ========================================================================== */
+    const INITIAL_STATE = {
+      player: {
+        name: "Alex Mercer",
+        position: "ST",
+        nationality: "England",
+        club: "Real Madrid",
+        ovr: 75.0, // STRICT 75 STARTING OVR (MAX 99)
+        stamina: 100,
+        managerTrust: 80,
+        releaseClause: 120, // in Millions €
+        followers: 100000,
+        injuryGamesLeft: 0,
+        injuryName: null,
+        reinjuryRisk: false
+      },
+      season: 1,
+      matchday: 1,
+      totalMatchdays: 30,
+      seasonStats: { apps: 0, goals: 0, assists: 0, ratingsSum: 0 },
+      rivalHaalandGoals: 0,
+      leagueTable: []
+    };
+
+    let gameState = null;
+    let simInterval = null;
+    let simSpeed = 1;
+    let currentBuyerClub = null;
+
+    function initLeagueTable() {
+      gameState.leagueTable = TOP_16_EUROPE.map(c => ({
+        name: c.name, abbr: c.abbr, strength: c.strength,
+        p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, gd: 0, pts: 0
+      }));
+    }
+
+    function loadGame() {
+      const saved = localStorage.getItem('fc27_seasonal_ovr_save');
+      if (saved) {
+        try {
+          gameState = JSON.parse(saved);
+          if (!gameState.leagueTable || gameState.leagueTable.length !== 16) initLeagueTable();
+        } catch(e) {
+          initNewGame();
+        }
+      } else {
+        initNewGame();
+      }
+      updateUI();
+      renderLeagueTab();
+    }
+
+    function initNewGame() {
+      gameState = JSON.parse(JSON.stringify(INITIAL_STATE));
+      initLeagueTable();
+      saveGame(false);
+    }
+
+    function saveGame(notify = true) {
+      localStorage.setItem('fc27_seasonal_ovr_save', JSON.stringify(gameState));
+      if (notify) alert("Game progress saved!");
+    }
+
+    function resetGameModal() {
+      if (confirm("Reset career back to starting 75 OVR?")) {
+        localStorage.removeItem('fc27_seasonal_ovr_save');
+        initNewGame();
+        updateUI();
+        renderLeagueTab();
+      }
+    }
+
+    /* ==========================================================================
+       3. NAVIGATION & UI
+       ========================================================================== */
+    function switchTab(tabId) {
+      ['dashboard', 'league', 'rivalry', 'rehab', 'contracts'].forEach(t => {
+        const el = document.getElementById(`tab-${t}`);
+        if (el) el.classList.add('hidden');
+      });
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('bg-emerald-500/20', 'text-emerald-400', 'border-emerald-500/40');
+        b.classList.add('text-slate-400');
+      });
+
+      const activeEl = document.getElementById(`tab-${tabId}`);
+      if (activeEl) activeEl.classList.remove('hidden');
+
+      const activeBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-emerald-500/20', 'text-emerald-400', 'border-emerald-500/40');
+        activeBtn.classList.remove('text-slate-400');
+      }
+
+      if (tabId === 'league') renderLeagueTab();
+      if (tabId === 'rivalry') renderRivalryTab();
+    }
+
+    function updateUI() {
+      const p = gameState.player;
+      const s = gameState.seasonStats;
+
+      p.ovr = Math.min(99.0, Math.max(70.0, p.ovr));
+
+      document.getElementById('hud-name').innerText = p.name.toUpperCase();
+      document.getElementById('hud-club').innerText = p.club;
+      document.getElementById('hud-ovr').innerText = p.ovr.toFixed(1);
+      document.getElementById('hud-stamina').innerText = `Stamina: ${p.stamina}%`;
+      document.getElementById('hud-clause').innerText = `€${p.releaseClause}M`;
+
+      // Seasonal OVR Growth Projection: (Goals + Assists) / 6
+      const totalGA = s.goals + s.assists;
+      const projectedBoost = (totalGA / 6.0).toFixed(1);
+      document.getElementById('hud-growth-est').innerText = `+${projectedBoost} OVR (${totalGA} G+A)`;
+
+      // Squad status based on stamina and trust
+      const isSuperSub = p.stamina < 60 || p.managerTrust < 65;
+      document.getElementById('hud-role-status').innerText = isSuperSub ? "Impact Sub" : "Starter";
+      document.getElementById('matchday-role-label').innerText = isSuperSub ? "Super-Sub (70' Onwards)" : "Starting XI";
+      document.getElementById('manager-trust-tag').innerText = `${p.managerTrust}% Trust`;
+
+      // Schedule
+      document.getElementById('matchday-counter').innerText = `MD ${gameState.matchday} / ${gameState.totalMatchdays}`;
+      document.getElementById('league-current-md').innerText = `Matchday ${gameState.matchday} / ${gameState.totalMatchdays}`;
+      const opp = getNextOpponent();
+      document.getElementById('fixture-home-name').innerText = p.club;
+      document.getElementById('fixture-away-name').innerText = opp.name;
+
+      // Injury
+      const injBadge = document.getElementById('dash-injury-badge');
+      const injBox = document.getElementById('dash-injury-box');
+      if (p.injuryGamesLeft > 0) {
+        injBadge.className = "bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded text-[11px] font-bold";
+        injBadge.innerText = `Injured (${p.injuryGamesLeft} left)`;
+        injBox.innerHTML = `<p class="text-rose-400 font-bold">${p.injuryName}</p><p class="text-slate-400">Missed matches apply -1.0 OVR downgrade.</p>`;
+      } else {
+        injBadge.className = "bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded text-[11px] font-bold";
+        injBadge.innerText = "Fit";
+        injBox.innerHTML = `<p class="text-slate-400">No active physical complications.</p><p class="text-[11px] text-amber-400/90 font-medium mt-1">Rule: Every missed game due to injury inflicts a strict -1.0 OVR downgrade.</p>`;
+      }
+
+      // Performance matrix
+      document.getElementById('stat-apps').innerText = s.apps;
+      document.getElementById('stat-goals').innerText = s.goals;
+      document.getElementById('stat-assists').innerText = s.assists;
+      document.getElementById('stat-ga').innerText = totalGA;
+
+      // Contracts
+      document.getElementById('contract-clause-display').innerText = `€${p.releaseClause},000,000`;
+    }
+
+    function getNextOpponent() {
+      const candidates = gameState.leagueTable.filter(c => c.name !== gameState.player.club);
+      return candidates[(gameState.matchday - 1) % candidates.length];
+    }
+
+    function restAndRecover() {
+      const p = gameState.player;
+      p.stamina = Math.min(100, p.stamina + 35);
+      alert(`Stamina recharged to ${p.stamina}%!`);
+      updateUI();
+    }
+
+    /* ==========================================================================
+       4. REALISTIC MATCH SIMULATION & SUPER-SUB LOGIC
+       ========================================================================== */
+    let matchSim = { minute: 0, homeScore: 0, awayScore: 0, goals: 0, assists: 0, rating: 6.6, isSub: false };
+
+    function launchMatchSimulation() {
+      const p = gameState.player;
+
+      // Injured missed game logic
+      if (p.injuryGamesLeft > 0) {
+        p.injuryGamesLeft--;
+        p.ovr = Math.max(70.0, p.ovr - 1.0); // STRICT -1 OVR PER MISSED GAME
+        alert(`⚠️ You missed Matchday ${gameState.matchday} due to injury.\n-1.0 OVR Penalty Applied! Current OVR: ${p.ovr.toFixed(1)}`);
+        simulateFullLeagueRound(0, 0, false);
+        advanceMatchdayRound();
+        return;
+      }
+
+      const isSub = p.stamina < 60 || p.managerTrust < 65;
+      matchSim = { minute: isSub ? 70 : 0, homeScore: 0, awayScore: 0, goals: 0, assists: 0, rating: 6.6, isSub: isSub };
+
+      // Pre-sim 70 mins if Super Sub
+      if (isSub) {
+        matchSim.homeScore = Math.floor(Math.random() * 2);
+        matchSim.awayScore = Math.floor(Math.random() * 2);
+      }
+
+      p.stamina = Math.max(15, p.stamina - (isSub ? 8 : 18));
+
+      document.getElementById('sim-home-name').innerText = p.club;
+      document.getElementById('sim-away-name').innerText = getNextOpponent().name;
+      document.getElementById('sim-home-score').innerText = matchSim.homeScore;
+      document.getElementById('sim-away-score').innerText = matchSim.awayScore;
+      document.getElementById('sim-minute').innerText = `${matchSim.minute}'`;
+      document.getElementById('sim-player-rating').innerText = "6.6";
+      document.getElementById('sim-player-goals').innerText = "0";
+      document.getElementById('sim-player-assists').innerText = "0";
+      document.getElementById('sim-role-pill').innerText = isSub ? "Super-Sub (70')" : "Starting XI";
+      document.getElementById('sim-commentary').innerHTML = isSub
+        ? `<p class="text-amber-400">70' SUBSTITUTION: Alex Mercer enters as an Impact Sub!</p>`
+        : `<p class="text-slate-400">Match kicks off across Europe!</p>`;
+      document.getElementById('btn-close-sim').classList.add('hidden');
+      document.getElementById('modal-match').classList.remove('hidden');
+
+      startMatchClock();
+    }
+
+    function setSimSpeed(sp) { simSpeed = sp; }
+
+    function startMatchClock() {
+      if (simInterval) clearInterval(simInterval);
+      simInterval = setInterval(() => {
+        matchSim.minute += 3;
+        document.getElementById('sim-minute').innerText = `${matchSim.minute}'`;
+
+        stepMatchEvents(matchSim.minute);
+
+        if (matchSim.minute >= 90) {
+          clearInterval(simInterval);
+          matchSim.minute = 90;
+          document.getElementById('sim-minute').innerText = "FT";
+          document.getElementById('btn-close-sim').classList.remove('hidden');
+        }
+      }, Math.max(60, 300 / simSpeed));
+    }
+
+    function instantSimMatch() {
+      if (simInterval) clearInterval(simInterval);
+      while (matchSim.minute < 90) {
+        matchSim.minute += 5;
+        stepMatchEvents(matchSim.minute);
+      }
+      matchSim.minute = 90;
+      document.getElementById('sim-minute').innerText = "FT";
+      document.getElementById('sim-home-score').innerText = matchSim.homeScore;
+      document.getElementById('sim-away-score').innerText = matchSim.awayScore;
+      document.getElementById('sim-player-rating').innerText = matchSim.rating.toFixed(1);
+      document.getElementById('sim-player-goals').innerText = matchSim.goals;
+      document.getElementById('sim-player-assists').innerText = matchSim.assists;
+      document.getElementById('btn-close-sim').classList.remove('hidden');
+    }
+
+    function stepMatchEvents(minute) {
+      const p = gameState.player;
+      const baseGoalRate = 0.013 + ((p.ovr - 75) * 0.0006);
+      const baseAssistRate = 0.011 + ((p.ovr - 75) * 0.0004);
+
+      // Re-injury check if rushed back
+      if (p.reinjuryRisk && Math.random() < 0.08) {
+        p.injuryGamesLeft = 3;
+        p.injuryName = "Aggravated Hamstring Strain";
+        p.reinjuryRisk = false;
+        addMatchCommentary(`🚨 ${minute}' RE-INJURY: ${p.name} pulled up in pain! Rush-back consequence.`);
+      }
+
+      // Realistic goal
+      if (Math.random() < baseGoalRate && matchSim.goals < 2) {
+        matchSim.goals++;
+        matchSim.homeScore++;
+        matchSim.rating = Math.min(9.8, matchSim.rating + 1.2);
+        document.getElementById('sim-home-score').innerText = matchSim.homeScore;
+        document.getElementById('sim-player-goals').innerText = matchSim.goals;
+        document.getElementById('sim-player-rating').innerText = matchSim.rating.toFixed(1);
+        addMatchCommentary(`⚽ ${minute}' GOAL! ${p.name} scores! (+1 G towards Seasonal OVR)`);
+        return;
+      }
+
+      // Realistic assist
+      if (Math.random() < baseAssistRate && matchSim.assists < 2) {
+        matchSim.assists++;
+        matchSim.homeScore++;
+        matchSim.rating = Math.min(9.5, matchSim.rating + 0.9);
+        document.getElementById('sim-home-score').innerText = matchSim.homeScore;
+        document.getElementById('sim-player-assists').innerText = matchSim.assists;
+        document.getElementById('sim-player-rating').innerText = matchSim.rating.toFixed(1);
+        addMatchCommentary(`🎯 ${minute}' ASSIST! Crisp pass delivered by ${p.name}! (+1 A towards Seasonal OVR)`);
+        return;
+      }
+
+      // Teammate goal
+      if (Math.random() < 0.015 && matchSim.homeScore < 4) {
+        matchSim.homeScore++;
+        document.getElementById('sim-home-score').innerText = matchSim.homeScore;
+        addMatchCommentary(`⚽ ${minute}' Team goal: Teammate slots it home.`);
+        return;
+      }
+
+      // Opponent goal
+      if (Math.random() < 0.024 && matchSim.awayScore < 3) {
+        matchSim.awayScore++;
+        document.getElementById('sim-away-score').innerText = matchSim.awayScore;
+        addMatchCommentary(`⚡ ${minute}' Opponent counters and scores.`);
+      }
+    }
+
+    function addMatchCommentary(msg) {
+      const feed = document.getElementById('sim-commentary');
+      const item = document.createElement('p');
+      item.className = "py-0.5 text-slate-300";
+      item.innerHTML = msg;
+      feed.prepend(item);
+    }
+
+    function finishMatchSimulation() {
+      document.getElementById('modal-match').classList.add('hidden');
+      const s = gameState.seasonStats;
+
+      s.apps++;
+      s.goals += matchSim.goals;
+      s.assists += matchSim.assists;
+      s.ratingsSum += matchSim.rating;
+
+      // Notice: In seasonal OVR mode, OVR does NOT increase during the matchday.
+      // It accumulates into G+A and applies strictly at season completion via (G+A)/6.
+
+      // Realistic Haaland Rivalry Goals
+      if (Math.random() < 0.45) gameState.rivalHaalandGoals += 1;
+
+      // Update league table
+      simulateFullLeagueRound(matchSim.homeScore, matchSim.awayScore, true);
+
+      // Open Post Match Press Conference
+      document.getElementById('modal-press').classList.remove('hidden');
+    }
+
+    /* ==========================================================================
+       5. POST-MATCH PRESS CONFERENCE
+       ========================================================================== */
+    function handlePressChoice(type) {
+      document.getElementById('modal-press').classList.add('hidden');
+      const p = gameState.player;
+      if (type === 'humble') {
+        p.managerTrust = Math.min(100, p.managerTrust + 5);
+      } else {
+        p.followers += 20000;
+        p.managerTrust = Math.max(45, p.managerTrust - 2);
+      }
+
+      checkMidSeasonBuyout();
+      advanceMatchdayRound();
+    }
+
+    /* ==========================================================================
+       6. RELEASE CLAUSE & BUYOUT DRAMA (MD 15 & MD 30)
+       ========================================================================== */
+    function updateReleaseClause() {
+      const val = parseInt(document.getElementById('input-new-clause').value);
+      if (val && val >= 50 && val <= 350) {
+        gameState.player.releaseClause = val;
+        alert(`Release clause set to €${val}M!`);
+        updateUI();
+      } else {
+        alert("Please enter a valid clause between €50M and €350M.");
+      }
+    }
+
+    function checkMidSeasonBuyout() {
+      if (gameState.matchday === 15 && Math.random() < 0.4) {
+        triggerBuyoutModal();
+      }
+    }
+
+    function triggerBuyoutModal() {
+      const suitors = TOP_16_EUROPE.filter(c => c.name !== gameState.player.club);
+      currentBuyerClub = suitors[Math.floor(Math.random() * suitors.length)].name;
+      document.getElementById('clause-buyout-desc').innerText = 
+        `${currentBuyerClub} has formally triggered your €${gameState.player.releaseClause}M release clause! Accept terms or remain?`;
+      document.getElementById('modal-clause-buyout').classList.remove('hidden');
+    }
+
+    function acceptBuyoutTransfer() {
+      document.getElementById('modal-clause-buyout').classList.add('hidden');
+      gameState.player.club = currentBuyerClub;
+      alert(`🎉 OFFICIAL: You signed with ${currentBuyerClub} after release clause activation!`);
+      updateUI();
+      renderLeagueTab();
+    }
+
+    function rejectBuyoutTransfer() {
+      document.getElementById('modal-clause-buyout').classList.add('hidden');
+      alert(`Loyalty proven! You rejected the transfer offer from ${currentBuyerClub}.`);
+    }
+
+    /* ==========================================================================
+       7. REHAB PATHWAY (RUSH VS STANDARD)
+       ========================================================================== */
+    function rushBackRehab() {
+      const p = gameState.player;
+      if (p.injuryGamesLeft <= 0) {
+        alert("You are not currently injured.");
+        return;
+      }
+      p.injuryGamesLeft = Math.max(0, p.injuryGamesLeft - 1);
+      p.reinjuryRisk = true;
+      alert("You rushed your rehabilitation! Sideline duration reduced by 1 match. ⚠️ Caution: 30% re-injury risk active.");
+      updateUI();
+    }
+
+    function standardRehab() {
+      const p = gameState.player;
+      if (p.injuryGamesLeft <= 0) {
+        alert("You are not currently injured.");
+        return;
+      }
+      p.reinjuryRisk = false;
+      alert("Standard medical protocol followed. Sharpness will be guaranteed upon full completion.");
+    }
+
+    /* ==========================================================================
+       8. FULL 16-TEAM LEAGUE ROUND
+       ========================================================================== */
+    function recordMatch(hName, aName, hGoals, aGoals) {
+      const home = gameState.leagueTable.find(t => t.name === hName);
+      const away = gameState.leagueTable.find(t => t.name === aName);
+      if (!home || !away) return;
+
+      home.p += 1;
+      away.p += 1;
+      home.gf += hGoals;
+      home.ga += aGoals;
+      home.gd = home.gf - home.ga;
+      away.gf += aGoals;
+      away.ga += hGoals;
+      away.gd = away.gf - away.ga;
+
+      if (hGoals > aGoals) {
+        home.w += 1;
+        home.pts += 3;
+        away.l += 1;
+      } else if (hGoals === aGoals) {
+        home.d += 1;
+        home.pts += 1;
+        away.d += 1;
+        away.pts += 1;
+      } else {
+        away.w += 1;
+        away.pts += 3;
+        home.l += 1;
+      }
+    }
+
+    function simulateFullLeagueRound(userHScore, userAScore, userPlayed) {
+      const userClub = gameState.player.club;
+      const oppClub = getNextOpponent().name;
+
+      if (userPlayed) {
+        recordMatch(userClub, oppClub, userHScore, userAScore);
+      } else {
+        const uh = Math.floor(Math.random() * 2);
+        const ua = Math.floor(Math.random() * 2);
+        recordMatch(userClub, oppClub, uh, ua);
+      }
+
+      const remaining = gameState.leagueTable.filter(c => c.name !== userClub && c.name !== oppClub);
+      for (let i = 0; i < remaining.length; i += 2) {
+        if (i + 1 < remaining.length) {
+          const g1 = Math.floor(Math.random() * 2.4);
+          const g2 = Math.floor(Math.random() * 2.1);
+          recordMatch(remaining[i].name, remaining[i + 1].name, g1, g2);
+        }
+      }
+
+      sortLeagueTable();
+      renderLeagueTab();
+    }
+
+    function sortLeagueTable() {
+      gameState.leagueTable.sort((a, b) => {
+        if (b.pts !== a.pts) return b.pts - a.pts;
+        if (b.gd !== a.gd) return b.gd - a.gd;
+        return b.gf - a.gf;
+      });
+    }
+
+    function renderLeagueTab() {
+      sortLeagueTable();
+      const tbody = document.getElementById('league-table-body');
+      tbody.innerHTML = gameState.leagueTable.map((t, idx) => {
+        const isUser = t.name === gameState.player.club;
+        return `
+          <tr class="${isUser ? 'bg-emerald-500/15 font-bold text-emerald-400' : 'hover:bg-slate-800/40 text-slate-300'}">
+            <td class="py-2.5 px-3">${idx + 1}</td>
+            <td class="py-2.5 px-3 flex items-center gap-1.5">
+              <span>${t.name}</span>
+              ${isUser ? '<span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded ml-1 font-bold">YOU</span>' : ''}
+            </td>
+            <td class="py-2.5 px-3 text-center">${t.p}</td>
+            <td class="py-2.5 px-3 text-center">${t.w}</td>
+            <td class="py-2.5 px-3 text-center">${t.d}</td>
+            <td class="py-2.5 px-3 text-center">${t.l}</td>
+            <td class="py-2.5 px-3 text-center">${t.gf}</td>
+            <td class="py-2.5 px-3 text-center">${t.ga}</td>
+            <td class="py-2.5 px-3 text-center">${t.gd > 0 ? '+' + t.gd : t.gd}</td>
+            <td class="py-2.5 px-3 text-center font-bold text-white">${t.pts}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderRivalryTab() {
+      const uGoals = gameState.seasonStats.goals;
+      const hGoals = gameState.rivalHaalandGoals;
+
+      document.getElementById('rival-user-name').innerText = gameState.player.name;
+      document.getElementById('rival-user-club').innerText = gameState.player.club;
+      document.getElementById('rival-user-goals').innerText = uGoals;
+      document.getElementById('rival-rival-goals').innerText = hGoals;
+
+      const diff = uGoals - hGoals;
+      const nar = document.getElementById('rivalry-narrative');
+      if (diff > 0) nar.innerText = `🔥 You lead Erling Haaland by ${diff} goal(s) in the European race!`;
+      else if (diff === 0) nar.innerText = `⚔️ Level on terms! Both you and Haaland sit on ${uGoals} goals.`;
+      else nar.innerText = `⚡ Haaland leads by ${Math.abs(diff)} goal(s). Clinical finishing needed to catch up.`;
+    }
+
+    /* ==========================================================================
+       9. ADVANCE ROUND & BALLON D'OR / SEASONAL OVR UPGRADE
+       ========================================================================== */
+    function advanceMatchdayRound() {
+      gameState.matchday++;
+      if (gameState.matchday > gameState.totalMatchdays) {
+        triggerEndOfSeasonCeremony();
+      } else {
+        updateUI();
+      }
+    }
+
+    function triggerEndOfSeasonCeremony() {
+      sortLeagueTable();
+      const p = gameState.player;
+      const s = gameState.seasonStats;
+      const champ = gameState.leagueTable[0].name;
+
+      // SEASONAL OVR RULE: OVR += (Goals + Assists) / 6
+      const totalGA = s.goals + s.assists;
+      const ovrGain = parseFloat((totalGA / 6.0).toFixed(1));
+      p.ovr = Math.min(99.0, p.ovr + ovrGain);
+
+      // Ballon d'Or calculation formula
+      const userBallonScore = (p.ovr * 1.2) + (s.goals * 2.0) + (s.assists * 1.5) + (champ === p.club ? 25 : 0);
+      const haalandScore = (91 * 1.2) + (gameState.rivalHaalandGoals * 2.0) + 15;
+      const isBallonWinner = userBallonScore >= haalandScore;
+
+      document.getElementById('gala-champ-name').innerText = champ;
+      document.getElementById('gala-ballon-winner').innerText = isBallonWinner ? `${p.name} (Winner)` : "Erling Haaland";
+      document.getElementById('gala-stats-summary').innerText = `${s.goals} Goals + ${s.assists} Assists = ${totalGA} Total`;
+      document.getElementById('gala-ovr-boost').innerText = `+${ovrGain.toFixed(1)} OVR`;
+      document.getElementById('gala-new-ovr').innerText = `${p.ovr.toFixed(1)} / 99`;
+
+      document.getElementById('modal-ballon').classList.remove('hidden');
+    }
+
+    function advanceNextSeason() {
+      document.getElementById('modal-ballon').classList.add('hidden');
+      gameState.season++;
+      gameState.matchday = 1;
+      gameState.seasonStats = { apps: 0, goals: 0, assists: 0, ratingsSum: 0 };
+      gameState.rivalHaalandGoals = 0;
+      initLeagueTable();
+      updateUI();
+      renderLeagueTab();
+      saveGame(false);
+    }
+
+    // BOOTSTRAP
+    window.addEventListener('DOMContentLoaded', loadGame);
+  </script>
+</body>
+</html>
