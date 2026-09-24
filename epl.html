@@ -1,0 +1,1909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>38-0-0: Premier League Invincibles Simulator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.6.0/confetti.browser.min.js"></script>
+  <style>
+    :root {
+      --epl-purple: #38003c;
+      --epl-neon: #00ff87;
+      --epl-cyan: #04f5ff;
+      --epl-magenta: #e90052;
+      --pitch-lines: rgba(255, 255, 255, 0.45);
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(circle at 50% 0%, #1f0528 0%, #0d0213 45%, #050109 100%);
+      color: #f8fafc;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+    h1, h2, h3, .epl-font {
+      font-family: 'Cabinet Grotesk', -apple-system, sans-serif;
+      letter-spacing: -0.02em;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+    ::-webkit-scrollbar-thumb { background: #38003c; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #00ff87; }
+
+    .pitch-container {
+      background: linear-gradient(180deg, #18602b 0%, #155526 25%, #195e2b 50%, #144f23 75%, #165627 100%);
+      background-size: 100% 40px;
+      box-shadow: inset 0 0 40px rgba(0,0,0,0.6), 0 10px 30px rgba(0,0,0,0.5);
+      position: relative;
+      border: 3px solid rgba(255, 255, 255, 0.6);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .pitch-stripes {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.05),
+        rgba(0, 0, 0, 0.05) 30px,
+        transparent 30px,
+        transparent 60px
+      );
+      pointer-events: none;
+    }
+    .pitch-line {
+      position: absolute;
+      border: 2px solid var(--pitch-lines);
+      pointer-events: none;
+    }
+    .pitch-half-circle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 110px;
+      height: 110px;
+      border: 2px solid var(--pitch-lines);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .pitch-half-line {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--pitch-lines);
+      pointer-events: none;
+    }
+    .fut-card {
+      background: linear-gradient(135deg, rgba(30, 20, 45, 0.95) 0%, rgba(12, 5, 22, 0.95) 100%);
+      border: 1.5px solid rgba(255, 215, 0, 0.4);
+      transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+    }
+    .fut-card:hover {
+      transform: translateY(-4px) scale(1.03);
+      border-color: var(--epl-neon);
+      box-shadow: 0 8px 20px rgba(0, 255, 135, 0.3);
+    }
+    .fut-card.gold-tier {
+      border-color: #facc15;
+      background: linear-gradient(145deg, #2d240d 0%, #151004 100%);
+    }
+    .glass-panel {
+      background: rgba(22, 10, 32, 0.78);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 15px rgba(0, 255, 135, 0.4); }
+      50% { box-shadow: 0 0 30px rgba(0, 255, 135, 0.8); }
+    }
+    .glow-active {
+      animation: pulse-glow 2s infinite ease-in-out;
+    }
+    .chem-svg-layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .chem-line {
+      transition: stroke 0.3s, stroke-width 0.3s;
+    }
+    .bench-card {
+      background: rgba(15, 8, 24, 0.85);
+      border: 1px dashed rgba(255, 255, 255, 0.25);
+      transition: all 0.2s ease;
+    }
+    .bench-card:hover {
+      border-color: var(--epl-cyan);
+      transform: translateY(-2px);
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, rgba(0, 255, 135, 0.2), rgba(4, 245, 255, 0.2));
+      border-color: #00ff87;
+      color: #00ff87;
+    }
+  </style>
+</head>
+<body class="p-3 sm:p-6 text-slate-100 flex flex-col items-center">
+
+  <header class="w-full max-w-7xl flex flex-col md:flex-row items-center justify-between gap-4 py-3.5 px-6 glass-panel rounded-2xl mb-6 border-b border-purple-800/40">
+    <div class="flex items-center gap-3">
+      <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-purple-800 via-fuchsia-600 to-emerald-400 p-0.5 flex items-center justify-center shadow-lg shadow-purple-900/40">
+        <div class="w-full h-full bg-[#180022] rounded-[10px] flex items-center justify-center font-black text-emerald-400 text-xl">🦁</div>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+            38<span class="text-[#00ff87]">-</span>0<span class="text-[#00ff87]">-</span>0
+            <span class="text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-[#00ff87] border border-emerald-500/30 uppercase tracking-widest ml-1">Invincibles</span>
+          </h1>
+        </div>
+        <p class="text-xs text-slate-400">Spin Club & Season • Pick max 3 stars per squad • Sim all 38 fixtures</p>
+      </div>
+    </div>
+
+    <!-- Live Header Squad Tracker -->
+    <div class="flex items-center gap-4 bg-black/40 px-4 py-2 rounded-xl border border-white/10">
+      <div class="text-center px-2">
+        <div class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Starting XI</div>
+        <div id="header-slots" class="text-lg font-black text-[#00ff87]">0 / 11</div>
+      </div>
+      <div class="w-px h-8 bg-white/10"></div>
+      <div class="text-center px-2">
+        <div class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Spin Round</div>
+        <div id="header-spins" class="text-lg font-black text-fuchsia-400">1 / 11</div>
+      </div>
+      <div class="w-px h-8 bg-white/10"></div>
+      <div class="text-center px-2">
+        <div class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Squad OVR</div>
+        <div id="header-ovr" class="text-lg font-black text-amber-400">--</div>
+      </div>
+      <div class="w-px h-8 bg-white/10"></div>
+      <div class="text-center px-2">
+        <div class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Chemistry</div>
+        <div id="header-chem" class="text-lg font-black text-cyan-400">0%</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- LEFT COLUMN: Instant Spin & Available Roster (5 Cols) -->
+    <section class="lg:col-span-5 flex flex-col gap-6" id="draft-sidebar">
+      
+      <!-- Button Spin Card -->
+      <div class="glass-panel p-5 rounded-2xl relative shadow-2xl flex flex-col gap-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#00ff87] animate-ping"></span>
+            <h2 class="text-base font-extrabold text-white uppercase tracking-wider">EPL Champions Spinner</h2>
+          </div>
+          <span id="squads-remaining-badge" class="text-xs text-slate-300 bg-purple-950/80 border border-purple-600/50 px-2.5 py-1 rounded-full font-bold">15/15 Champions Left</span>
+        </div>
+
+        <!-- Spin Action Button -->
+        <div class="flex items-center gap-3">
+          <button id="spin-btn" onclick="spinNewSquad()" class="flex-1 bg-gradient-to-r from-[#00ff87] via-emerald-400 to-[#04f5ff] text-slate-950 font-black py-4 px-5 rounded-xl shadow-lg shadow-emerald-500/20 hover:opacity-95 active:scale-95 transition-all text-base uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer">
+            <span id="spin-icon" class="text-xl">🎰</span>
+            <span id="spin-text">Spin Next Champion (1/11)</span>
+          </button>
+          <button onclick="resetDraft()" title="Reset Entire Draft" class="bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-300 font-bold px-4 py-4 rounded-xl transition text-sm flex items-center justify-center" title="Reset Squad">
+            🔄
+          </button>
+        </div>
+
+        <!-- Current Rolled Result Display: Club - Season -->
+        <div class="bg-black/50 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center transition-all duration-300 relative overflow-hidden" id="spin-result-box">
+          <div class="text-[11px] uppercase tracking-widest font-bold text-slate-400 mb-1">Current Rolled Champion Squad</div>
+          <div id="rolled-result-text" class="text-xl sm:text-2xl font-black text-white flex items-center justify-center gap-2">
+            <span class="text-slate-500 text-lg">Click "Spin Next Champion" to begin</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Available Players List -->
+      <div class="glass-panel p-5 rounded-2xl flex-1 flex flex-col shadow-2xl">
+        <div class="flex items-center justify-between mb-3 border-b border-white/10 pb-3">
+          <div>
+            <h3 class="text-sm font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+              <span id="current-squad-title">Available Champion Roster</span>
+            </h3>
+            <p id="pick-allowance-msg" class="text-xs text-slate-400">Select 1 star to assign anywhere into your 4-3-3</p>
+          </div>
+          <div id="picks-left-badge" class="hidden px-2.5 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-[#00ff87] border border-emerald-500/40">
+            1 Pick Left
+          </div>
+        </div>
+
+        <div id="available-players-container" class="space-y-2 overflow-y-auto max-h-[420px] pr-1">
+          <div class="text-center py-12 text-slate-500 text-xs">
+            <div class="text-3xl mb-2">🏆</div>
+            Click "Spin Next Champion" above to draw 1 of 15 authentic title-winning squads!
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN: 4-3-3 Pitch & Full Season Simulator (7 Cols) -->
+    <section class="lg:col-span-7 flex flex-col gap-6">
+
+      <!-- 4-3-3 Football Pitch Visualizer -->
+      <div class="glass-panel p-4 sm:p-5 rounded-2xl shadow-2xl relative flex flex-col">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">📋</span>
+            <h2 class="text-sm font-extrabold uppercase tracking-wider text-white">4-3-3 Tactical Formation</h2>
+          </div>
+          <div class="text-xs text-slate-400 flex items-center gap-3">
+            <span>Click card to remove</span>
+            <span class="w-1.5 h-1.5 rounded-full bg-white/30"></span>
+            <span class="text-amber-300 font-semibold" id="pitch-status-hint">Draft 11 Starting Stars</span>
+          </div>
+        </div>
+
+        <!-- Pitch Turf Container -->
+        <div class="pitch-container w-full h-[540px] sm:h-[570px] flex flex-col justify-between p-3 relative" id="main-pitch-container">
+          <div class="pitch-stripes"></div>
+
+          <!-- SVG Link Lines Layer for FUT Chemistry -->
+          <svg class="chem-svg-layer" id="chemistry-svg-canvas"></svg>
+
+          <!-- Pitch Lines & Markings -->
+          <div class="pitch-half-line"></div>
+          <div class="pitch-half-circle"></div>
+          <div class="pitch-line top-0 left-1/2 -translate-x-1/2 w-48 h-20 border-t-0 rounded-b-xl"></div>
+          <div class="pitch-line bottom-0 left-1/2 -translate-x-1/2 w-48 h-20 border-b-0 rounded-t-xl"></div>
+          <div class="pitch-line bottom-0 left-1/2 -translate-x-1/2 w-24 h-8 border-b-0"></div>
+
+          <!-- ROW 1: FORWARDS (LW - ST - RW) -->
+          <div class="grid grid-cols-3 gap-2 z-10 pt-2">
+            <div id="slot-LW" onclick="handleSlotClick('LW')" class="pitch-slot flex flex-col items-center justify-center cursor-pointer"></div>
+            <div id="slot-ST" onclick="handleSlotClick('ST')" class="pitch-slot flex flex-col items-center justify-center cursor-pointer"></div>
+            <div id="slot-RW" onclick="handleSlotClick('RW')" class="pitch-slot flex flex-col items-center justify-center cursor-pointer"></div>
+          </div>
+
+          <!-- ROW 2: MIDFIELDERS (LCM - CM - RCM) -->
+          <div class="grid grid-cols-3 gap-2 z-10">
+            <div id="slot-LCM" onclick="handleSlotClick('LCM')" class="pitch-slot flex flex-col items-center justify-center cursor-pointer"></div>
+            <div id="slot-CM" onclick="handleSlotClick('CM')" class="pitch-slot flex flex-col items-center justify-center cursor-pointer"></div>
+            <div id="slot-RCM" onclick="handleSlotClick('RCM')" class="pitch-slot flex flex-col items-center justify-center cursor-pointer"></div>
+          </div>
+
+          <!-- ROW 3: DEFENDERS (LB - LCB - RCB - RB) -->
+          <div class="grid grid-cols-4 gap-1.5 z-10">
+            <div id="slot-LB" onclick="handleSlotClick('LB')" class="pitch-slot flex flex-col items-center justify-center cursor-pointer"></div>
+            <div id="slot-LCB" onclick="handleSlotClick('LCB')" class="pitch-slot flex flex-col items-center justify-center cursor-pointer"></div>
+            <div id="slot-RCB" onclick="handleSlotClick('RCB')" class="pitch-slot flex flex-col items-center justify-center cursor-pointer"></div>
+            <div id="slot-RB" onclick="handleSlotClick('RB')" class="pitch-slot flex flex-col items-center justify-center cursor-pointer"></div>
+          </div>
+
+          <!-- ROW 4: GOALKEEPER (GK) -->
+          <div class="flex justify-center z-10 pb-1">
+            <div id="slot-GK" onclick="handleSlotClick('GK')" class="pitch-slot flex flex-col items-center justify-center cursor-pointer w-28"></div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <button id="start-sim-btn" onclick="startSeasonSimulationView()" disabled class="w-full py-4 rounded-xl font-black text-sm tracking-wider uppercase transition-all duration-300 flex items-center justify-center gap-2 cursor-not-allowed bg-slate-800 text-slate-500 border border-white/5">
+            <span>🔒</span> Fill All 11 Pitch Positions to Unlock Season
+          </button>
+        </div>
+      </div>
+
+      <!-- Simulation & Match Center Hub -->
+      <div id="season-simulation-hub" class="glass-panel p-5 rounded-2xl shadow-2xl hidden">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-white/10 pb-4 mb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-xl font-black text-white">Premier League 38-Fixture Campaign</h3>
+              <span id="streak-indicator" class="bg-emerald-500/20 text-[#00ff87] text-xs font-black px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                0-0-0
+              </span>
+            </div>
+            <p class="text-xs text-slate-400">Play matches live with impact subs, or sim alongside the live 20-team title race!</p>
+          </div>
+
+          <!-- Tactics Switcher -->
+          <div class="flex items-center gap-1 bg-black/50 p-1 rounded-xl border border-white/10 text-xs">
+            <span class="text-[10px] uppercase font-bold text-slate-400 px-2">Tactics:</span>
+            <button onclick="setTactic('PARK')" id="btn-tactic-park" class="px-2.5 py-1 rounded-lg text-slate-400 font-bold transition">Bus 🚌</button>
+            <button onclick="setTactic('BALANCED')" id="btn-tactic-bal" class="px-2.5 py-1 rounded-lg bg-emerald-500 text-slate-950 font-bold transition">Balanced ⚖️</button>
+            <button onclick="setTactic('ATTACK')" id="btn-tactic-atk" class="px-2.5 py-1 rounded-lg text-slate-400 font-bold transition">All-Out ⚡</button>
+          </div>
+        </div>
+
+        <!-- MATCH CENTER NAVIGATION TABS -->
+        <div class="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+          <button onclick="switchHubTab('matchday')" id="tab-btn-matchday" class="tab-btn active px-4 py-2 rounded-xl text-xs font-black border border-white/10 text-slate-300 transition flex items-center gap-1.5 whitespace-nowrap">
+            <span>🏟️</span> Match Fixture
+          </button>
+          <button onclick="switchHubTab('table')" id="tab-btn-table" class="tab-btn px-4 py-2 rounded-xl text-xs font-black border border-white/10 text-slate-300 transition flex items-center gap-1.5 whitespace-nowrap">
+            <span>📊</span> 20-Team League Table
+          </button>
+          <button onclick="switchHubTab('awards')" id="tab-btn-awards" class="tab-btn px-4 py-2 rounded-xl text-xs font-black border border-white/10 text-slate-300 transition flex items-center gap-1.5 whitespace-nowrap">
+            <span>👟</span> Golden Boot & Playmakers
+          </button>
+          <button onclick="switchHubTab('squad')" id="tab-btn-squad" class="tab-btn px-4 py-2 rounded-xl text-xs font-black border border-white/10 text-slate-300 transition flex items-center gap-1.5 whitespace-nowrap">
+            <span>⭐</span> Squad Stats
+          </button>
+        </div>
+
+        <!-- Standings Stats Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 mb-4">
+          <div class="bg-black/40 p-2.5 rounded-xl border border-white/5 text-center">
+            <div class="text-[10px] uppercase font-bold text-slate-400">Matchday</div>
+            <div id="sim-played" class="text-lg font-black text-white">0/38</div>
+          </div>
+          <div class="bg-black/40 p-2.5 rounded-xl border border-white/5 text-center">
+            <div class="text-[10px] uppercase font-bold text-slate-400">Wins</div>
+            <div id="sim-wins" class="text-lg font-black text-[#00ff87]">0</div>
+          </div>
+          <div class="bg-black/40 p-2.5 rounded-xl border border-white/5 text-center">
+            <div class="text-[10px] uppercase font-bold text-slate-400">Draws</div>
+            <div id="sim-draws" class="text-lg font-black text-amber-400">0</div>
+          </div>
+          <div class="bg-black/40 p-2.5 rounded-xl border border-white/5 text-center">
+            <div class="text-[10px] uppercase font-bold text-slate-400">Losses</div>
+            <div id="sim-losses" class="text-lg font-black text-red-400">0</div>
+          </div>
+          <div class="bg-black/40 p-2.5 rounded-xl border border-white/5 text-center">
+            <div class="text-[10px] uppercase font-bold text-slate-400">Points</div>
+            <div id="sim-points" class="text-lg font-black text-cyan-400">0</div>
+          </div>
+          <div class="bg-black/40 p-2.5 rounded-xl border border-white/5 text-center">
+            <div class="text-[10px] uppercase font-bold text-slate-400">Goal Diff</div>
+            <div id="sim-gd" class="text-lg font-black text-yellow-400">+0</div>
+          </div>
+        </div>
+
+        <!-- TAB 1: MATCHDAY VIEW -->
+        <div id="hub-tab-matchday">
+          <!-- Upcoming Fixture Card -->
+          <div id="fixture-hero" class="bg-gradient-to-r from-purple-950/60 to-slate-900 p-4 rounded-xl border border-purple-800/40 mb-4">
+            <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+              <span id="fixture-round" class="font-bold text-slate-300">UPCOMING: MATCHDAY 1 OF 38</span>
+              <span id="fixture-difficulty" class="text-amber-400 font-semibold">Tough Rival</span>
+            </div>
+            <div class="flex items-center justify-between py-2">
+              <div class="flex items-center gap-3 w-5/12">
+                <div class="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-400 flex items-center justify-center font-black text-emerald-400 text-sm">
+                  INV
+                </div>
+                <div>
+                  <div class="font-black text-sm sm:text-base text-white truncate" id="match-home-name">YOUR INVINCIBLES</div>
+                  <div class="text-[11px] text-slate-400">HOME • OVR <span id="match-home-ovr">90</span></div>
+                </div>
+              </div>
+
+              <!-- Score / Time Box -->
+              <div class="text-center px-4">
+                <div id="match-clock-display" class="text-xs font-mono font-bold text-[#00ff87] mb-1">NOT STARTED</div>
+                <div id="match-score-display" class="text-2xl sm:text-3xl font-black tracking-widest text-white">0 - 0</div>
+              </div>
+
+              <div class="flex items-center justify-end gap-3 w-5/12 text-right">
+                <div>
+                  <div class="font-black text-sm sm:text-base text-white truncate" id="match-away-name">ARSENAL</div>
+                  <div class="text-[11px] text-slate-400">AWAY • OVR <span id="match-away-ovr">87</span></div>
+                </div>
+                <div id="match-away-logo" class="w-10 h-10 rounded-full bg-red-600/20 border border-red-500/40 flex items-center justify-center font-black text-red-300 text-sm">
+                  ARS
+                </div>
+              </div>
+            </div>
+
+            <!-- Live Event Feed in match -->
+            <div id="live-match-log" class="mt-3 bg-black/60 rounded-lg p-2.5 text-xs font-mono max-h-28 overflow-y-auto space-y-1 text-slate-300 border border-white/5">
+              <div class="text-slate-500 italic">Fixture ready for kickoff. Select an option below.</div>
+            </div>
+          </div>
+
+          <!-- Simulation Actions -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button id="btn-play-live" onclick="playLiveMatch()" class="bg-gradient-to-r from-emerald-500 to-[#00ff87] text-slate-950 font-black py-3 rounded-xl text-xs uppercase tracking-wider hover:opacity-90 active:scale-95 transition shadow-lg shadow-emerald-500/20">
+              ▶️ Play Next Match (Live)
+            </button>
+            <button id="btn-sim-five" onclick="simMatches(5)" class="bg-purple-900/80 hover:bg-purple-800 border border-purple-600/50 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider active:scale-95 transition">
+              ⏩ Fast Sim Next 5
+            </button>
+            <button id="btn-sim-all" onclick="simWholeSeason()" class="bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider hover:opacity-90 active:scale-95 transition shadow-lg shadow-fuchsia-600/20">
+              ⚡ Sim Full 38 Games
+            </button>
+          </div>
+
+          <!-- Fixture History Log -->
+          <div class="mt-5">
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center justify-between">
+              <span>Completed Matchdays</span>
+              <span class="text-[10px] text-slate-500">Auto-scrolls latest</span>
+            </div>
+            <div id="fixture-results-log" class="space-y-1.5 max-h-48 overflow-y-auto pr-1"></div>
+          </div>
+        </div>
+
+        <!-- TAB 2: LIVE 20-TEAM PREMIER LEAGUE TABLE -->
+        <div id="hub-tab-table" class="hidden">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h4 class="text-sm font-black uppercase tracking-wider text-white">Live Premier League Standings</h4>
+              <p class="text-xs text-slate-400">Simulates real results across all 20 clubs simultaneously</p>
+            </div>
+            <div class="text-xs font-bold text-[#00ff87] bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-lg" id="table-gap-indicator">
+              1st • Lead: +0 pts
+            </div>
+          </div>
+          <div class="overflow-x-auto max-h-[380px] rounded-xl border border-white/10 bg-black/40">
+            <table class="w-full text-xs text-left">
+              <thead class="text-[10px] uppercase font-bold text-slate-400 bg-white/5 border-b border-white/10">
+                <tr>
+                  <th class="p-2.5 text-center">Pos</th>
+                  <th class="p-2.5">Club</th>
+                  <th class="p-2.5 text-center">P</th>
+                  <th class="p-2.5 text-center">W</th>
+                  <th class="p-2.5 text-center">D</th>
+                  <th class="p-2.5 text-center">L</th>
+                  <th class="p-2.5 text-center">GF</th>
+                  <th class="p-2.5 text-center">GA</th>
+                  <th class="p-2.5 text-center">GD</th>
+                  <th class="p-2.5 text-center font-black text-white">Pts</th>
+                  <th class="p-2.5 text-center">Form</th>
+                </tr>
+              </thead>
+              <tbody id="league-table-body" class="divide-y divide-white/5"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 3: GOLDEN BOOT & PLAYMAKER HUB -->
+        <div id="hub-tab-awards" class="hidden">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Golden Boot -->
+            <div class="bg-black/40 border border-white/10 rounded-xl p-4">
+              <div class="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
+                <span class="text-xs font-extrabold uppercase text-amber-400 flex items-center gap-1.5">
+                  <span>👟</span> Premier League Golden Boot
+                </span>
+                <span class="text-[10px] text-slate-400">Top Scorers</span>
+              </div>
+              <div id="golden-boot-list" class="space-y-2 max-h-[300px] overflow-y-auto pr-1"></div>
+            </div>
+
+            <!-- Playmaker Award (Assists) -->
+            <div class="bg-black/40 border border-white/10 rounded-xl p-4">
+              <div class="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
+                <span class="text-xs font-extrabold uppercase text-cyan-400 flex items-center gap-1.5">
+                  <span>🎯</span> Premier League Playmaker
+                </span>
+                <span class="text-[10px] text-slate-400">Top Assists</span>
+              </div>
+              <div id="playmaker-list" class="space-y-2 max-h-[300px] overflow-y-auto pr-1"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 4: SQUAD STATS -->
+        <div id="hub-tab-squad" class="hidden">
+          <div class="bg-black/40 border border-white/10 rounded-xl p-4">
+            <h4 class="text-xs font-black uppercase text-slate-300 mb-3">Individual Invincibles Season Contributions</h4>
+            <div id="my-squad-stats-list" class="space-y-2 max-h-[320px] overflow-y-auto pr-1"></div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+  </main>
+
+  <!-- MODAL: SEASON COMPLETED (38/38) -->
+  <div id="season-end-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 hidden">
+    <div class="glass-panel max-w-lg w-full p-7 rounded-3xl border-2 border-emerald-400 text-center shadow-2xl relative overflow-hidden">
+      <div id="modal-trophy-icon" class="text-5xl mb-3 animate-bounce">🏆</div>
+      <h3 id="modal-season-title" class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-emerald-300 to-[#00ff87] mb-1">
+        CAMPAIGN COMPLETE!
+      </h3>
+      <p id="modal-season-sub" class="text-xs sm:text-sm text-emerald-400 font-bold uppercase tracking-widest mb-4">
+        Final Record: 38 Matches Finished
+      </p>
+
+      <div class="bg-black/60 p-4 rounded-2xl border border-white/10 grid grid-cols-4 gap-2 mb-6 text-center">
+        <div>
+          <div class="text-[10px] text-slate-400 uppercase font-bold">Wins</div>
+          <div id="modal-stat-w" class="text-xl font-black text-[#00ff87]">0</div>
+        </div>
+        <div>
+          <div class="text-[10px] text-slate-400 uppercase font-bold">Draws</div>
+          <div id="modal-stat-d" class="text-xl font-black text-amber-400">0</div>
+        </div>
+        <div>
+          <div class="text-[10px] text-slate-400 uppercase font-bold">Losses</div>
+          <div id="modal-stat-l" class="text-xl font-black text-red-400">0</div>
+        </div>
+        <div>
+          <div class="text-[10px] text-slate-400 uppercase font-bold">Points</div>
+          <div id="modal-stat-pts" class="text-xl font-black text-cyan-400">0</div>
+        </div>
+      </div>
+
+      <div id="modal-season-eval" class="text-xs text-slate-300 mb-6 bg-white/5 p-3 rounded-xl border border-white/5">
+        Historic season evaluation.
+      </div>
+
+      <div class="flex gap-3">
+        <button onclick="closeModalOnly()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition">
+          Review Match Log
+        </button>
+        <button onclick="startFreshDraft()" class="flex-1 bg-gradient-to-r from-[#00ff87] to-cyan-400 text-slate-950 font-black py-3.5 rounded-xl text-xs uppercase tracking-wider hover:opacity-95 transition shadow-lg shadow-emerald-500/20">
+          New 38-Game Draft 🔄
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: FLEXIBLE POSITION SELECTOR -->
+  <div id="position-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-panel max-w-md w-full p-6 rounded-2xl border border-white/20 text-center shadow-2xl relative">
+      <h3 class="text-lg font-black text-white mb-1" id="pos-modal-player-name">Select Pitch Position</h3>
+      <p class="text-xs text-slate-300 mb-4" id="pos-modal-desc">Assign this attacker anywhere across LW, ST, or RW</p>
+      <div id="pos-modal-options" class="grid grid-cols-1 gap-2 mb-4"></div>
+      <button onclick="closePositionModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider">
+        Cancel
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const CHAMPION_SQUADS = [
+      {
+        id: "ARS-0304",
+        club: "Arsenal",
+        season: "2003-04",
+        titleDesc: "The 49-Game Unbeaten Invincibles (90 pts)",
+        color: "#EF0107",
+        players: [
+          { name: "Thierry Henry", type: "ATT", basePos: "ST", ovr: 96 },
+          { name: "Dennis Bergkamp", type: "ATT", basePos: "ST", ovr: 92 },
+          { name: "Robert Pires", type: "ATT", basePos: "LW", ovr: 91 },
+          { name: "Freddie Ljungberg", type: "ATT", basePos: "RW", ovr: 89 },
+          { name: "Patrick Vieira", type: "MID", basePos: "CM", ovr: 94 },
+          { name: "Gilberto Silva", type: "MID", basePos: "CM", ovr: 88 },
+          { name: "Ray Parlour", type: "MID", basePos: "RCM", ovr: 85 },
+          { name: "Ashley Cole", type: "DEF", basePos: "LB", ovr: 91 },
+          { name: "Sol Campbell", type: "DEF", basePos: "LCB", ovr: 92 },
+          { name: "Kolo Toure", type: "DEF", basePos: "RCB", ovr: 88 },
+          { name: "Lauren", type: "DEF", basePos: "RB", ovr: 86 },
+          { name: "Jens Lehmann", type: "GK", basePos: "GK", ovr: 90 }
+        ]
+      },
+      {
+        id: "MUN-9899",
+        club: "Manchester United",
+        season: "1998-99",
+        titleDesc: "Historic Continental Treble Champions",
+        color: "#DA291C",
+        players: [
+          { name: "Dwight Yorke", type: "ATT", basePos: "ST", ovr: 90 },
+          { name: "Andy Cole", type: "ATT", basePos: "ST", ovr: 89 },
+          { name: "Ole Gunnar Solskjaer", type: "ATT", basePos: "ST", ovr: 87 },
+          { name: "Teddy Sheringham", type: "ATT", basePos: "ST", ovr: 86 },
+          { name: "David Beckham", type: "ATT", basePos: "RW", ovr: 92 },
+          { name: "Ryan Giggs", type: "ATT", basePos: "LW", ovr: 91 },
+          { name: "Paul Scholes", type: "MID", basePos: "CM", ovr: 92 },
+          { name: "Roy Keane", type: "MID", basePos: "CM", ovr: 93 },
+          { name: "Nicky Butt", type: "MID", basePos: "LCM", ovr: 85 },
+          { name: "Jaap Stam", type: "DEF", basePos: "LCB", ovr: 92 },
+          { name: "Ronny Johnsen", type: "DEF", basePos: "RCB", ovr: 86 },
+          { name: "Denis Irwin", type: "DEF", basePos: "LB", ovr: 89 },
+          { name: "Gary Neville", type: "DEF", basePos: "RB", ovr: 88 },
+          { name: "Peter Schmeichel", type: "GK", basePos: "GK", ovr: 94 }
+        ]
+      },
+      {
+        id: "CHE-0405",
+        club: "Chelsea",
+        season: "2004-05",
+        titleDesc: "Mourinho's 15-Goals Conceded Fortress (95 pts)",
+        color: "#034694",
+        players: [
+          { name: "Didier Drogba", type: "ATT", basePos: "ST", ovr: 91 },
+          { name: "Eidur Gudjohnsen", type: "ATT", basePos: "ST", ovr: 87 },
+          { name: "Arjen Robben", type: "ATT", basePos: "LW", ovr: 90 },
+          { name: "Damien Duff", type: "ATT", basePos: "RW", ovr: 87 },
+          { name: "Frank Lampard", type: "MID", basePos: "LCM", ovr: 93 },
+          { name: "Claude Makelele", type: "MID", basePos: "CM", ovr: 91 },
+          { name: "Tiago Mendes", type: "MID", basePos: "RCM", ovr: 85 },
+          { name: "John Terry", type: "DEF", basePos: "LCB", ovr: 94 },
+          { name: "Ricardo Carvalho", type: "DEF", basePos: "RCB", ovr: 90 },
+          { name: "William Gallas", type: "DEF", basePos: "LB", ovr: 88 },
+          { name: "Paulo Ferreira", type: "DEF", basePos: "RB", ovr: 86 },
+          { name: "Petr Cech", type: "GK", basePos: "GK", ovr: 94 }
+        ]
+      },
+      {
+        id: "MCI-1718",
+        club: "Manchester City",
+        season: "2017-18",
+        titleDesc: "The 100-Point All-Time Centurions",
+        color: "#6CABDD",
+        players: [
+          { name: "Sergio Aguero", type: "ATT", basePos: "ST", ovr: 92 },
+          { name: "Gabriel Jesus", type: "ATT", basePos: "ST", ovr: 86 },
+          { name: "Raheem Sterling", type: "ATT", basePos: "RW", ovr: 90 },
+          { name: "Leroy Sane", type: "ATT", basePos: "LW", ovr: 89 },
+          { name: "Kevin De Bruyne", type: "MID", basePos: "RCM", ovr: 94 },
+          { name: "David Silva", type: "MID", basePos: "LCM", ovr: 92 },
+          { name: "Fernandinho", type: "MID", basePos: "CM", ovr: 90 },
+          { name: "Ilkay Gundogan", type: "MID", basePos: "CM", ovr: 87 },
+          { name: "Nicolas Otamendi", type: "DEF", basePos: "LCB", ovr: 87 },
+          { name: "John Stones", type: "DEF", basePos: "RCB", ovr: 86 },
+          { name: "Kyle Walker", type: "DEF", basePos: "RB", ovr: 88 },
+          { name: "Fabian Delph", type: "DEF", basePos: "LB", ovr: 83 },
+          { name: "Ederson", type: "GK", basePos: "GK", ovr: 89 }
+        ]
+      },
+      {
+        id: "LEI-1516",
+        club: "Leicester City",
+        season: "2015-16",
+        titleDesc: "The 5000-to-1 Miracle Title Winners",
+        color: "#003090",
+        players: [
+          { name: "Jamie Vardy", type: "ATT", basePos: "ST", ovr: 90 },
+          { name: "Shinji Okazaki", type: "ATT", basePos: "ST", ovr: 84 },
+          { name: "Riyad Mahrez", type: "ATT", basePos: "RW", ovr: 91 },
+          { name: "Marc Albrighton", type: "ATT", basePos: "LW", ovr: 84 },
+          { name: "N. Kante", type: "MID", basePos: "CM", ovr: 92 },
+          { name: "Danny Drinkwater", type: "MID", basePos: "LCM", ovr: 85 },
+          { name: "Andy King", type: "MID", basePos: "RCM", ovr: 82 },
+          { name: "Wes Morgan", type: "DEF", basePos: "LCB", ovr: 86 },
+          { name: "Robert Huth", type: "DEF", basePos: "RCB", ovr: 86 },
+          { name: "Christian Fuchs", type: "DEF", basePos: "LB", ovr: 84 },
+          { name: "Danny Simpson", type: "DEF", basePos: "RB", ovr: 83 },
+          { name: "Kasper Schmeichel", type: "GK", basePos: "GK", ovr: 89 }
+        ]
+      },
+      {
+        id: "BBL-9495",
+        club: "Blackburn Rovers",
+        season: "1994-95",
+        titleDesc: "Shearer & Sutton SAS Title Triumph",
+        color: "#005CA9",
+        players: [
+          { name: "Alan Shearer", type: "ATT", basePos: "ST", ovr: 95 },
+          { name: "Chris Sutton", type: "ATT", basePos: "ST", ovr: 89 },
+          { name: "Stuart Ripley", type: "ATT", basePos: "RW", ovr: 85 },
+          { name: "Jason Wilcox", type: "ATT", basePos: "LW", ovr: 85 },
+          { name: "Tim Sherwood", type: "MID", basePos: "CM", ovr: 88 },
+          { name: "Mark Atkins", type: "MID", basePos: "LCM", ovr: 84 },
+          { name: "Paul Warhurst", type: "MID", basePos: "RCM", ovr: 83 },
+          { name: "Colin Hendry", type: "DEF", basePos: "LCB", ovr: 90 },
+          { name: "Ian Pearce", type: "DEF", basePos: "RCB", ovr: 86 },
+          { name: "Graeme Le Saux", type: "DEF", basePos: "LB", ovr: 89 },
+          { name: "Henning Berg", type: "DEF", basePos: "RB", ovr: 86 },
+          { name: "Tim Flowers", type: "GK", basePos: "GK", ovr: 88 }
+        ]
+      },
+      {
+        id: "LIV-1920",
+        club: "Liverpool",
+        season: "2019-20",
+        titleDesc: "Klopp's 99-Point Dominant Champions",
+        color: "#C8102E",
+        players: [
+          { name: "Mohamed Salah", type: "ATT", basePos: "RW", ovr: 94 },
+          { name: "Sadio Mane", type: "ATT", basePos: "LW", ovr: 93 },
+          { name: "Roberto Firmino", type: "ATT", basePos: "ST", ovr: 89 },
+          { name: "Divock Origi", type: "ATT", basePos: "ST", ovr: 84 },
+          { name: "Jordan Henderson", type: "MID", basePos: "RCM", ovr: 88 },
+          { name: "Fabinho", type: "MID", basePos: "CM", ovr: 90 },
+          { name: "Georginio Wijnaldum", type: "MID", basePos: "LCM", ovr: 88 },
+          { name: "James Milner", type: "MID", basePos: "CM", ovr: 85 },
+          { name: "Virgil van Dijk", type: "DEF", basePos: "LCB", ovr: 95 },
+          { name: "Joe Gomez", type: "DEF", basePos: "RCB", ovr: 86 },
+          { name: "Andy Robertson", type: "DEF", basePos: "LB", ovr: 90 },
+          { name: "Trent Alexander-Arnold", type: "DEF", basePos: "RB", ovr: 90 },
+          { name: "Alisson Becker", type: "GK", basePos: "GK", ovr: 93 }
+        ]
+      },
+      {
+        id: "MUN-0708",
+        club: "Manchester United",
+        season: "2007-08",
+        titleDesc: "Ronaldo 42 Goals, Rooney & Tevez Champions",
+        color: "#DA291C",
+        players: [
+          { name: "Cristiano Ronaldo", type: "ATT", basePos: "RW", ovr: 96 },
+          { name: "Wayne Rooney", type: "ATT", basePos: "ST", ovr: 93 },
+          { name: "Carlos Tevez", type: "ATT", basePos: "ST", ovr: 90 },
+          { name: "Ryan Giggs", type: "ATT", basePos: "LW", ovr: 89 },
+          { name: "Paul Scholes", type: "MID", basePos: "CM", ovr: 92 },
+          { name: "Michael Carrick", type: "MID", basePos: "LCM", ovr: 88 },
+          { name: "Owen Hargreaves", type: "MID", basePos: "RCM", ovr: 87 },
+          { name: "Nemanja Vidic", type: "DEF", basePos: "LCB", ovr: 94 },
+          { name: "Rio Ferdinand", type: "DEF", basePos: "RCB", ovr: 94 },
+          { name: "Patrice Evra", type: "DEF", basePos: "LB", ovr: 90 },
+          { name: "Wes Brown", type: "DEF", basePos: "RB", ovr: 85 },
+          { name: "Edwin van der Sar", type: "GK", basePos: "GK", ovr: 92 }
+        ]
+      },
+      {
+        id: "CHE-0910",
+        club: "Chelsea",
+        season: "2009-10",
+        titleDesc: "Ancelotti's Record 103-Goal Champions",
+        color: "#034694",
+        players: [
+          { name: "Didier Drogba", type: "ATT", basePos: "ST", ovr: 93 },
+          { name: "Nicolas Anelka", type: "ATT", basePos: "RW", ovr: 89 },
+          { name: "Florent Malouda", type: "ATT", basePos: "LW", ovr: 89 },
+          { name: "Salomon Kalou", type: "ATT", basePos: "RW", ovr: 85 },
+          { name: "Frank Lampard", type: "MID", basePos: "LCM", ovr: 93 },
+          { name: "Michael Ballack", type: "MID", basePos: "RCM", ovr: 89 },
+          { name: "Michael Essien", type: "MID", basePos: "CM", ovr: 90 },
+          { name: "John Obi Mikel", type: "MID", basePos: "CM", ovr: 85 },
+          { name: "John Terry", type: "DEF", basePos: "LCB", ovr: 92 },
+          { name: "Alex", type: "DEF", basePos: "RCB", ovr: 86 },
+          { name: "Ashley Cole", type: "DEF", basePos: "LB", ovr: 91 },
+          { name: "Branislav Ivanovic", type: "DEF", basePos: "RB", ovr: 87 },
+          { name: "Petr Cech", type: "GK", basePos: "GK", ovr: 92 }
+        ]
+      },
+      {
+        id: "MCI-1112",
+        club: "Manchester City",
+        season: "2011-12",
+        titleDesc: "Aguero 93:20 Iconic First Title",
+        color: "#6CABDD",
+        players: [
+          { name: "Sergio Aguero", type: "ATT", basePos: "ST", ovr: 92 },
+          { name: "Edin Dzeko", type: "ATT", basePos: "ST", ovr: 88 },
+          { name: "Carlos Tevez", type: "ATT", basePos: "ST", ovr: 89 },
+          { name: "David Silva", type: "ATT", basePos: "LW", ovr: 92 },
+          { name: "Samir Nasri", type: "ATT", basePos: "RW", ovr: 87 },
+          { name: "Yaya Toure", type: "MID", basePos: "CM", ovr: 93 },
+          { name: "Gareth Barry", type: "MID", basePos: "LCM", ovr: 86 },
+          { name: "James Milner", type: "MID", basePos: "RCM", ovr: 85 },
+          { name: "Vincent Kompany", type: "DEF", basePos: "LCB", ovr: 93 },
+          { name: "Joleon Lescott", type: "DEF", basePos: "RCB", ovr: 86 },
+          { name: "Gael Clichy", type: "DEF", basePos: "LB", ovr: 86 },
+          { name: "Pablo Zabaleta", type: "DEF", basePos: "RB", ovr: 87 },
+          { name: "Joe Hart", type: "GK", basePos: "GK", ovr: 89 }
+        ]
+      },
+      {
+        id: "MUN-9394",
+        club: "Manchester United",
+        season: "1993-94",
+        titleDesc: "Cantona-Led Double Winning Powerhouse",
+        color: "#DA291C",
+        players: [
+          { name: "Eric Cantona", type: "ATT", basePos: "ST", ovr: 94 },
+          { name: "Mark Hughes", type: "ATT", basePos: "ST", ovr: 89 },
+          { name: "Ryan Giggs", type: "ATT", basePos: "LW", ovr: 91 },
+          { name: "Andrei Kanchelskis", type: "ATT", basePos: "RW", ovr: 88 },
+          { name: "Roy Keane", type: "MID", basePos: "CM", ovr: 91 },
+          { name: "Paul Ince", type: "MID", basePos: "LCM", ovr: 90 },
+          { name: "Bryan Robson", type: "MID", basePos: "RCM", ovr: 87 },
+          { name: "Steve Bruce", type: "DEF", basePos: "LCB", ovr: 90 },
+          { name: "Gary Pallister", type: "DEF", basePos: "RCB", ovr: 90 },
+          { name: "Denis Irwin", type: "DEF", basePos: "LB", ovr: 89 },
+          { name: "Paul Parker", type: "DEF", basePos: "RB", ovr: 86 },
+          { name: "Peter Schmeichel", type: "GK", basePos: "GK", ovr: 93 }
+        ]
+      },
+      {
+        id: "CHE-1617",
+        club: "Chelsea",
+        season: "2016-17",
+        titleDesc: "Conte's 30-Win Tactical Revolution",
+        color: "#034694",
+        players: [
+          { name: "Eden Hazard", type: "ATT", basePos: "LW", ovr: 94 },
+          { name: "Diego Costa", type: "ATT", basePos: "ST", ovr: 90 },
+          { name: "Pedro", type: "ATT", basePos: "RW", ovr: 87 },
+          { name: "Willian", type: "ATT", basePos: "RW", ovr: 86 },
+          { name: "N. Kante", type: "MID", basePos: "CM", ovr: 93 },
+          { name: "Nemanja Matic", type: "MID", basePos: "LCM", ovr: 87 },
+          { name: "Cesc Fabregas", type: "MID", basePos: "RCM", ovr: 88 },
+          { name: "David Luiz", type: "DEF", basePos: "LCB", ovr: 88 },
+          { name: "Gary Cahill", type: "DEF", basePos: "RCB", ovr: 87 },
+          { name: "Marcos Alonso", type: "DEF", basePos: "LB", ovr: 86 },
+          { name: "Cesar Azpilicueta", type: "DEF", basePos: "RB", ovr: 89 },
+          { name: "Thibaut Courtois", type: "GK", basePos: "GK", ovr: 90 }
+        ]
+      },
+      {
+        id: "MCI-2223",
+        club: "Manchester City",
+        season: "2022-23",
+        titleDesc: "Haaland 36 Goals Treble Champions",
+        color: "#6CABDD",
+        players: [
+          { name: "Erling Haaland", type: "ATT", basePos: "ST", ovr: 95 },
+          { name: "Julian Alvarez", type: "ATT", basePos: "ST", ovr: 87 },
+          { name: "Jack Grealish", type: "ATT", basePos: "LW", ovr: 88 },
+          { name: "Phil Foden", type: "ATT", basePos: "RW", ovr: 90 },
+          { name: "Riyad Mahrez", type: "ATT", basePos: "RW", ovr: 88 },
+          { name: "Kevin De Bruyne", type: "MID", basePos: "RCM", ovr: 94 },
+          { name: "Rodri", type: "MID", basePos: "CM", ovr: 94 },
+          { name: "Ilkay Gundogan", type: "MID", basePos: "LCM", ovr: 91 },
+          { name: "Bernardo Silva", type: "MID", basePos: "RCM", ovr: 91 },
+          { name: "Ruben Dias", type: "DEF", basePos: "LCB", ovr: 91 },
+          { name: "John Stones", type: "DEF", basePos: "RCB", ovr: 89 },
+          { name: "Nathan Ake", type: "DEF", basePos: "LB", ovr: 86 },
+          { name: "Kyle Walker", type: "DEF", basePos: "RB", ovr: 87 },
+          { name: "Ederson", type: "GK", basePos: "GK", ovr: 90 }
+        ]
+      },
+      {
+        id: "MUN-9900",
+        club: "Manchester United",
+        season: "1999-00",
+        titleDesc: "Sir Alex Ferguson 91-Point Juggernaut",
+        color: "#DA291C",
+        players: [
+          { name: "Dwight Yorke", type: "ATT", basePos: "ST", ovr: 91 },
+          { name: "Andy Cole", type: "ATT", basePos: "ST", ovr: 90 },
+          { name: "Ole Gunnar Solskjaer", type: "ATT", basePos: "ST", ovr: 88 },
+          { name: "David Beckham", type: "ATT", basePos: "RW", ovr: 93 },
+          { name: "Ryan Giggs", type: "ATT", basePos: "LW", ovr: 91 },
+          { name: "Paul Scholes", type: "MID", basePos: "CM", ovr: 92 },
+          { name: "Roy Keane", type: "MID", basePos: "CM", ovr: 94 },
+          { name: "Jaap Stam", type: "DEF", basePos: "LCB", ovr: 93 },
+          { name: "Mikael Silvestre", type: "DEF", basePos: "LB", ovr: 85 },
+          { name: "Denis Irwin", type: "DEF", basePos: "LB", ovr: 88 },
+          { name: "Gary Neville", type: "DEF", basePos: "RB", ovr: 88 },
+          { name: "Henning Berg", type: "DEF", basePos: "RCB", ovr: 85 },
+          { name: "Mark Bosnich", type: "GK", basePos: "GK", ovr: 86 }
+        ]
+      },
+      {
+        id: "MCI-1819",
+        club: "Manchester City",
+        season: "2018-19",
+        titleDesc: "Domestic Treble & 98-Point Title Winners",
+        color: "#6CABDD",
+        players: [
+          { name: "Sergio Aguero", type: "ATT", basePos: "ST", ovr: 93 },
+          { name: "Raheem Sterling", type: "ATT", basePos: "LW", ovr: 91 },
+          { name: "Bernardo Silva", type: "ATT", basePos: "RW", ovr: 91 },
+          { name: "Leroy Sane", type: "ATT", basePos: "LW", ovr: 89 },
+          { name: "Riyad Mahrez", type: "ATT", basePos: "RW", ovr: 87 },
+          { name: "David Silva", type: "MID", basePos: "LCM", ovr: 91 },
+          { name: "Fernandinho", type: "MID", basePos: "CM", ovr: 90 },
+          { name: "Kevin De Bruyne", type: "MID", basePos: "RCM", ovr: 92 },
+          { name: "Ilkay Gundogan", type: "MID", basePos: "CM", ovr: 88 },
+          { name: "Aymeric Laporte", type: "DEF", basePos: "LCB", ovr: 90 },
+          { name: "Vincent Kompany", type: "DEF", basePos: "RCB", ovr: 89 },
+          { name: "John Stones", type: "DEF", basePos: "RCB", ovr: 86 },
+          { name: "Oleksandr Zinchenko", type: "DEF", basePos: "LB", ovr: 85 },
+          { name: "Kyle Walker", type: "DEF", basePos: "RB", ovr: 88 },
+          { name: "Ederson", type: "GK", basePos: "GK", ovr: 90 }
+        ]
+      }
+    ];
+
+    const FORMATION_SLOTS = ["GK", "LB", "LCB", "RCB", "RB", "LCM", "CM", "RCM", "LW", "ST", "RW"];
+
+    const POSITION_GROUPS = {
+      ATT: ["LW", "ST", "RW"],
+      MID: ["LCM", "CM", "RCM"],
+      DEF: ["LB", "LCB", "RCB", "RB"],
+      GK: ["GK"]
+    };
+
+    let dreamTeam = {
+      GK: null, LB: null, LCB: null, RCB: null, RB: null,
+      LCM: null, CM: null, RCM: null,
+      LW: null, ST: null, RW: null
+    };
+
+    let usedSquadIds = [];
+    let currentChampion = null;
+    let pendingPlayerForModal = null;
+    let currentSpinRound = 1;
+    let isSpinningSquad = false;
+
+    let currentTactic = 'BALANCED';
+    let fixtures = [];
+    let currentMatchIndex = 0;
+    let seasonStats = { p: 0, w: 0, d: 0, l: 0, pts: 0, gf: 0, ga: 0 };
+    let isMatchSimulating = false;
+
+    let leagueTable = [];
+    let goldenBoot = {};
+    let playmakerTable = {};
+    let mySquadStats = {};
+
+    const CHEMISTRY_LINKS = [
+      ["LW", "ST"], ["ST", "RW"],
+      ["LW", "LCM"], ["ST", "CM"], ["RW", "RCM"],
+      ["LCM", "CM"], ["CM", "RCM"],
+      ["LCM", "LB"], ["CM", "LCB"], ["CM", "RCB"], ["RCM", "RB"],
+      ["LB", "LCB"], ["LCB", "RCB"], ["RCB", "RB"],
+      ["LCB", "GK"], ["RCB", "GK"]
+    ];
+
+    function getLinkChemistry(p1, p2) {
+      if (!p1 || !p2) return { status: "none", color: "rgba(255,255,255,0.12)", width: 1.5 };
+      if (p1.club === p2.club && p1.season === p2.season) {
+        return { status: "perfect", color: "#00ff87", width: 3.5 };
+      } else if (p1.club === p2.club) {
+        return { status: "strong", color: "#00ff87", width: 2.5 };
+      } else if (p1.season === p2.season) {
+        return { status: "era", color: "#facc15", width: 2 };
+      }
+      return { status: "weak", color: "rgba(239,68,68,0.35)", width: 1.5 };
+    }
+
+    function renderChemistryLinks() {
+      const svg = document.getElementById("chemistry-svg-canvas");
+      const pitch = document.getElementById("main-pitch-container");
+      if (!svg || !pitch) return;
+
+      const pRect = pitch.getBoundingClientRect();
+      svg.setAttribute("viewBox", `0 0 ${pRect.width} ${pRect.height}`);
+      svg.innerHTML = "";
+
+      CHEMISTRY_LINKS.forEach(([s1, s2]) => {
+        const el1 = document.getElementById(`slot-${s1}`);
+        const el2 = document.getElementById(`slot-${s2}`);
+        if (!el1 || !el2) return;
+
+        const r1 = el1.getBoundingClientRect();
+        const r2 = el2.getBoundingClientRect();
+
+        const x1 = (r1.left + r1.width / 2) - pRect.left;
+        const y1 = (r1.top + r1.height / 2) - pRect.top;
+        const x2 = (r2.left + r2.width / 2) - pRect.left;
+        const y2 = (r2.top + r2.height / 2) - pRect.top;
+
+        const p1 = dreamTeam[s1];
+        const p2 = dreamTeam[s2];
+        const chem = getLinkChemistry(p1, p2);
+
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", x1);
+        line.setAttribute("y1", y1);
+        line.setAttribute("x2", x2);
+        line.setAttribute("y2", y2);
+        line.setAttribute("stroke", chem.color);
+        line.setAttribute("stroke-width", chem.width);
+        line.setAttribute("stroke-linecap", "round");
+        if (chem.status === "perfect") {
+          line.setAttribute("filter", "drop-shadow(0 0 4px #00ff87)");
+        }
+        svg.appendChild(line);
+      });
+    }
+
+    window.addEventListener("resize", renderChemistryLinks);
+
+    function spinNewSquad() {
+      if (isSpinningSquad) return;
+      if (currentSpinRound > 11 && Object.values(dreamTeam).filter(Boolean).length >= 11) {
+        return;
+      }
+
+      // Filter available champions that have not appeared yet
+      const availableChampions = CHAMPION_SQUADS.filter(c => !usedSquadIds.includes(c.id));
+      if (availableChampions.length === 0) {
+        document.getElementById("rolled-result-text").innerHTML = `<span class="text-amber-400">All 15 champion squads have been spun!</span>`;
+        return;
+      }
+
+      isSpinningSquad = true;
+      const spinBtn = document.getElementById("spin-btn");
+      const spinIcon = document.getElementById("spin-icon");
+      const resultText = document.getElementById("rolled-result-text");
+
+      spinBtn.disabled = true;
+      spinIcon.classList.add("animate-spin");
+      resultText.innerHTML = `<span class="text-amber-400 font-bold animate-pulse">Rolling EPL Title Winners...</span>`;
+
+      let cycle = 0;
+      const interval = setInterval(() => {
+        const randomTemp = availableChampions[Math.floor(Math.random() * availableChampions.length)];
+        resultText.innerHTML = `<span class="text-slate-400">${randomTemp.club} <span class="text-white">(${randomTemp.season})</span></span>`;
+        cycle++;
+
+        if (cycle > 12) {
+          clearInterval(interval);
+          const chosenChampion = availableChampions[Math.floor(Math.random() * availableChampions.length)];
+          currentChampion = chosenChampion;
+          usedSquadIds.push(chosenChampion.id);
+
+          resultText.innerHTML = `
+            <div class="flex flex-col items-center">
+              <span class="text-white flex items-center gap-2">
+                <span class="w-3.5 h-3.5 rounded-full shadow" style="background:${chosenChampion.color}"></span>
+                <strong class="text-[#00ff87] text-lg sm:text-2xl">${chosenChampion.club}</strong> • ${chosenChampion.season}
+              </span>
+              <span class="text-[11px] text-amber-300/90 font-semibold mt-0.5">🏆 ${chosenChampion.titleDesc}</span>
+            </div>
+          `;
+
+          document.getElementById("current-squad-title").innerText = `${chosenChampion.club} (${chosenChampion.season}) Champions`;
+          document.getElementById("pick-allowance-msg").innerText = `Draft 1 player into any compatible pitch slot`;
+          document.getElementById("picks-left-badge").classList.remove("hidden");
+          document.getElementById("picks-left-badge").innerText = `Spin ${currentSpinRound}/11 • 1 Pick`;
+
+          const leftCount = 15 - usedSquadIds.length;
+          document.getElementById("squads-remaining-badge").innerText = `${leftCount}/15 Champions Left`;
+
+          loadRolledSquadRoster();
+
+          spinBtn.disabled = false;
+          spinIcon.classList.remove("animate-spin");
+          isSpinningSquad = false;
+        }
+      }, 70);
+    }
+
+    function loadRolledSquadRoster() {
+      const container = document.getElementById("available-players-container");
+      if (!container || !currentChampion) return;
+
+      container.innerHTML = "";
+      currentChampion.players.forEach((player, index) => {
+        const isDrafted = Object.values(dreamTeam).some(p => p && p.name === player.name);
+
+        const card = document.createElement("div");
+        card.className = `p-3 rounded-xl flex items-center justify-between border transition ${
+          isDrafted
+            ? 'bg-emerald-950/30 border-emerald-500/30 opacity-60'
+            : 'bg-black/40 hover:bg-purple-950/40 border-white/10 hover:border-[#00ff87]/50'
+        }`;
+
+        const isHigh = player.ovr >= 91;
+        const validSlots = POSITION_GROUPS[player.type].join(', ');
+
+        card.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center font-black text-sm ${
+              isHigh ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-slate-800 text-slate-200 border border-white/10'
+            }">
+              ${player.ovr}
+            </div>
+            <div>
+              <div class="font-extrabold text-sm text-white flex items-center gap-1.5">
+                <span>${player.name}</span>
+                ${isDrafted ? '<span class="text-[10px] text-[#00ff87] font-bold">[DRAFTED]</span>' : ''}
+              </div>
+              <div class="text-[11px] text-slate-400 flex items-center gap-2">
+                <span class="px-1.5 py-0.5 rounded bg-white/10 text-white font-mono font-bold">${player.type}</span>
+                <span>Fits: <strong class="text-slate-200">${validSlots}</strong></span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <button onclick="promptPositionForPlayer(${index})" ${isDrafted ? 'disabled' : ''} class="px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition ${
+              isDrafted
+                ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                : 'bg-gradient-to-r from-emerald-500 to-[#00ff87] text-slate-950 hover:opacity-95 active:scale-95 shadow-md shadow-emerald-500/20 cursor-pointer'
+            }">
+              Draft ➔
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function promptPositionForPlayer(playerIndex) {
+      const player = currentChampion.players[playerIndex];
+      if (!player) return;
+
+      pendingPlayerForModal = {
+        name: player.name,
+        type: player.type,
+        basePos: player.basePos,
+        ovr: player.ovr,
+        club: currentChampion.club,
+        season: currentChampion.season,
+        clubId: currentChampion.id,
+        goals: 0,
+        assists: 0,
+        matches: 0
+      };
+
+      const validSlots = POSITION_GROUPS[player.type];
+      const modal = document.getElementById("position-modal");
+      const titleEl = document.getElementById("pos-modal-player-name");
+      const descEl = document.getElementById("pos-modal-desc");
+      const optionsBox = document.getElementById("pos-modal-options");
+
+      titleEl.innerHTML = `Draft <span class="text-[#00ff87]">${player.name}</span> (${player.ovr} OVR)`;
+
+      if (player.type === 'ATT') {
+        descEl.innerText = "Attacker: Place anywhere across Left Wing (LW), Striker (ST), or Right Wing (RW)";
+      } else if (player.type === 'MID') {
+        descEl.innerText = "Midfielder: Place anywhere across Left CM (LCM), Central (CM), or Right CM (RCM)";
+      } else if (player.type === 'DEF') {
+        descEl.innerText = "Defender: Place anywhere across Left Back (LB), Center Backs (LCB, RCB), or Right Back (RB)";
+      } else {
+        descEl.innerText = "Goalkeeper: Place in Goalkeeper (GK) position";
+      }
+
+      optionsBox.innerHTML = "";
+      validSlots.forEach(slot => {
+        const currentOccupant = dreamTeam[slot];
+        const btn = document.createElement("button");
+        btn.className = `p-3 rounded-xl border text-left flex items-center justify-between transition ${
+          currentOccupant
+            ? 'bg-purple-950/40 border-purple-600/40 hover:border-amber-400'
+            : 'bg-emerald-950/40 border-emerald-500/40 hover:border-[#00ff87]'
+        }`;
+
+        btn.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <span class="w-8 h-8 rounded-lg bg-black/60 flex items-center justify-center font-black text-xs text-white border border-white/10">${slot}</span>
+            <div>
+              <div class="text-xs font-bold text-white">Place in ${slot}</div>
+              <div class="text-[10px] text-slate-400">${currentOccupant ? `Replace: ${currentOccupant.name} (${currentOccupant.ovr})` : 'Position Currently Empty'}</div>
+            </div>
+          </div>
+          <span class="text-xs font-black ${currentOccupant ? 'text-amber-400' : 'text-[#00ff87]'}">
+            ${currentOccupant ? 'Swap ⇄' : 'Select ✓'}
+          </span>
+        `;
+        btn.onclick = () => assignPlayerToSlot(slot);
+        optionsBox.appendChild(btn);
+      });
+
+      modal.classList.remove("hidden");
+    }
+
+    function closePositionModal() {
+      const modal = document.getElementById("position-modal");
+      if (modal) modal.classList.add("hidden");
+      pendingPlayerForModal = null;
+    }
+
+    function assignPlayerToSlot(slot) {
+      if (!pendingPlayerForModal) return;
+
+      dreamTeam[slot] = pendingPlayerForModal;
+      closePositionModal();
+
+      currentSpinRound++;
+      updateSpinControls();
+      renderPitchSlots();
+      loadRolledSquadRoster();
+      checkDraftCompletion();
+      setTimeout(renderChemistryLinks, 100);
+    }
+
+    function updateSpinControls() {
+      const filledCount = Object.values(dreamTeam).filter(Boolean).length;
+      document.getElementById("header-spins").innerText = `${Math.min(11, currentSpinRound)} / 11`;
+
+      const spinText = document.getElementById("spin-text");
+      if (filledCount >= 11) {
+        spinText.innerText = "Starting XI Complete (11/11)";
+      } else {
+        spinText.innerText = `Spin Next Champion (${Math.min(11, currentSpinRound)}/11)`;
+      }
+    }
+
+    function handleSlotClick(slot) {
+      if (dreamTeam[slot]) {
+        dreamTeam[slot] = null;
+        renderPitchSlots();
+        loadRolledSquadRoster();
+        checkDraftCompletion();
+        setTimeout(renderChemistryLinks, 100);
+      }
+    }
+
+    function renderPitchSlots() {
+      FORMATION_SLOTS.forEach(slot => {
+        const slotEl = document.getElementById(`slot-${slot}`);
+        if (!slotEl) return;
+        const player = dreamTeam[slot];
+
+        if (!player) {
+          slotEl.innerHTML = `
+            <div class="w-14 sm:w-16 h-16 sm:h-20 rounded-xl border-2 border-dashed border-white/30 bg-black/40 hover:bg-white/10 hover:border-[#00ff87] transition flex flex-col items-center justify-center p-1 text-center shadow-lg">
+              <span class="text-xs font-black text-slate-300 tracking-wider">${slot}</span>
+              <span class="text-[10px] text-slate-500 mt-0.5">+ Empty</span>
+            </div>
+          `;
+        } else {
+          const isHighOvr = player.ovr >= 92;
+          slotEl.innerHTML = `
+            <div class="fut-card w-14 sm:w-16 h-16 sm:h-20 rounded-xl p-1 flex flex-col justify-between items-center text-center cursor-pointer relative ${isHighOvr ? 'gold-tier' : ''}">
+              <div class="w-full flex justify-between items-center px-1">
+                <span class="text-[11px] font-black ${isHighOvr ? 'text-amber-400' : 'text-[#00ff87]'}">${player.ovr}</span>
+                <span class="text-[9px] font-bold text-slate-300 uppercase">${slot}</span>
+              </div>
+              <div class="w-full px-0.5 my-auto">
+                <div class="text-[10px] sm:text-[11px] font-black text-white truncate leading-tight">${player.name.split(' ').pop()}</div>
+                <div class="text-[8px] text-slate-400 truncate">${player.season.slice(2)} ${player.club.slice(0,3).toUpperCase()}</div>
+              </div>
+              <div class="w-full text-[8px] text-red-300/70 hover:text-red-300 font-bold tracking-tighter">
+                ✕ REMOVE
+              </div>
+            </div>
+          `;
+        }
+      });
+      calculateSquadMetrics();
+    }
+
+    function calculateSquadMetrics() {
+      const filledPlayers = Object.values(dreamTeam).filter(Boolean);
+      const totalCount = filledPlayers.length;
+
+      document.getElementById('header-slots').innerText = `${totalCount} / 11`;
+
+      if (totalCount === 0) {
+        document.getElementById('header-ovr').innerText = "--";
+        document.getElementById('header-chem').innerText = "0%";
+        return;
+      }
+
+      const sumOvr = filledPlayers.reduce((acc, p) => acc + p.ovr, 0);
+      const avgOvr = Math.round(sumOvr / totalCount);
+      document.getElementById('header-ovr').innerText = avgOvr;
+
+      let clubMatches = 0;
+      let seasonMatches = 0;
+      for (let i = 0; i < filledPlayers.length; i++) {
+        for (let j = i + 1; j < filledPlayers.length; j++) {
+          if (filledPlayers[i].club === filledPlayers[j].club) clubMatches++;
+          if (filledPlayers[i].season === filledPlayers[j].season) seasonMatches++;
+        }
+      }
+
+      const rawChem = Math.min(100, Math.round((totalCount * 6) + (clubMatches * 7) + (seasonMatches * 5)));
+      document.getElementById('header-chem').innerText = `${rawChem}%`;
+    }
+
+    function checkDraftCompletion() {
+      const filledCount = Object.values(dreamTeam).filter(Boolean).length;
+      const startBtn = document.getElementById("start-sim-btn");
+      const hint = document.getElementById("pitch-status-hint");
+
+      if (filledCount === 11) {
+        startBtn.disabled = false;
+        startBtn.className = "w-full py-4 rounded-xl font-black text-sm tracking-wider uppercase transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-[#00ff87] via-emerald-400 to-cyan-400 text-slate-950 shadow-xl shadow-emerald-500/25 active:scale-98 glow-active";
+        startBtn.innerHTML = `<span>🚀</span> START 38-GAME SEASON CAMPAIGN`;
+        hint.innerText = "Starting XI Ready!";
+        hint.className = "text-emerald-400 font-bold";
+      } else {
+        startBtn.disabled = true;
+        startBtn.className = "w-full py-4 rounded-xl font-black text-sm tracking-wider uppercase transition-all duration-300 flex items-center justify-center gap-2 cursor-not-allowed bg-slate-800 text-slate-500 border border-white/5";
+        startBtn.innerHTML = `<span>🔒</span> Fill All 11 Pitch Positions (${11 - filledCount} needed)`;
+        hint.innerText = `${11 - filledCount} slots left`;
+        hint.className = "text-amber-300 font-semibold";
+      }
+    }
+
+    function resetDraft() {
+      dreamTeam = { GK:null, LB:null, LCB:null, RCB:null, RB:null, LCM:null, CM:null, RCM:null, LW:null, ST:null, RW:null };
+      usedSquadIds = [];
+      currentChampion = null;
+      currentSpinRound = 1;
+
+      document.getElementById("squads-remaining-badge").innerText = "15/15 Champions Left";
+      document.getElementById("rolled-result-text").innerHTML = `<span class="text-slate-500 text-lg">Click "Spin Next Champion" to begin</span>`;
+      document.getElementById("available-players-container").innerHTML = `
+        <div class="text-center py-12 text-slate-500 text-xs">
+          <div class="text-3xl mb-2">🏆</div>
+          Click "Spin Next Champion" above to draw 1 of 15 authentic title-winning squads!
+        </div>
+      `;
+      document.getElementById("picks-left-badge").classList.add("hidden");
+      document.getElementById("current-squad-title").innerText = "Available Champion Roster";
+      document.getElementById("pick-allowance-msg").innerText = "Select 1 star to assign anywhere into your 4-3-3";
+
+      updateSpinControls();
+      renderPitchSlots();
+      checkDraftCompletion();
+      setTimeout(renderChemistryLinks, 100);
+    }
+
+    const PREMIER_LEAGUE_OPPONENTS = [
+      { name: "Arsenal", ovr: 88, logo: "ARS", diff: "Title Contender" },
+      { name: "Manchester City", ovr: 91, logo: "MCI", diff: "World Class" },
+      { name: "Liverpool", ovr: 89, logo: "LIV", diff: "Title Contender" },
+      { name: "Chelsea", ovr: 84, logo: "CHE", diff: "Tough Rival" },
+      { name: "Manchester United", ovr: 83, logo: "MUN", diff: "Tough Rival" },
+      { name: "Tottenham", ovr: 84, logo: "TOT", diff: "Tough Rival" },
+      { name: "Aston Villa", ovr: 84, logo: "AVL", diff: "Tricky Test" },
+      { name: "Newcastle", ovr: 83, logo: "NEW", diff: "Physical Test" },
+      { name: "Brighton", ovr: 80, logo: "BHA", diff: "Tactical Test" },
+      { name: "West Ham", ovr: 79, logo: "WHU", diff: "Mid-Table" },
+      { name: "Brentford", ovr: 78, logo: "BRE", diff: "Tough Away Ground" },
+      { name: "Fulham", ovr: 78, logo: "FUL", diff: "Mid-Table" },
+      { name: "Bournemouth", ovr: 77, logo: "BOU", diff: "Stubborn Block" },
+      { name: "Crystal Palace", ovr: 77, logo: "CRY", diff: "Stubborn Block" },
+      { name: "Wolves", ovr: 77, logo: "WOL", diff: "Stubborn Block" },
+      { name: "Everton", ovr: 77, logo: "EVE", diff: "Physical Battle" },
+      { name: "Nottingham Forest", ovr: 76, logo: "NFO", diff: "Relegation Fight" },
+      { name: "Leicester City", ovr: 75, logo: "LEI", diff: "Relegation Fight" },
+      { name: "Ipswich Town", ovr: 73, logo: "IPS", diff: "Underdogs" }
+    ];
+
+    function generate38Fixtures() {
+      fixtures = [];
+      PREMIER_LEAGUE_OPPONENTS.forEach((opp) => {
+        fixtures.push({ ...opp, venue: "H" });
+        fixtures.push({ ...opp, venue: "A", ovr: opp.ovr + 1 });
+      });
+      fixtures.sort(() => Math.random() - 0.5);
+    }
+
+    function initLeagueTable() {
+      leagueTable = [
+        { name: "Your Invincibles", ovr: parseInt(document.getElementById('header-ovr').innerText, 10) || 90, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0, isPlayer: true, form: [] }
+      ];
+      PREMIER_LEAGUE_OPPONENTS.forEach(opp => {
+        leagueTable.push({
+          name: opp.name,
+          ovr: opp.ovr,
+          p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0,
+          isPlayer: false,
+          form: []
+        });
+      });
+      goldenBoot = {};
+      playmakerTable = {};
+      mySquadStats = {};
+
+      Object.values(dreamTeam).filter(Boolean).forEach(p => {
+        mySquadStats[p.name] = { name: p.name, pos: p.basePos, club: p.club, goals: 0, assists: 0, matches: 0, motm: 0 };
+      });
+    }
+
+    function switchHubTab(tabName) {
+      ['matchday', 'table', 'awards', 'squad'].forEach(t => {
+        const content = document.getElementById(`hub-tab-${t}`);
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (content) content.classList.add('hidden');
+        if (btn) btn.classList.remove('active');
+      });
+      const targetContent = document.getElementById(`hub-tab-${tabName}`);
+      const targetBtn = document.getElementById(`tab-btn-${tabName}`);
+      if (targetContent) targetContent.classList.remove('hidden');
+      if (targetBtn) targetBtn.classList.add('active');
+    }
+
+    function setTactic(tactic) {
+      currentTactic = tactic;
+      ['park', 'bal', 'atk'].forEach(t => {
+        const btn = document.getElementById(`btn-tactic-${t}`);
+        if (btn) btn.className = "px-2.5 py-1 rounded-lg text-slate-400 font-bold transition";
+      });
+
+      if (tactic === 'PARK') {
+        document.getElementById('btn-tactic-park').className = "px-2.5 py-1 rounded-lg bg-cyan-500 text-slate-950 font-bold transition";
+      } else if (tactic === 'BALANCED') {
+        document.getElementById('btn-tactic-bal').className = "px-2.5 py-1 rounded-lg bg-emerald-500 text-slate-950 font-bold transition";
+      } else if (tactic === 'ATTACK') {
+        document.getElementById('btn-tactic-atk').className = "px-2.5 py-1 rounded-lg bg-rose-500 text-white font-bold transition";
+      }
+    }
+
+    function disableSimButtons(disabled) {
+      const bLive = document.getElementById('btn-play-live');
+      const bFive = document.getElementById('btn-sim-five');
+      const bAll = document.getElementById('btn-sim-all');
+      if (bLive) bLive.disabled = disabled;
+      if (bFive) bFive.disabled = disabled;
+      if (bAll) bAll.disabled = disabled;
+    }
+
+    function updateSimDashboard() {
+      document.getElementById('sim-played').innerText = `${seasonStats.p}/38`;
+      document.getElementById('sim-wins').innerText = seasonStats.w;
+      document.getElementById('sim-draws').innerText = seasonStats.d;
+      document.getElementById('sim-losses').innerText = seasonStats.l;
+      document.getElementById('sim-points').innerText = seasonStats.pts;
+      const gd = seasonStats.gf - seasonStats.ga;
+      document.getElementById('sim-gd').innerText = `${gd >= 0 ? '+' : ''}${gd}`;
+      document.getElementById('streak-indicator').innerText = `${seasonStats.w}-${seasonStats.d}-${seasonStats.l}`;
+    }
+
+    function startSeasonSimulationView() {
+      generate38Fixtures();
+      initLeagueTable();
+      currentMatchIndex = 0;
+      seasonStats = { p: 0, w: 0, d: 0, l: 0, pts: 0, gf: 0, ga: 0 };
+
+      const hub = document.getElementById("season-simulation-hub");
+      hub.classList.remove("hidden");
+      hub.scrollIntoView({ behavior: 'smooth' });
+
+      updateSimDashboard();
+      updateUpcomingFixtureCard();
+      renderLiveLeagueTable();
+      renderAwardsLeaderboard();
+    }
+
+    function pickSquadScorer() {
+      const activeStarters = Object.values(dreamTeam).filter(Boolean);
+      if (activeStarters.length === 0) return { scorer: "Striker", assist: "Midfielder" };
+
+      const weights = { "ATT": 65, "MID": 25, "DEF": 9, "GK": 1 };
+      let weightedList = [];
+      activeStarters.forEach(p => {
+        const w = Math.round(weights[p.type] || 10);
+        for (let i = 0; i < w; i++) weightedList.push(p);
+      });
+
+      const scorer = weightedList[Math.floor(Math.random() * weightedList.length)] || activeStarters[0];
+      const assistCandidates = activeStarters.filter(p => p.name !== scorer.name);
+      const assist = assistCandidates[Math.floor(Math.random() * assistCandidates.length)] || null;
+
+      return { scorer: scorer.name, assist: assist ? assist.name : null };
+    }
+
+    function simOtherLeagueFixtures(currentOppName) {
+      const remainingTeams = leagueTable.filter(t => !t.isPlayer && t.name !== currentOppName);
+      remainingTeams.sort(() => Math.random() - 0.5);
+
+      for (let i = 0; i < remainingTeams.length; i += 2) {
+        if (i + 1 >= remainingTeams.length) break;
+        const t1 = remainingTeams[i];
+        const t2 = remainingTeams[i + 1];
+
+        const diff = (t1.ovr + 1) - t2.ovr;
+        let g1 = Math.max(0, Math.floor(Math.random() * 3 + (diff > 2 ? 1 : 0)));
+        let g2 = Math.max(0, Math.floor(Math.random() * 3 + (diff < -2 ? 1 : 0)));
+
+        t1.p++; t1.gf += g1; t1.ga += g2;
+        t2.p++; t2.gf += g2; t2.ga += g1;
+
+        if (g1 > g2) {
+          t1.w++; t1.pts += 3; t1.form.push('W');
+          t2.l++; t2.form.push('L');
+        } else if (g1 === g2) {
+          t1.d++; t1.pts += 1; t1.form.push('D');
+          t2.d++; t2.pts += 1; t2.form.push('D');
+        } else {
+          t2.w++; t2.pts += 3; t2.form.push('W');
+          t1.l++; t1.form.push('L');
+        }
+
+        const starScorers = ["Erling Haaland", "Mohamed Salah", "Bukayo Saka", "Cole Palmer", "Alexander Isak", "Son Heung-min", "Ollie Watkins"];
+        if (g1 > 0 && Math.random() > 0.4) {
+          const star = starScorers[Math.floor(Math.random() * starScorers.length)];
+          goldenBoot[star] = (goldenBoot[star] || 0) + 1;
+        }
+      }
+    }
+
+    function updateUpcomingFixtureCard() {
+      if (currentMatchIndex >= 38) {
+        document.getElementById('fixture-round').innerText = `SEASON COMPLETED (38 / 38 MATCHES)`;
+        document.getElementById('fixture-difficulty').innerText = "Campaign Finished";
+        document.getElementById('match-clock-display').innerText = "FULL SEASON COMPLETE";
+        return;
+      }
+      const fix = fixtures[currentMatchIndex];
+      const squadOvr = parseInt(document.getElementById('header-ovr').innerText, 10) || 88;
+
+      document.getElementById('fixture-round').innerText = `MATCHDAY ${currentMatchIndex + 1} OF 38 • ${fix.venue === 'H' ? 'HOME GAME' : 'AWAY GROUND'}`;
+      document.getElementById('fixture-difficulty').innerText = fix.diff;
+
+      document.getElementById('match-home-name').innerText = fix.venue === 'H' ? 'YOUR INVINCIBLES' : fix.name;
+      document.getElementById('match-home-ovr').innerText = fix.venue === 'H' ? squadOvr : fix.ovr;
+
+      document.getElementById('match-away-name').innerText = fix.venue === 'H' ? fix.name : 'YOUR INVINCIBLES';
+      document.getElementById('match-away-ovr').innerText = fix.venue === 'H' ? fix.ovr : squadOvr;
+      document.getElementById('match-away-logo').innerText = fix.logo;
+
+      document.getElementById('match-clock-display').innerText = "KICKOFF READY";
+      document.getElementById('match-score-display').innerText = "0 - 0";
+    }
+
+    function resolveSingleMatchLogic(fix) {
+      const squadOvr = parseInt(document.getElementById('header-ovr').innerText, 10) || 88;
+      const netEdge = squadOvr - fix.ovr + (fix.venue === 'H' ? 2 : -2);
+
+      let myLambda = Math.max(0.7, 1.95 + (netEdge * 0.13));
+      let oppLambda = Math.max(0.20, 1.05 - (netEdge * 0.08));
+
+      if (currentTactic === 'PARK') {
+        myLambda *= 0.65;
+        oppLambda *= 0.45;
+      } else if (currentTactic === 'ATTACK') {
+        myLambda *= 1.35;
+        oppLambda *= 1.25;
+      }
+
+      let myGoals = 0;
+      let oppGoals = 0;
+
+      for (let i = 0; i < 5; i++) {
+        if (Math.random() < myLambda / 3.3) myGoals++;
+        if (Math.random() < oppLambda / 3.4) oppGoals++;
+      }
+
+      if (myGoals <= oppGoals && Math.random() < 0.32) {
+        myGoals = oppGoals + 1;
+      }
+
+      return {
+        myGoals,
+        oppGoals,
+        homeTeam: fix.venue === 'H' ? 'Your Invincibles' : fix.name,
+        awayTeam: fix.venue === 'H' ? fix.name : 'Your Invincibles',
+        venue: fix.venue
+      };
+    }
+
+    function playLiveMatch() {
+      if (currentMatchIndex >= 38 || isMatchSimulating) return;
+
+      isMatchSimulating = true;
+      disableSimButtons(true);
+
+      const fix = fixtures[currentMatchIndex];
+      const logBox = document.getElementById("live-match-log");
+      logBox.innerHTML = `<div class="text-[#00ff87]">1' • Kickoff whistled! ${fix.venue === 'H' ? 'Home at Invincibles Arena' : 'Away at ' + fix.name}!</div>`;
+
+      let minute = 0;
+      let currentMy = 0;
+      let currentOpp = 0;
+
+      const clockEl = document.getElementById("match-clock-display");
+      const scoreEl = document.getElementById("match-score-display");
+
+      const matchInterval = setInterval(() => {
+        minute += 10;
+        clockEl.innerText = `${minute}' LIVE`;
+
+        if (minute === 30) {
+          if (Math.random() > 0.45) {
+            currentMy++;
+            logBox.innerHTML = `<div>⚽ 32' • GOAL! Incisive through ball finished clinically! (${currentMy}-${currentOpp})</div>` + logBox.innerHTML;
+          } else {
+            logBox.innerHTML = `<div>🧤 28' • Acrobatic save maintains the deadlock.</div>` + logBox.innerHTML;
+          }
+        } else if (minute === 60) {
+          if (Math.random() > 0.68) {
+            currentOpp++;
+            logBox.innerHTML = `<div class="text-amber-400">⚠️ 58' • ${fix.name} strikes on the counter attack! (${currentMy}-${currentOpp})</div>` + logBox.innerHTML;
+          } else {
+            logBox.innerHTML = `<div>🛡️ 62' • Rock solid defensive block from your backline.</div>` + logBox.innerHTML;
+          }
+        } else if (minute === 80) {
+          logBox.innerHTML = `<div class="text-cyan-300">⚡ 80' • Final 10 minutes. High tension on the touchline!</div>` + logBox.innerHTML;
+        }
+
+        scoreEl.innerText = fix.venue === 'H' ? `${currentMy} - ${currentOpp}` : `${currentOpp} - ${currentMy}`;
+
+        if (minute >= 90) {
+          clearInterval(matchInterval);
+          clockEl.innerText = "FULL TIME 90'";
+
+          const outcome = resolveSingleMatchLogic(fix);
+          scoreEl.innerText = fix.venue === 'H' ? `${outcome.myGoals} - ${outcome.oppGoals}` : `${outcome.oppGoals} - ${outcome.myGoals}`;
+          logBox.innerHTML = `<div class="font-bold text-[#00ff87]">🏁 90+4' • Final whistle! Match Result: ${outcome.myGoals} - ${outcome.oppGoals}</div>` + logBox.innerHTML;
+
+          applyMatchResult(outcome, fix);
+          isMatchSimulating = false;
+          disableSimButtons(false);
+        }
+      }, 140);
+    }
+
+    function simMatches(count) {
+      if (isMatchSimulating) return;
+      isMatchSimulating = true;
+      disableSimButtons(true);
+
+      let step = 0;
+      function stepSim() {
+        if (step < count && currentMatchIndex < 38) {
+          const fix = fixtures[currentMatchIndex];
+          const outcome = resolveSingleMatchLogic(fix);
+          applyMatchResult(outcome, fix);
+          step++;
+          setTimeout(stepSim, 60);
+        } else {
+          isMatchSimulating = false;
+          disableSimButtons(false);
+        }
+      }
+      stepSim();
+    }
+
+    function simWholeSeason() {
+      if (isMatchSimulating) return;
+      isMatchSimulating = true;
+      disableSimButtons(true);
+
+      function loop() {
+        if (currentMatchIndex < 38) {
+          const fix = fixtures[currentMatchIndex];
+          const outcome = resolveSingleMatchLogic(fix);
+          applyMatchResult(outcome, fix);
+          setTimeout(loop, 30);
+        } else {
+          isMatchSimulating = false;
+          disableSimButtons(false);
+        }
+      }
+      loop();
+    }
+
+    function applyMatchResult(outcome, fix) {
+      seasonStats.p++;
+      seasonStats.gf += outcome.myGoals;
+      seasonStats.ga += outcome.oppGoals;
+
+      let isWin = false;
+      let isDraw = false;
+
+      if (outcome.myGoals > outcome.oppGoals) {
+        seasonStats.w++;
+        seasonStats.pts += 3;
+        isWin = true;
+      } else if (outcome.myGoals === outcome.oppGoals) {
+        seasonStats.d++;
+        seasonStats.pts += 1;
+        isDraw = true;
+      } else {
+        seasonStats.l++;
+      }
+
+      let matchGoalEvents = [];
+      for (let g = 0; g < outcome.myGoals; g++) {
+        const event = pickSquadScorer();
+        goldenBoot[event.scorer] = (goldenBoot[event.scorer] || 0) + 1;
+        if (mySquadStats[event.scorer]) mySquadStats[event.scorer].goals++;
+        if (event.assist) {
+          playmakerTable[event.assist] = (playmakerTable[event.assist] || 0) + 1;
+          if (mySquadStats[event.assist]) mySquadStats[event.assist].assists++;
+        }
+        matchGoalEvents.push(event);
+      }
+
+      const myTeamRow = leagueTable.find(t => t.isPlayer);
+      if (myTeamRow) {
+        myTeamRow.p++;
+        myTeamRow.gf += outcome.myGoals;
+        myTeamRow.ga += outcome.oppGoals;
+        if (isWin) { myTeamRow.w++; myTeamRow.pts += 3; myTeamRow.form.push('W'); }
+        else if (isDraw) { myTeamRow.d++; myTeamRow.pts += 1; myTeamRow.form.push('D'); }
+        else { myTeamRow.l++; myTeamRow.form.push('L'); }
+      }
+
+      const oppTeamRow = leagueTable.find(t => t.name === fix.name);
+      if (oppTeamRow) {
+        oppTeamRow.p++;
+        oppTeamRow.gf += outcome.oppGoals;
+        oppTeamRow.ga += outcome.myGoals;
+        if (!isWin && !isDraw) { oppTeamRow.w++; oppTeamRow.pts += 3; oppTeamRow.form.push('W'); }
+        else if (isDraw) { oppTeamRow.d++; oppTeamRow.pts += 1; oppTeamRow.form.push('D'); }
+        else { oppTeamRow.l++; oppTeamRow.form.push('L'); }
+      }
+
+      simOtherLeagueFixtures(fix.name);
+
+      const resultsContainer = document.getElementById("fixture-results-log");
+      const row = document.createElement("div");
+      row.className = `p-2 rounded-lg text-xs flex items-center justify-between border ${
+        isWin
+          ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300'
+          : isDraw
+          ? 'bg-amber-950/40 border-amber-500/30 text-amber-300'
+          : 'bg-red-950/40 border-red-500/30 text-red-300'
+      }`;
+
+      const scorersDesc = matchGoalEvents.map(e => `${e.scorer.split(' ').pop()}${e.assist ? ` (${e.assist.split(' ').pop()})` : ''}`).join(', ');
+
+      row.innerHTML = `
+        <div class="flex items-center gap-2">
+          <span class="font-mono font-bold text-slate-400">MD ${currentMatchIndex + 1}</span>
+          <span>vs <strong>${fix.name}</strong> (${fix.venue}) ${scorersDesc ? `<span class="text-[10px] text-slate-400">⚽ ${scorersDesc}</span>` : ''}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="font-bold">${outcome.myGoals} - ${outcome.oppGoals}</span>
+          <span class="px-1.5 py-0.5 rounded font-black text-[10px] ${
+            isWin ? 'bg-emerald-500/20 text-[#00ff87]' : isDraw ? 'bg-amber-500/20 text-amber-300' : 'bg-red-500/20 text-red-300'
+          }">
+            ${isWin ? 'WIN' : isDraw ? 'DRAW' : 'LOSS'}
+          </span>
+        </div>
+      `;
+      resultsContainer.prepend(row);
+
+      currentMatchIndex++;
+      updateSimDashboard();
+      renderLiveLeagueTable();
+      renderAwardsLeaderboard();
+
+      if (currentMatchIndex === 38) {
+        triggerSeasonEndModal();
+      } else {
+        updateUpcomingFixtureCard();
+      }
+    }
+
+    function renderLiveLeagueTable() {
+      const tbody = document.getElementById("league-table-body");
+      if (!tbody) return;
+
+      leagueTable.sort((a, b) => {
+        if (b.pts !== a.pts) return b.pts - a.pts;
+        const gdA = a.gf - a.ga;
+        const gdB = b.gf - b.ga;
+        if (gdB !== gdA) return gdB - gdA;
+        return b.gf - a.gf;
+      });
+
+      tbody.innerHTML = "";
+      leagueTable.forEach((t, idx) => {
+        const gd = t.gf - t.ga;
+        const tr = document.createElement("tr");
+        tr.className = t.isPlayer ? "bg-emerald-950/40 font-bold text-white border-l-4 border-l-[#00ff87]" : "hover:bg-white/5";
+        
+        const formStr = t.form.slice(-5).map(f => {
+          const color = f === 'W' ? 'text-[#00ff87]' : f === 'D' ? 'text-amber-400' : 'text-red-400';
+          return `<span class="${color} font-black">${f}</span>`;
+        }).join(' ');
+
+        tr.innerHTML = `
+          <td class="p-2 text-center font-bold ${idx < 4 ? 'text-emerald-400' : idx >= 17 ? 'text-red-400' : 'text-slate-400'}">${idx + 1}</td>
+          <td class="p-2 flex items-center gap-1.5 ${t.isPlayer ? 'text-[#00ff87] font-black' : 'text-slate-200'}">
+            ${t.isPlayer ? '👑 ' : ''}${t.name}
+          </td>
+          <td class="p-2 text-center text-slate-300">${t.p}</td>
+          <td class="p-2 text-center text-[#00ff87]">${t.w}</td>
+          <td class="p-2 text-center text-amber-400">${t.d}</td>
+          <td class="p-2 text-center text-red-400">${t.l}</td>
+          <td class="p-2 text-center text-slate-400">${t.gf}</td>
+          <td class="p-2 text-center text-slate-400">${t.ga}</td>
+          <td class="p-2 text-center font-mono ${gd >= 0 ? 'text-emerald-400' : 'text-red-400'}">${gd >= 0 ? '+' : ''}${gd}</td>
+          <td class="p-2 text-center font-black ${t.isPlayer ? 'text-[#00ff87]' : 'text-white'} text-sm">${t.pts}</td>
+          <td class="p-2 text-center text-[10px] font-mono">${formStr || '-'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const playerPos = leagueTable.findIndex(t => t.isPlayer) + 1;
+      const playerTeam = leagueTable.find(t => t.isPlayer);
+      const runnerUp = leagueTable[1];
+      const gapEl = document.getElementById("table-gap-indicator");
+      if (gapEl && playerTeam && runnerUp) {
+        if (playerPos === 1) {
+          const ptsLead = playerTeam.pts - runnerUp.pts;
+          gapEl.innerText = `1st • Lead: +${ptsLead} pts over ${runnerUp.name}`;
+          gapEl.className = "text-xs font-bold text-[#00ff87] bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-lg";
+        } else {
+          const leader = leagueTable[0];
+          const ptsTrail = leader.pts - playerTeam.pts;
+          gapEl.innerText = `${playerPos}th • Trail: -${ptsTrail} pts behind ${leader.name}`;
+          gapEl.className = "text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-lg";
+        }
+      }
+    }
+
+    function renderAwardsLeaderboard() {
+      const bootContainer = document.getElementById("golden-boot-list");
+      if (bootContainer) {
+        const sortedScorers = Object.entries(goldenBoot).sort((a, b) => b[1] - a[1]).slice(0, 8);
+        bootContainer.innerHTML = sortedScorers.length === 0 ? `<div class="text-slate-500 text-xs py-3 text-center">No goals recorded yet</div>` : "";
+        sortedScorers.forEach(([name, goals], idx) => {
+          const isMine = mySquadStats[name];
+          const row = document.createElement("div");
+          row.className = `p-2 rounded-lg flex items-center justify-between text-xs border ${isMine ? 'bg-amber-500/10 border-amber-500/30 text-amber-300' : 'bg-black/30 border-white/5 text-slate-300'}`;
+          row.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-black/50 flex items-center justify-center font-bold text-[10px] text-amber-400">${idx + 1}</span>
+              <span class="font-bold">${name} ${isMine ? '<span class="text-[9px] text-[#00ff87]">[INV]</span>' : ''}</span>
+            </div>
+            <span class="font-black text-sm text-white">${goals} <span class="text-[10px] text-slate-400 font-normal">goals</span></span>
+          `;
+          bootContainer.appendChild(row);
+        });
+      }
+
+      const makerContainer = document.getElementById("playmaker-list");
+      if (makerContainer) {
+        const sortedAssists = Object.entries(playmakerTable).sort((a, b) => b[1] - a[1]).slice(0, 8);
+        makerContainer.innerHTML = sortedAssists.length === 0 ? `<div class="text-slate-500 text-xs py-3 text-center">No assists recorded yet</div>` : "";
+        sortedAssists.forEach(([name, assists], idx) => {
+          const isMine = mySquadStats[name];
+          const row = document.createElement("div");
+          row.className = `p-2 rounded-lg flex items-center justify-between text-xs border ${isMine ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300' : 'bg-black/30 border-white/5 text-slate-300'}`;
+          row.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-black/50 flex items-center justify-center font-bold text-[10px] text-cyan-400">${idx + 1}</span>
+              <span class="font-bold">${name}</span>
+            </div>
+            <span class="font-black text-sm text-white">${assists} <span class="text-[10px] text-slate-400 font-normal">assists</span></span>
+          `;
+          makerContainer.appendChild(row);
+        });
+      }
+
+      const mySquadContainer = document.getElementById("my-squad-stats-list");
+      if (mySquadContainer) {
+        const squadArr = Object.values(mySquadStats).sort((a, b) => b.goals - a.goals || b.assists - a.assists);
+        mySquadContainer.innerHTML = "";
+        squadArr.forEach(p => {
+          const row = document.createElement("div");
+          row.className = "p-2 rounded-lg bg-black/30 border border-white/5 flex items-center justify-between text-xs";
+          row.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="px-1.5 py-0.5 rounded bg-white/10 text-[10px] font-mono font-bold">${p.pos}</span>
+              <span class="font-bold text-white">${p.name}</span>
+              <span class="text-[10px] text-slate-400">${p.club}</span>
+            </div>
+            <div class="flex items-center gap-3 font-mono">
+              <span class="text-amber-400">⚽ ${p.goals}</span>
+              <span class="text-cyan-400">🎯 ${p.assists}</span>
+            </div>
+          `;
+          mySquadContainer.appendChild(row);
+        });
+      }
+    }
+
+    function triggerSeasonEndModal() {
+      const modal = document.getElementById("season-end-modal");
+      if (!modal) return;
+
+      document.getElementById("modal-stat-w").innerText = seasonStats.w;
+      document.getElementById("modal-stat-d").innerText = seasonStats.d;
+      document.getElementById("modal-stat-l").innerText = seasonStats.l;
+      document.getElementById("modal-stat-pts").innerText = seasonStats.pts;
+
+      const evalBox = document.getElementById("modal-season-eval");
+      const title = document.getElementById("modal-season-title");
+      const sub = document.getElementById("modal-season-sub");
+
+      if (seasonStats.w === 38) {
+        title.innerText = "🌟 THE 38-0-0 MIRACLE!";
+        sub.innerText = "PERFECT SEASON • 114 POINTS • IMMORTALITY";
+        evalBox.innerHTML = "You have rewritten football history! An immaculate 38 wins in 38 games. The Golden Premier League Trophy is yours!";
+        if (window.confetti) window.confetti({ particleCount: 150, spread: 80 });
+      } else if (seasonStats.l === 0) {
+        title.innerText = "👑 UNBEATEN INVINCIBLES!";
+        sub.innerText = `FINAL RECORD: ${seasonStats.w} WINS • ${seasonStats.d} DRAWS • 0 LOSSES`;
+        evalBox.innerHTML = `You match Arsenal 2003-04! Finished with ${seasonStats.pts} points without a single Premier League defeat!`;
+        if (window.confetti) window.confetti({ particleCount: 90, spread: 60 });
+      } else {
+        title.innerText = "CAMPAIGN FINISHED";
+        sub.innerText = `FINAL POINTS: ${seasonStats.pts} PTS • (${seasonStats.w}-${seasonStats.d}-${seasonStats.l})`;
+        evalBox.innerHTML = `A relentless 38-game Premier League journey concluded with ${seasonStats.gf} goals scored. Can you push for 38-0-0 next draft?`;
+      }
+
+      modal.classList.remove("hidden");
+    }
+
+    function closeModalOnly() {
+      const modal = document.getElementById("season-end-modal");
+      if (modal) modal.classList.add("hidden");
+    }
+
+    function startFreshDraft() {
+      closeModalOnly();
+      resetDraft();
+      const hub = document.getElementById("season-simulation-hub");
+      if (hub) hub.classList.add("hidden");
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    window.onload = function() {
+      renderPitchSlots();
+      setTimeout(renderChemistryLinks, 150);
+    };
+  </script>
+</body>
+</html>
