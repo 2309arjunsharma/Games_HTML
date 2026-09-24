@@ -1,0 +1,2477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pirate Island Party - Board Game Adventure</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome CDN for pirate & UI icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Google Fonts: Fredoka & MedievalSharp for playful pirate party vibes -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700;800&family=Pirata+One&family=Yuji+Boku&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      font-family: 'Fredoka', cursive, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      box-sizing: border-box;
+    }
+    .pirate-title {
+      font-family: 'Pirata One', 'Fredoka', cursive;
+      letter-spacing: 1px;
+    }
+    body {
+      background: radial-gradient(circle at 50% 20%, #2980b9 0%, #1a365d 70%, #0f172a 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+
+    /* Wii Party 3D Tactile Buttons */
+    .wii-btn {
+      transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 5px 0 rgba(0, 0, 0, 0.28), 0 8px 15px rgba(0,0,0,0.2);
+    }
+    .wii-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 7px 0 rgba(0, 0, 0, 0.28), 0 12px 18px rgba(0,0,0,0.25);
+    }
+    .wii-btn:active:not(:disabled) {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3), 0 3px 5px rgba(0,0,0,0.15);
+    }
+    .wii-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      filter: grayscale(40%);
+    }
+
+    /* 3D Rolling Dice */
+    .dice-stage {
+      perspective: 700px;
+      width: 84px;
+      height: 84px;
+    }
+    .dice-cube {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.45s ease-out;
+    }
+    .dice-cube.rolling {
+      animation: spinDiceAnim 0.45s infinite linear;
+    }
+    @keyframes spinDiceAnim {
+      0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+      100% { transform: rotateX(720deg) rotateY(1080deg) rotateZ(360deg); }
+    }
+    .cube-face {
+      position: absolute;
+      width: 84px;
+      height: 84px;
+      border-radius: 16px;
+      border: 4px solid #fff3bf;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.6rem;
+      font-weight: 800;
+      color: #3f1f06;
+      background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+      box-shadow: inset 0 0 12px rgba(255,255,255,0.8), 0 4px 10px rgba(0,0,0,0.3);
+    }
+    .face-1 { transform: rotateY(0deg) translateZ(42px); }
+    .face-2 { transform: rotateY(90deg) translateZ(42px); }
+    .face-3 { transform: rotateY(180deg) translateZ(42px); }
+    .face-4 { transform: rotateY(-90deg) translateZ(42px); }
+    .face-5 { transform: rotateX(90deg) translateZ(42px); }
+    .face-6 { transform: rotateX(-90deg) translateZ(42px); }
+
+    /* Bobbing & Pirate Treasure Pulses */
+    @keyframes pirateFloat {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-7px) rotate(1.5deg); }
+    }
+    .pirate-bob {
+      animation: pirateFloat 3s ease-in-out infinite;
+    }
+
+    @keyframes starPulseGlow {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 6px #facc15); }
+      50% { transform: scale(1.15); filter: drop-shadow(0 0 16px #f59e0b); }
+    }
+    .star-pulse {
+      animation: starPulseGlow 1.6s ease-in-out infinite;
+    }
+
+    /* Modal Pop-in */
+    @keyframes popBounce {
+      0% { opacity: 0; transform: scale(0.7) translateY(30px); }
+      75% { transform: scale(1.04) translateY(-4px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .pop-in {
+      animation: popBounce 0.32s cubic-bezier(0.175, 0.885, 0.32, 1.25) forwards;
+    }
+  </style>
+</head>
+
+<body class="flex flex-col min-h-screen text-slate-800">
+  <header class="w-full bg-amber-950/85 backdrop-blur-md border-b-4 border-amber-600 px-4 py-2.5 flex items-center justify-between shadow-xl z-30 sticky top-0 text-white">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-amber-950 shadow-lg text-2xl font-black pirate-bob">
+        ☠️
+      </div>
+      <div>
+        <h1 class="text-xl sm:text-2xl font-black pirate-title leading-tight tracking-wider text-amber-300">
+          Pirate Island Party
+        </h1>
+        <p class="text-xs text-amber-100/80 font-bold hidden sm:block">Roll, plunder doubloons, grab stars & dodge Blackbeard!</p>
+      </div>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center gap-2">
+      <button id="soundToggleBtn" class="wii-btn bg-amber-900/80 hover:bg-amber-800 text-amber-200 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 border border-amber-600">
+        <i class="fa-solid fa-volume-high text-yellow-400" id="soundIcon"></i>
+        <span class="hidden sm:inline">Audio</span>
+      </button>
+      <button id="rulesBtn" class="wii-btn bg-sky-900/80 hover:bg-sky-800 text-sky-200 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 border border-sky-500">
+        <i class="fa-solid fa-scroll text-sky-300"></i>
+        <span>Rules</span>
+      </button>
+      <button id="newGameHeaderBtn" class="wii-btn bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 border-b-4 border-emerald-800">
+        <i class="fa-solid fa-rotate-right"></i>
+        <span>New</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto p-2 sm:p-4 flex flex-col gap-3">
+    <!-- Active Turn & Round Status Tracker -->
+    <div class="bg-amber-100/95 backdrop-blur rounded-2xl p-3 border-2 border-amber-300 shadow-xl flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div id="turnBadge" class="px-4 py-1.5 rounded-xl font-black text-white text-base shadow flex items-center gap-2 bg-red-600 border border-white/40">
+          <i class="fa-solid fa-skull-crossbones"></i>
+          <span id="activePlayerName">Captain Red's Turn</span>
+        </div>
+        <div class="text-xs sm:text-sm font-black text-amber-950 bg-amber-200/80 px-3 py-1 rounded-xl border border-amber-400">
+          Round <span id="roundCounter" class="text-rose-600 font-extrabold text-base">1</span> / <span id="maxRoundsLabel">5</span>
+        </div>
+      </div>
+      <!-- Star & Chest Tracker -->
+      <div class="flex items-center gap-2 text-xs sm:text-sm font-black text-amber-950 bg-yellow-200/90 border-2 border-yellow-500 px-3.5 py-1.5 rounded-xl shadow-sm">
+        <span class="text-xl star-pulse">⭐</span>
+        <span>Treasure Star costs <b>20 Doubloons</b>!</span>
+      </div>
+    </div>
+
+    <!-- Players Cards Grid with Items Inventory -->
+    <div id="playersGrid" class="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
+      <!-- Generated dynamically by JavaScript -->
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 flex-1">
+      <!-- Main Pirate Island Canvas -->
+      <div class="lg:col-span-8 bg-amber-50/95 rounded-3xl p-3 sm:p-4 shadow-2xl border-4 border-amber-700/60 flex flex-col items-center justify-center relative min-h-[440px] sm:min-h-[520px] overflow-hidden">
+        <!-- Action Notification Toast Pill -->
+        <div id="boardActionToast" class="absolute top-4 left-1/2 -translate-x-1/2 bg-amber-950/95 text-amber-200 px-5 py-2 rounded-full font-black text-xs sm:text-sm shadow-2xl z-20 pointer-events-none transition-all duration-300 opacity-0 transform -translate-y-2 border-2 border-amber-400">
+          🏴‍☠️ Ahoy! Roll the dice to begin your hunt!
+        </div>
+
+        <!-- HTML5 Canvas for the Pirate Island Map -->
+        <canvas id="boardCanvas" class="w-full h-full max-h-[540px] rounded-2xl block"></canvas>
+      </div>
+
+      <!-- Action & Dice Control Dock -->
+      <div class="lg:col-span-4 flex flex-col gap-3">
+        <!-- Rolling & Item Use Station -->
+        <div class="bg-amber-100/95 rounded-3xl p-4 shadow-xl border-4 border-amber-500 flex flex-col items-center text-center justify-between min-h-[300px]">
+          <div class="w-full">
+            <span class="text-xs uppercase font-black text-amber-900 tracking-wider bg-amber-200/90 border border-amber-400 px-3 py-1 rounded-full">
+              Quarterdeck Station
+            </span>
+            <h3 id="currentActionPrompt" class="text-base sm:text-lg font-black text-amber-950 mt-2">
+              Ready to Roll, Captain!
+            </h3>
+            <!-- Active Items Buff Tag -->
+            <div id="activeBuffPill" class="hidden mt-1 text-xs font-black text-purple-700 bg-purple-100 border border-purple-300 rounded-full px-3 py-0.5 inline-block">
+              ✨ Double Dice Active!
+            </div>
+          </div>
+
+          <!-- 3D Dice Stage -->
+          <div class="py-3 my-auto flex items-center justify-center gap-3">
+            <div class="dice-stage" id="diceStage1">
+              <div class="dice-cube" id="diceCube1">
+                <div class="cube-face face-1">1</div>
+                <div class="cube-face face-2">2</div>
+                <div class="cube-face face-3">3</div>
+                <div class="cube-face face-4">4</div>
+                <div class="cube-face face-5">5</div>
+                <div class="cube-face face-6">6</div>
+              </div>
+            </div>
+            <!-- Secondary dice for Double / Triple items -->
+            <div class="dice-stage hidden" id="diceStage2">
+              <div class="dice-cube" id="diceCube2">
+                <div class="cube-face face-1">1</div>
+                <div class="cube-face face-2">2</div>
+                <div class="cube-face face-3">3</div>
+                <div class="cube-face face-4">4</div>
+                <div class="cube-face face-5">5</div>
+                <div class="cube-face face-6">6</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Buttons: Use Item & Roll Dice -->
+          <div class="w-full flex flex-col gap-2">
+            <button id="openItemBagBtn" class="wii-btn w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black text-sm shadow border-b-4 border-purple-800 flex items-center justify-center gap-2">
+              <i class="fa-solid fa-box-open text-base"></i>
+              <span>Use Pirate Item</span>
+            </button>
+            <button id="rollDiceBtn" class="wii-btn w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 border-b-4 border-amber-700 text-amber-950 text-xl font-black shadow-lg flex items-center justify-center gap-2">
+              <i class="fa-solid fa-dice text-2xl"></i>
+              <span>ROLL DICE!</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Space Legend & Quick Rules -->
+        <div class="bg-amber-50/90 rounded-2xl p-3 shadow-md border-2 border-amber-200 text-xs text-amber-950">
+          <h4 class="font-black text-sm mb-2 text-amber-900 flex items-center gap-1.5">
+            <i class="fa-solid fa-map-location-dot text-amber-700"></i> Island Space Legend
+          </h4>
+          <div class="grid grid-cols-2 gap-1.5 font-bold">
+            <div class="flex items-center gap-1.5 bg-blue-100/80 p-1.5 rounded-lg border border-blue-300">
+              <span class="w-3.5 h-3.5 rounded-full bg-blue-500 inline-block shadow"></span>
+              <span><b>Blue:</b> +3 Doubloons</span>
+            </div>
+            <div class="flex items-center gap-1.5 bg-rose-100/80 p-1.5 rounded-lg border border-rose-300">
+              <span class="w-3.5 h-3.5 rounded-full bg-rose-500 inline-block shadow"></span>
+              <span><b>Red:</b> -3 Doubloons</span>
+            </div>
+            <div class="flex items-center gap-1.5 bg-yellow-100/80 p-1.5 rounded-lg border border-yellow-400">
+              <span class="w-3.5 h-3.5 rounded-full bg-yellow-500 inline-block shadow"></span>
+              <span><b>Star:</b> ⭐ 20 Doubloons</span>
+            </div>
+            <div class="flex items-center gap-1.5 bg-cyan-100/80 p-1.5 rounded-lg border border-cyan-300">
+              <span class="w-3.5 h-3.5 rounded-full bg-cyan-600 inline-block shadow"></span>
+              <span><b>Shop:</b> Buy Supplies</span>
+            </div>
+            <div class="flex items-center gap-1.5 bg-emerald-100/80 p-1.5 rounded-lg border border-emerald-300">
+              <span class="w-3.5 h-3.5 rounded-full bg-emerald-600 inline-block shadow"></span>
+              <span><b>Event:</b> Mystery Wheel</span>
+            </div>
+            <div class="flex items-center gap-1.5 bg-purple-100/80 p-1.5 rounded-lg border border-purple-300">
+              <span class="w-3.5 h-3.5 rounded-full bg-purple-700 inline-block shadow"></span>
+              <span><b>Blackbeard:</b> Mischief!</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="setupModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-amber-50 rounded-3xl p-5 sm:p-7 max-w-lg w-full shadow-2xl border-4 border-amber-600 pop-in text-center max-h-[92vh] overflow-y-auto">
+      <div class="inline-block p-3.5 bg-amber-200 rounded-full text-4xl mb-2 pirate-bob border-2 border-amber-400">
+        🗺️🦜
+      </div>
+      <h2 class="text-3xl font-black pirate-title text-amber-950">Pirate Island Party</h2>
+      <p class="text-amber-800 font-bold text-xs sm:text-sm mb-5">Choose crew members, AI captain bots, and voyage length!</p>
+
+      <!-- Player Count Buttons -->
+      <div class="mb-4 text-left">
+        <label class="block text-xs font-black uppercase text-amber-900 tracking-wider mb-1.5">Crew Size:</label>
+        <div class="grid grid-cols-3 gap-2.5">
+          <button type="button" class="player-count-btn wii-btn py-2 rounded-xl font-black text-sm border-2 border-amber-300 bg-white" data-count="2">2 Sailors</button>
+          <button type="button" class="player-count-btn wii-btn py-2 rounded-xl font-black text-sm border-2 border-amber-300 bg-white" data-count="3">3 Sailors</button>
+          <button type="button" class="player-count-btn wii-btn py-2 rounded-xl font-black text-sm border-2 border-amber-700 bg-amber-700 text-white" data-count="4">4 Sailors</button>
+        </div>
+      </div>
+
+      <!-- Player list config -->
+      <div id="setupPlayersList" class="flex flex-col gap-2 mb-5 text-left">
+        <!-- Populated via renderSetupPlayerRows -->
+      </div>
+
+      <!-- Length selection -->
+      <div class="mb-5 text-left bg-amber-100/90 p-3 rounded-2xl border border-amber-300 flex items-center justify-between">
+        <span class="text-xs sm:text-sm font-black text-amber-950">Voyage Length:</span>
+        <select id="roundsSelect" class="bg-white border-2 border-amber-400 font-black rounded-xl px-3 py-1.5 text-xs sm:text-sm outline-none">
+          <option value="3">Quick Voyage (3 Rounds)</option>
+          <option value="5" selected>Standard Voyage (5 Rounds)</option>
+          <option value="8">Grand Odyssey (8 Rounds)</option>
+        </select>
+      </div>
+
+      <button id="startGameBtn" class="wii-btn w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xl font-black shadow-lg border-b-4 border-teal-800 flex items-center justify-center gap-2">
+        <i class="fa-solid fa-anchor"></i> SET SAIL!
+      </button>
+    </div>
+  </div>
+
+  <div id="forkModal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-amber-50 rounded-3xl p-6 max-w-md w-full shadow-2xl border-4 border-amber-500 pop-in text-center">
+      <div class="text-4xl mb-2">🧭🔀</div>
+      <h3 class="text-2xl font-black pirate-title text-amber-950">Fork in the Path!</h3>
+      <p id="forkPromptDesc" class="text-amber-900 font-bold text-sm my-3">
+        Captain, which course shall we chart?
+      </p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+        <button id="choosePathNorthBtn" class="wii-btn p-3.5 bg-rose-500 hover:bg-rose-600 text-white font-black rounded-2xl border-b-4 border-rose-800 text-sm flex flex-col items-center">
+          <span class="text-xl mb-1">💀 North Shortcut</span>
+          <span class="text-[11px] font-bold opacity-90">High Danger & Bowser!</span>
+        </button>
+        <button id="choosePathSouthBtn" class="wii-btn p-3.5 bg-sky-500 hover:bg-sky-600 text-white font-black rounded-2xl border-b-4 border-sky-800 text-sm flex flex-col items-center">
+          <span class="text-xl mb-1">🏖️ South Cove</span>
+          <span class="text-[11px] font-bold opacity-90">Safe Sands & Shop!</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="shopModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden items-center justify-center p-3 sm:p-4">
+    <div class="bg-amber-50 rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl border-4 border-cyan-600 pop-in text-center max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b-2 border-amber-200 pb-2 mb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-3xl">🦜🏴‍☠️</span>
+          <h3 class="text-2xl font-black pirate-title text-amber-950">Quartermaster's Shack</h3>
+        </div>
+        <div class="text-sm font-black bg-yellow-200 px-3 py-1 rounded-xl text-amber-950 border border-yellow-400">
+          🪙 <span id="shopPlayerCoins">0</span> Doubloons
+        </div>
+      </div>
+      <p class="text-xs sm:text-sm font-bold text-amber-900 mb-4">Stock up on trusty seafaring tools to outsmart your rival captains!</p>
+
+      <!-- Shop Items Shelf -->
+      <div id="shopItemsList" class="flex flex-col gap-2.5 text-left mb-4">
+        <!-- Rendered by JS -->
+      </div>
+
+      <button id="closeShopBtn" class="wii-btn w-full py-2.5 bg-slate-300 hover:bg-slate-400 text-slate-800 font-black rounded-xl border-b-4 border-slate-500 text-base">
+        Leave Shop
+      </button>
+    </div>
+  </div>
+
+  <div id="itemBagModal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-amber-50 rounded-3xl p-6 max-w-md w-full shadow-2xl border-4 border-purple-500 pop-in text-center">
+      <div class="flex items-center justify-between border-b-2 border-amber-200 pb-2 mb-3">
+        <h3 class="text-xl font-black pirate-title text-purple-950 flex items-center gap-2">
+          <i class="fa-solid fa-toolbox text-purple-600"></i> Your Pirate Satchel
+        </h3>
+        <button id="closeItemBagBtn" class="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 font-black text-slate-600">✕</button>
+      </div>
+      <div id="satchelItemsList" class="flex flex-col gap-2.5 my-3 text-left">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </div>
+
+  <div id="starModal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-amber-50 rounded-3xl p-6 max-w-sm w-full shadow-2xl border-4 border-yellow-400 pop-in text-center">
+      <div class="text-5xl mb-2 star-pulse">⭐🏴‍☠️</div>
+      <h3 class="text-2xl font-black pirate-title text-amber-950">Treasure Star Chest!</h3>
+      <p id="starModalDesc" class="text-amber-900 font-bold text-sm my-3">
+        Will you open the golden chest and claim a Star for <b>20 Doubloons</b>?
+      </p>
+      <div class="flex gap-3 mt-4">
+        <button id="buyStarYesBtn" class="wii-btn flex-1 py-3 bg-amber-400 hover:bg-amber-500 text-amber-950 font-black rounded-xl border-b-4 border-amber-600 text-lg">
+          Aye! (20 🪙)
+        </button>
+        <button id="buyStarNoBtn" class="wii-btn flex-1 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl border-b-4 border-slate-400 text-lg">
+          Nay
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="blackbeardModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-slate-900 rounded-3xl p-6 max-w-md w-full shadow-2xl border-4 border-purple-600 pop-in text-center text-white">
+      <div class="text-5xl mb-2 pirate-bob">☠️🔥</div>
+      <span class="text-xs uppercase font-black text-purple-300 tracking-wider bg-purple-900/90 px-3 py-1 rounded-full">Pirate Mischief</span>
+      <h3 class="text-3xl font-black pirate-title text-amber-400 mt-2">Captain Blackbeard's Wrath!</h3>
+      <p class="text-slate-300 font-bold text-sm mt-1 mb-4">Spin the dark wheel and suffer the pirate law!</p>
+      
+      <div class="bg-slate-950 p-4 rounded-2xl border-2 border-purple-800 mb-4 min-h-[90px] flex items-center justify-center">
+        <span id="blackbeardRouletteText" class="text-xl font-black text-yellow-300 animate-pulse">SPINNING...</span>
+      </div>
+
+      <button id="blackbeardSpinBtn" class="wii-btn w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-black text-lg rounded-2xl border-b-4 border-purple-800">
+        SURRENDER TO FATE!
+      </button>
+    </div>
+  </div>
+
+  <div id="eventWheelModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-amber-50 rounded-3xl p-6 max-w-md w-full shadow-2xl border-4 border-emerald-500 pop-in text-center flex flex-col items-center">
+      <span class="text-xs uppercase font-black text-emerald-800 tracking-wider bg-emerald-200 px-3 py-1 rounded-full mb-2">Lucky Compass</span>
+      <h3 class="text-2xl font-black pirate-title text-amber-950">Fortune's Wheel</h3>
+      <div class="relative my-4 flex items-center justify-center">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-20 text-3xl text-rose-500 drop-shadow">🔻</div>
+        <canvas id="wheelCanvas" width="260" height="260" class="rounded-full shadow-lg border-4 border-white"></canvas>
+      </div>
+      <p id="wheelOutcomeText" class="font-bold text-amber-900 text-base min-h-[30px]"></p>
+      <button id="spinWheelBtn" class="wii-btn w-full mt-2 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg rounded-2xl border-b-4 border-emerald-800">
+        SPIN COMPASS!
+      </button>
+    </div>
+  </div>
+
+  <div id="minigameModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex-col items-center justify-center p-3 sm:p-5">
+    <div class="bg-amber-50 rounded-3xl max-w-3xl w-full p-4 sm:p-6 shadow-2xl border-4 border-amber-600 flex flex-col pop-in max-h-[94vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b-2 border-amber-200 pb-3 mb-2">
+        <div class="flex items-center gap-2">
+          <span class="p-2 bg-amber-200 text-amber-900 rounded-xl text-xl">⚔️</span>
+          <div>
+            <span class="text-[10px] sm:text-xs uppercase font-black tracking-widest text-amber-800">Round End Showdown</span>
+            <h2 id="mgTitle" class="text-lg sm:text-2xl font-black pirate-title text-amber-950">Mini-game Title</h2>
+          </div>
+        </div>
+        <div id="mgTimerBadge" class="bg-amber-200 text-amber-950 border-2 border-amber-400 px-4 py-1.5 rounded-full font-black text-base flex items-center gap-1.5">
+          <i class="fa-regular fa-clock"></i>
+          <span id="mgTimerText">15s</span>
+        </div>
+      </div>
+
+      <p id="mgInstructions" class="text-xs sm:text-sm font-semibold text-amber-900 mb-3 bg-amber-100 p-2.5 rounded-xl border border-amber-300 text-center">
+        Controls: Click or Tap to jump!
+      </p>
+
+      <!-- Mini-Game Interactive Canvas Container -->
+      <div class="relative w-full aspect-video bg-slate-950 rounded-2xl overflow-hidden border-4 border-amber-900 shadow-inner flex flex-col items-center justify-center">
+        <canvas id="mgCanvas" class="w-full h-full block"></canvas>
+        
+        <div id="mgCountdownOverlay" class="absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center text-white z-20">
+          <h2 id="mgCountdownText" class="text-5xl sm:text-6xl font-black tracking-wider animate-bounce text-yellow-400 pirate-title">READY?</h2>
+          <p class="text-xs sm:text-sm font-bold text-amber-200 mt-2">All hands on deck!</p>
+        </div>
+
+        <div id="mgInteractiveOverlay" class="absolute inset-0 z-10 hidden flex items-center justify-center bg-transparent cursor-pointer">
+          <button id="mgActionTapBtn" class="wii-btn bg-yellow-400 hover:bg-yellow-300 text-amber-950 font-black text-2xl sm:text-3xl px-8 py-5 rounded-3xl border-b-8 border-yellow-600 active:scale-95 shadow-2xl">
+            FIRE CANNON!
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Scores in Mini-Game -->
+      <div id="mgScoresBar" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
+        <!-- Rendered per player -->
+      </div>
+    </div>
+  </div>
+
+  <div id="winnerModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden items-center justify-center p-3 sm:p-5">
+    <div class="bg-amber-50 rounded-3xl p-5 sm:p-8 max-w-lg w-full text-center shadow-2xl border-4 border-yellow-500 pop-in relative overflow-hidden max-h-[95vh] overflow-y-auto">
+      <canvas id="confettiCanvas" class="absolute inset-0 pointer-events-none w-full h-full z-10"></canvas>
+      
+      <div class="relative z-20">
+        <div class="text-6xl mb-1 pirate-bob">👑🏴‍☠️</div>
+        <span class="text-xs font-black tracking-widest uppercase bg-yellow-200 text-amber-900 border border-yellow-400 px-3 py-1 rounded-full">Pirate King Champion</span>
+        <h2 id="winnerNameHeading" class="text-3xl sm:text-4xl font-black pirate-title text-amber-950 mt-2">Captain Wins!</h2>
+        
+        <!-- Bonus Stars Award Ceremony Card -->
+        <div id="bonusStarsAwardBox" class="my-4 bg-yellow-100/90 border-2 border-yellow-400 p-3 rounded-2xl text-left text-xs font-bold space-y-1.5 text-amber-950">
+          <div class="font-black text-sm text-amber-900 flex items-center gap-1.5 border-b border-yellow-300 pb-1">
+            <span>⭐</span> End-of-Game Secret Bonus Stars!
+          </div>
+          <div id="minigameStarAward" class="flex justify-between">
+            <span>⚔️ <b>Minigame Star:</b></span>
+            <span class="font-black text-amber-800" id="mgStarWinner">...</span>
+          </div>
+          <div id="coinStarAward" class="flex justify-between">
+            <span>🪙 <b>Coin Hoarder Star:</b></span>
+            <span class="font-black text-amber-800" id="coinStarWinner">...</span>
+          </div>
+          <div id="happeningStarAward" class="flex justify-between">
+            <span>🎡 <b>Happening Explorer Star:</b></span>
+            <span class="font-black text-amber-800" id="happeningStarWinner">...</span>
+          </div>
+        </div>
+
+        <div id="podiumList" class="flex flex-col gap-2 mb-5 text-left">
+          <!-- Populated dynamically -->
+        </div>
+
+        <button id="playAgainBtn" class="wii-btn w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 text-amber-950 text-xl font-black shadow-lg border-b-4 border-amber-700 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-rotate-right"></i> SAIL ANOTHER VOYAGE!
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="rulesModal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-amber-50 rounded-3xl p-6 max-w-md w-full shadow-2xl border-4 border-amber-600 pop-in text-amber-950">
+      <div class="flex items-center justify-between pb-3 border-b border-amber-200">
+        <h3 class="text-xl font-black pirate-title flex items-center gap-2">
+          <i class="fa-solid fa-scroll text-amber-700"></i> Rules of the High Seas
+        </h3>
+        <button id="closeRulesBtn" class="w-8 h-8 rounded-full bg-amber-200 hover:bg-amber-300 font-black text-amber-900 flex items-center justify-center">✕</button>
+      </div>
+      <div class="my-3 text-xs sm:text-sm font-medium space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">
+        <p>1. <b>Roll & Hop:</b> Roll the 3D dice block to traverse the winding paths of Pirate Island.</p>
+        <p>2. <b>Fork in the Road:</b> Choose whether to brave the dangerous <i>North Skull Rock</i> shortcut or stroll along the safe <i>South Sandy Cove</i>.</p>
+        <p>3. <b>Items & Satchel:</b> Visit the Quartermaster's Shack to purchase Double Dice, Swap Hooks, and Plunder Gloves. Activate them before rolling!</p>
+        <p>4. <b>Moving Treasure Star:</b> Purchase a Power Star for 20 Doubloons. Once claimed, the chest relocates to another spot on the map!</p>
+        <p>5. <b>Captain Blackbeard's Wrath:</b> Landing on a Skull tile unleashes Doubloon Revolutions, position shuffles, or hefty coin penalties!</p>
+        <p>6. <b>End-of-Round Mini-Games & Bonus Stars:</b> Compete in 4 exciting mini-games after each round. At the grand finale, 3 hidden bonus stars are revealed to crown the Pirate King!</p>
+      </div>
+      <button id="rulesGotItBtn" class="wii-btn w-full py-3 bg-amber-700 hover:bg-amber-800 text-white font-black rounded-xl border-b-4 border-amber-950">
+        Aye, Let's Plunder!
+      </button>
+    </div>
+  </div>
+
+  <script>
+    class PirateAudioSynthesizer {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.15) {
+        if (!this.enabled) return;
+        try {
+          this.init();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch(e) {}
+      }
+      diceTick() {
+        if (!this.enabled) return;
+        this.playTone(340 + Math.random() * 200, 'triangle', 0.05, 0.12);
+      }
+      diceSlam() {
+        this.playTone(550, 'square', 0.1, 0.18);
+        setTimeout(() => this.playTone(830, 'sine', 0.22, 0.2), 70);
+      }
+      hop() {
+        this.playTone(480, 'sine', 0.07, 0.12);
+      }
+      doubloon() {
+        if (!this.enabled) return;
+        this.playTone(1046.50, 'sine', 0.08, 0.2);
+        setTimeout(() => this.playTone(1396.91, 'sine', 0.25, 0.25), 75);
+      }
+      hazard() {
+        if (!this.enabled) return;
+        this.playTone(200, 'sawtooth', 0.15, 0.22);
+        setTimeout(() => this.playTone(140, 'sawtooth', 0.25, 0.22), 110);
+      }
+      cannon() {
+        if (!this.enabled) return;
+        this.playTone(90, 'sawtooth', 0.35, 0.35);
+        this.playTone(60, 'triangle', 0.45, 0.3);
+      }
+      fanfare() {
+        if (!this.enabled) return;
+        const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+        notes.forEach((freq, idx) => {
+          setTimeout(() => this.playTone(freq, 'triangle', 0.22, 0.22), idx * 110);
+        });
+      }
+      starFanfare() {
+        if (!this.enabled) return;
+        const notes = [587.33, 739.99, 880.00, 1174.66, 1479.98, 1760.00];
+        notes.forEach((freq, idx) => {
+          setTimeout(() => this.playTone(freq, 'square', 0.22, 0.18), idx * 80);
+        });
+      }
+      click() {
+        this.playTone(620, 'sine', 0.03, 0.07);
+      }
+    }
+
+    const sound = new PirateAudioSynthesizer();
+
+    const PIRATE_AVATARS = [
+      { name: 'Capt. Redbeard', color: '#dc2626', icon: 'fa-hat-cowboy-side', bg: 'bg-red-600' },
+      { name: 'First Mate Blue', color: '#2563eb', icon: 'fa-anchor', bg: 'bg-blue-600' },
+      { name: 'Pegleg Green', color: '#059669', icon: 'fa-skull-crossbones', bg: 'bg-emerald-600' },
+      { name: 'Scurvy Sunny', color: '#d97706', icon: 'fa-compass', bg: 'bg-amber-600' }
+    ];
+
+    const PIRATE_ITEMS = [
+      { id: 'double_dice', name: 'Double Dice 🎲🎲', cost: 5, desc: 'Roll two dice blocks on this turn!' },
+      { id: 'triple_dice', name: 'Golden Triple Dice 👑', cost: 10, desc: 'Roll three dice blocks for huge movement!' },
+      { id: 'swap_hook', name: 'Grappling Hook 🪝', cost: 7, desc: 'Swap places with a rival captain on the board!' },
+      { id: 'plunder_glove', name: 'Plunder Glove 🧤', cost: 6, desc: 'Steal 5 doubloons from the current leader!' }
+    ];
+
+    const SPACE_TYPES = {
+      START: { name: 'Dock', color: '#0284c7', icon: '⚓', label: 'Start Dock' },
+      BLUE: { name: 'Blue', color: '#3b82f6', icon: '🪙', label: '+3 Doubloons' },
+      RED: { name: 'Red', color: '#ef4444', icon: '🔻', label: '-3 Doubloons' },
+      SHOP: { name: 'Shop', color: '#06b6d4', icon: '🦜', label: 'Quartermaster' },
+      STAR: { name: 'Star', color: '#f59e0b', icon: '⭐', label: 'Treasure Star' },
+      EVENT: { name: 'Event', color: '#10b981', icon: '🎡', label: 'Fortune Wheel' },
+      BLACKBEARD: { name: 'Blackbeard', color: '#9333ea', icon: '☠️', label: 'Blackbeard Trap' },
+      FORK: { name: 'Fork', color: '#f97316', icon: '🔀', label: 'Branch Fork' }
+    };
+
+    const gameState = {
+      players: [],
+      currentPlayerIdx: 0,
+      round: 1,
+      maxRounds: 5,
+      isRolling: false,
+      isMoving: false,
+      inMinigame: false,
+      spaces: [],
+      dice1Val: 1,
+      dice2Val: 1,
+      activeItemBuff: null, // 'double_dice' | 'triple_dice'
+      starSpaceIdx: 12,
+      // Statistics for Bonus Stars
+      stats: {
+        minigamesWon: {},
+        peakCoins: {},
+        eventLandings: {}
+      }
+    };
+
+    function initBoardSpaces() {
+      // 24 custom spaces with a fork decision at index 5
+      // Fork routes:
+      // North Path: Indices 6, 7, 8, 9 (Shortcut with hazard & Blackbeard)
+      // South Path: Indices 10, 11, 12, 13 (Cove with item shop & star)
+      // Both routes converge at Space 14
+      gameState.spaces = [
+        { index: 0, type: SPACE_TYPES.START, next: [1], label: 'Dock' },
+        { index: 1, type: SPACE_TYPES.BLUE, next: [2] },
+        { index: 2, type: SPACE_TYPES.BLUE, next: [3] },
+        { index: 3, type: SPACE_TYPES.RED, next: [4] },
+        { index: 4, type: SPACE_TYPES.EVENT, next: [5] },
+        // Space 5 is the Fork
+        { index: 5, type: SPACE_TYPES.FORK, next: [6, 10], label: 'Fork' },
+        // North Path (Hazard shortcut)
+        { index: 6, type: SPACE_TYPES.RED, next: [7] },
+        { index: 7, type: SPACE_TYPES.BLACKBEARD, next: [8] },
+        { index: 8, type: SPACE_TYPES.BLUE, next: [9] },
+        { index: 9, type: SPACE_TYPES.RED, next: [14] },
+        // South Path (Safe Cove & Shop)
+        { index: 10, type: SPACE_TYPES.BLUE, next: [11] },
+        { index: 11, type: SPACE_TYPES.SHOP, next: [12] },
+        { index: 12, type: SPACE_TYPES.STAR, next: [13] }, // Initial Star
+        { index: 13, type: SPACE_TYPES.BLUE, next: [14] },
+        // Converged Path
+        { index: 14, type: SPACE_TYPES.EVENT, next: [15] },
+        { index: 15, type: SPACE_TYPES.BLUE, next: [16] },
+        { index: 16, type: SPACE_TYPES.BLACKBEARD, next: [17] },
+        { index: 17, type: SPACE_TYPES.BLUE, next: [18] },
+        { index: 18, type: SPACE_TYPES.BLUE, next: [19] },
+        { index: 19, type: SPACE_TYPES.RED, next: [20] },
+        { index: 20, type: SPACE_TYPES.SHOP, next: [21] },
+        { index: 21, type: SPACE_TYPES.BLUE, next: [22] },
+        { index: 22, type: SPACE_TYPES.EVENT, next: [23] },
+        { index: 23, type: SPACE_TYPES.BLUE, next: [0] } // Loops back to start
+      ];
+    }
+
+    const boardCanvas = document.getElementById('boardCanvas');
+    const bCtx = boardCanvas.getContext('2d');
+
+    function resizeBoardCanvas() {
+      const parent = boardCanvas.parentElement;
+      const rect = parent.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      
+      const width = rect.width - 24;
+      const height = Math.max(400, Math.min(540, window.innerHeight * 0.58));
+
+      boardCanvas.width = width * dpr;
+      boardCanvas.height = height * dpr;
+      boardCanvas.style.width = width + 'px';
+      boardCanvas.style.height = height + 'px';
+
+      bCtx.resetTransform();
+      bCtx.scale(dpr, dpr);
+
+      computePirateMapPositions(width, height);
+      renderBoard();
+    }
+
+    function computePirateMapPositions(w, h) {
+      const cx = w / 2;
+      const cy = h / 2;
+
+      // Coordinate placement designed specifically around Pirate Island features
+      // Shared Loop West (0 to 5)
+      gameState.spaces[0].x = cx - w * 0.38; gameState.spaces[0].y = cy + h * 0.28; // Start Dock
+      gameState.spaces[1].x = cx - w * 0.42; gameState.spaces[1].y = cy + h * 0.10;
+      gameState.spaces[2].x = cx - w * 0.40; gameState.spaces[2].y = cy - h * 0.12;
+      gameState.spaces[3].x = cx - w * 0.34; gameState.spaces[3].y = cy - h * 0.26;
+      gameState.spaces[4].x = cx - w * 0.22; gameState.spaces[4].y = cy - h * 0.34;
+      gameState.spaces[5].x = cx - w * 0.10; gameState.spaces[5].y = cy - h * 0.34; // Fork
+
+      // North Path: Skull Rock Shortcut (High danger, arches along top)
+      gameState.spaces[6].x = cx + w * 0.02; gameState.spaces[6].y = cy - h * 0.38;
+      gameState.spaces[7].x = cx + w * 0.14; gameState.spaces[7].y = cy - h * 0.37; // Blackbeard
+      gameState.spaces[8].x = cx + w * 0.24; gameState.spaces[8].y = cy - h * 0.30;
+      gameState.spaces[9].x = cx + w * 0.30; gameState.spaces[9].y = cy - h * 0.18;
+
+      // South Path: Sandy Cove (Curves through lagoon, shop, star)
+      gameState.spaces[10].x = cx - w * 0.08; gameState.spaces[10].y = cy - h * 0.14;
+      gameState.spaces[11].x = cx - w * 0.02; gameState.spaces[11].y = cy + h * 0.04; // Shop
+      gameState.spaces[12].x = cx + w * 0.10; gameState.spaces[12].y = cy + h * 0.06; // Star Chest
+      gameState.spaces[13].x = cx + w * 0.20; gameState.spaces[13].y = cy - h * 0.04;
+
+      // Converged East & South Loop (14 to 23)
+      gameState.spaces[14].x = cx + w * 0.36; gameState.spaces[14].y = cy - h * 0.06; // Rejoin
+      gameState.spaces[15].x = cx + w * 0.42; gameState.spaces[15].y = cy + h * 0.10;
+      gameState.spaces[16].x = cx + w * 0.38; gameState.spaces[16].y = cy + h * 0.25;
+      gameState.spaces[17].x = cx + w * 0.30; gameState.spaces[17].y = cy + h * 0.35;
+      gameState.spaces[18].x = cx + w * 0.18; gameState.spaces[18].y = cy + h * 0.38;
+      gameState.spaces[19].x = cx + w * 0.06; gameState.spaces[19].y = cy + h * 0.36;
+      gameState.spaces[20].x = cx - w * 0.06; gameState.spaces[20].y = cy + h * 0.38; // Shop 2
+      gameState.spaces[21].x = cx - w * 0.16; gameState.spaces[21].y = cy + h * 0.36;
+      gameState.spaces[22].x = cx - w * 0.26; gameState.spaces[22].y = cy + h * 0.35;
+      gameState.spaces[23].x = cx - w * 0.33; gameState.spaces[23].y = cy + h * 0.32;
+    }
+
+    function renderBoard() {
+      const w = parseFloat(boardCanvas.style.width);
+      const h = parseFloat(boardCanvas.style.height);
+      if (!w || !h) return;
+
+      bCtx.clearRect(0, 0, w, h);
+
+      // Deep Ocean Base
+      bCtx.save();
+      const seaGrad = bCtx.createRadialGradient(w/2, h/2, 50, w/2, h/2, w*0.6);
+      seaGrad.addColorStop(0, '#22d3ee');
+      seaGrad.addColorStop(0.5, '#0284c7');
+      seaGrad.addColorStop(1, '#0369a1');
+      bCtx.fillStyle = seaGrad;
+      bCtx.fillRect(0, 0, w, h);
+
+      // Pirate Parchment / Island Sand Shape
+      bCtx.beginPath();
+      bCtx.ellipse(w / 2, h / 2 + 5, w * 0.46, h * 0.44, 0, 0, Math.PI * 2);
+      bCtx.fillStyle = '#fef08a'; // Sand
+      bCtx.shadowColor = 'rgba(0,0,0,0.25)';
+      bCtx.shadowBlur = 18;
+      bCtx.fill();
+
+      // Lush Palm Canopy & Grassy Interior
+      bCtx.beginPath();
+      bCtx.ellipse(w / 2, h / 2, w * 0.38, h * 0.35, 0, 0, Math.PI * 2);
+      bCtx.fillStyle = '#86efac';
+      bCtx.shadowBlur = 0;
+      bCtx.fill();
+
+      // Inner Pirate Lagoon (Blue water in the center)
+      bCtx.beginPath();
+      bCtx.ellipse(w * 0.48, h * 0.54, 52, 38, 0, 0, Math.PI * 2);
+      bCtx.fillStyle = '#38bdf8';
+      bCtx.fill();
+      bCtx.lineWidth = 4;
+      bCtx.strokeStyle = '#fde047';
+      bCtx.stroke();
+
+      // Pirate Skull Rock Formation (North)
+      bCtx.beginPath();
+      bCtx.arc(w * 0.58, h * 0.22, 28, 0, Math.PI * 2);
+      bCtx.fillStyle = '#64748b';
+      bCtx.fill();
+      // Eye sockets
+      bCtx.fillStyle = '#1e293b';
+      bCtx.beginPath();
+      bCtx.arc(w * 0.55, h * 0.20, 5, 0, Math.PI * 2);
+      bCtx.arc(w * 0.61, h * 0.20, 5, 0, Math.PI * 2);
+      bCtx.fill();
+
+      // Decorative Pirate Ship at Dock (West)
+      bCtx.font = '28px Arial';
+      bCtx.fillText('🏴‍☠️⛵', w * 0.08, h * 0.76);
+      // Compass Rose (South East)
+      bCtx.fillText('🧭', w * 0.82, h * 0.86);
+      bCtx.restore();
+
+      // Draw Connecting Path Network
+      bCtx.save();
+      bCtx.lineWidth = 14;
+      bCtx.strokeStyle = '#d97706';
+      bCtx.lineCap = 'round';
+      bCtx.lineJoin = 'round';
+
+      gameState.spaces.forEach((sp) => {
+        sp.next.forEach(nxtIdx => {
+          const nextSp = gameState.spaces[nxtIdx];
+          bCtx.beginPath();
+          bCtx.moveTo(sp.x, sp.y);
+          bCtx.lineTo(nextSp.x, nextSp.y);
+          bCtx.stroke();
+        });
+      });
+
+      // Top Highlight for Path
+      bCtx.lineWidth = 6;
+      bCtx.strokeStyle = '#fffbeb';
+      gameState.spaces.forEach((sp) => {
+        sp.next.forEach(nxtIdx => {
+          const nextSp = gameState.spaces[nxtIdx];
+          bCtx.beginPath();
+          bCtx.moveTo(sp.x, sp.y);
+          bCtx.lineTo(nextSp.x, nextSp.y);
+          bCtx.stroke();
+        });
+      });
+      bCtx.restore();
+
+      // Draw Board Spaces
+      gameState.spaces.forEach((sp) => {
+        const radius = 18;
+        bCtx.save();
+
+        // Drop Shadow
+        bCtx.beginPath();
+        bCtx.arc(sp.x, sp.y + 3, radius, 0, Math.PI * 2);
+        bCtx.fillStyle = 'rgba(0,0,0,0.28)';
+        bCtx.fill();
+
+        // Main Space Circle
+        bCtx.beginPath();
+        bCtx.arc(sp.x, sp.y, radius, 0, Math.PI * 2);
+        bCtx.fillStyle = sp.type.color;
+        bCtx.fill();
+        bCtx.lineWidth = 3.5;
+        bCtx.strokeStyle = '#ffffff';
+        bCtx.stroke();
+
+        // Star Highlight Ring
+        if (sp.type === SPACE_TYPES.STAR) {
+          bCtx.beginPath();
+          bCtx.arc(sp.x, sp.y, radius + 6, 0, Math.PI * 2);
+          bCtx.strokeStyle = '#facc15';
+          bCtx.lineWidth = 3.5;
+          bCtx.setLineDash([4, 4]);
+          bCtx.stroke();
+        }
+
+        // Icon inside Space
+        bCtx.font = '14px Arial';
+        bCtx.textAlign = 'center';
+        bCtx.textBaseline = 'middle';
+        bCtx.fillText(sp.type.icon, sp.x, sp.y + 1);
+
+        bCtx.restore();
+      });
+
+      // Render Player Pawns on Board
+      gameState.players.forEach((player, pIdx) => {
+        const currentSpace = gameState.spaces[player.currentSpaceIdx];
+        if (!currentSpace) return;
+
+        // Offset multi-pawns on same tile
+        const offsetAngle = (pIdx / gameState.players.length) * Math.PI * 2;
+        const offsetDist = gameState.players.filter(p => p.currentSpaceIdx === player.currentSpaceIdx).length > 1 ? 12 : 0;
+        
+        let targetX = currentSpace.x + Math.cos(offsetAngle) * offsetDist;
+        let targetY = currentSpace.y + Math.sin(offsetAngle) * offsetDist;
+
+        if (player.isHopping) {
+          targetY -= player.hopOffset || 0;
+        }
+
+        bCtx.save();
+        // Pawn shadow
+        bCtx.beginPath();
+        bCtx.ellipse(targetX, targetY + 13, 10, 5, 0, 0, Math.PI * 2);
+        bCtx.fillStyle = 'rgba(0,0,0,0.3)';
+        bCtx.fill();
+
+        // Pawn Pin Body
+        bCtx.beginPath();
+        bCtx.arc(targetX, targetY - 4, 12, 0, Math.PI * 2);
+        bCtx.fillStyle = player.color;
+        bCtx.fill();
+        bCtx.lineWidth = 2.5;
+        bCtx.strokeStyle = '#ffffff';
+        bCtx.stroke();
+
+        // Active Player Turn Pointer
+        if (pIdx === gameState.currentPlayerIdx) {
+          bCtx.fillStyle = '#facc15';
+          bCtx.font = '14px Fredoka';
+          bCtx.textAlign = 'center';
+          bCtx.fillText('▼', targetX, targetY - 20);
+        }
+
+        // Player Initial
+        bCtx.fillStyle = '#ffffff';
+        bCtx.font = 'bold 11px Fredoka';
+        bCtx.textAlign = 'center';
+        bCtx.textBaseline = 'middle';
+        bCtx.fillText(player.name.substring(0, 1), targetX, targetY - 4);
+
+        bCtx.restore();
+      });
+    }
+
+    const setupModal = document.getElementById('setupModal');
+    const setupPlayersList = document.getElementById('setupPlayersList');
+    const startGameBtn = document.getElementById('startGameBtn');
+    const playersGrid = document.getElementById('playersGrid');
+    const activePlayerName = document.getElementById('activePlayerName');
+    const roundCounter = document.getElementById('roundCounter');
+    const maxRoundsLabel = document.getElementById('maxRoundsLabel');
+    const toast = document.getElementById('boardActionToast');
+    const activeBuffPill = document.getElementById('activeBuffPill');
+
+    let selectedPlayerCount = 4;
+
+    function renderSetupPlayerRows() {
+      setupPlayersList.innerHTML = '';
+      for (let i = 0; i < selectedPlayerCount; i++) {
+        const avatar = PIRATE_AVATARS[i];
+        const defaultIsCpu = i > 0;
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between p-2.5 rounded-2xl border-2 border-amber-200 bg-white/90';
+        row.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <span class="w-8 h-8 rounded-full flex items-center justify-center text-white shadow font-black text-sm" style="background-color: ${avatar.color}">
+              <i class="fa-solid ${avatar.icon}"></i>
+            </span>
+            <input type="text" id="pname_${i}" value="${avatar.name}" maxlength="12" 
+              class="font-black text-amber-950 bg-amber-50 border border-amber-300 rounded-lg px-2.5 py-1 text-xs sm:text-sm w-32 focus:outline-amber-600" />
+          </div>
+          <label class="flex items-center gap-1.5 cursor-pointer font-bold text-xs text-amber-950">
+            <input type="checkbox" id="pcpu_${i}" ${defaultIsCpu ? 'checked' : ''} class="w-4 h-4 text-amber-600 rounded">
+            <span>CPU Bot</span>
+          </label>
+        `;
+        setupPlayersList.appendChild(row);
+      }
+    }
+
+    document.querySelectorAll('.player-count-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        sound.click();
+        document.querySelectorAll('.player-count-btn').forEach(b => {
+          b.className = 'player-count-btn wii-btn py-2 rounded-xl font-black text-sm border-2 border-amber-300 bg-white';
+        });
+        btn.className = 'player-count-btn wii-btn py-2 rounded-xl font-black text-sm border-2 border-amber-700 bg-amber-700 text-white';
+        selectedPlayerCount = parseInt(btn.dataset.count);
+        renderSetupPlayerRows();
+      });
+    });
+
+    function showToast(message, duration = 2400) {
+      toast.innerHTML = message;
+      toast.style.opacity = '1';
+      toast.style.transform = 'translate(-50%, 0)';
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translate(-50%, -10px)';
+      }, duration);
+    }
+
+    function updateScorecardsUI() {
+      playersGrid.innerHTML = '';
+      gameState.players.forEach((p, idx) => {
+        const isCurrent = idx === gameState.currentPlayerIdx;
+        const card = document.createElement('div');
+        card.className = `p-2.5 sm:p-3 rounded-2xl transition-all duration-300 border-2 ${
+          isCurrent ? 'bg-amber-100 shadow-xl scale-[1.02] border-amber-500 ring-2 ring-amber-300' : 'bg-white/90 shadow border-amber-200'
+        } flex flex-col justify-between`;
+
+        // Render Inventory Mini-Badges
+        let itemsHtml = p.items.length === 0 ? '<span class="text-[10px] text-slate-400 font-bold">No Items</span>' : '';
+        p.items.forEach(it => {
+          itemsHtml += `<span class="px-1.5 py-0.5 rounded bg-amber-200 text-amber-950 text-[10px] font-black border border-amber-400">${it.name.split(' ')[0]}</span>`;
+        });
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between mb-1.5">
+            <div class="flex items-center gap-1.5">
+              <span class="w-6 h-6 rounded-lg flex items-center justify-center text-white text-[11px] font-black shadow" style="background-color: ${p.color}">
+                <i class="fa-solid ${p.icon}"></i>
+              </span>
+              <div>
+                <h4 class="font-black text-amber-950 text-xs sm:text-sm leading-tight truncate max-w-[90px]">${p.name}</h4>
+                <span class="text-[9px] font-bold uppercase ${p.isCpu ? 'text-indigo-600 bg-indigo-50' : 'text-emerald-700 bg-emerald-50'} px-1 py-0.2 rounded">
+                  ${p.isCpu ? 'CPU Bot' : 'Human'}
+                </span>
+              </div>
+            </div>
+            ${isCurrent ? '<span class="text-[10px] bg-amber-600 text-white font-black px-1.5 py-0.5 rounded-full animate-pulse">TURN</span>' : ''}
+          </div>
+          <div class="flex items-center justify-between bg-amber-50/80 p-1.5 rounded-xl text-xs sm:text-sm font-black border border-amber-200 mb-1.5">
+            <div class="flex items-center gap-1 text-amber-950">
+              <span>🪙</span>
+              <span>${p.coins}</span>
+            </div>
+            <div class="flex items-center gap-1 text-yellow-600">
+              <span>⭐</span>
+              <span>${p.stars}</span>
+            </div>
+          </div>
+          <!-- Inventory display -->
+          <div class="flex items-center gap-1 flex-wrap">
+            ${itemsHtml}
+          </div>
+        `;
+        playersGrid.appendChild(card);
+      });
+
+      const curPlayer = gameState.players[gameState.currentPlayerIdx];
+      if (curPlayer) {
+        activePlayerName.textContent = `${curPlayer.name}'s Turn`;
+        document.getElementById('turnBadge').style.backgroundColor = curPlayer.color;
+      }
+      roundCounter.textContent = gameState.round;
+      maxRoundsLabel.textContent = gameState.maxRounds;
+
+      // Update buff pill
+      if (gameState.activeItemBuff) {
+        activeBuffPill.classList.remove('hidden');
+        activeBuffPill.textContent = gameState.activeItemBuff === 'triple_dice' ? '👑 Golden Triple Dice Active!' : '🎲 Double Dice Active!';
+      } else {
+        activeBuffPill.classList.add('hidden');
+      }
+    }
+
+    const itemBagModal = document.getElementById('itemBagModal');
+    const satchelItemsList = document.getElementById('satchelItemsList');
+    const openItemBagBtn = document.getElementById('openItemBagBtn');
+    const closeItemBagBtn = document.getElementById('closeItemBagBtn');
+
+    openItemBagBtn.addEventListener('click', () => {
+      const cur = gameState.players[gameState.currentPlayerIdx];
+      if (!cur || cur.isCpu || gameState.isRolling || gameState.isMoving) return;
+      openSatchelModal(cur);
+    });
+
+    closeItemBagBtn.addEventListener('click', () => {
+      itemBagModal.classList.add('hidden');
+      itemBagModal.classList.remove('flex');
+    });
+
+    function openSatchelModal(player) {
+      sound.click();
+      satchelItemsList.innerHTML = '';
+      if (player.items.length === 0) {
+        satchelItemsList.innerHTML = '<p class="text-sm font-bold text-amber-800 text-center py-4">Your satchel is empty! Visit the Quartermaster.</p>';
+      } else {
+        player.items.forEach((item, idx) => {
+          const itemRow = document.createElement('div');
+          itemRow.className = 'flex items-center justify-between p-2.5 rounded-xl border-2 border-purple-200 bg-white hover:bg-purple-50';
+          itemRow.innerHTML = `
+            <div>
+              <h5 class="font-black text-amber-950 text-sm">${item.name}</h5>
+              <p class="text-[11px] font-bold text-slate-500">${item.desc}</p>
+            </div>
+            <button class="wii-btn bg-purple-600 hover:bg-purple-700 text-white font-black text-xs px-3 py-1.5 rounded-lg use-item-btn" data-idx="${idx}">
+              USE
+            </button>
+          `;
+          satchelItemsList.appendChild(itemRow);
+        });
+
+        satchelItemsList.querySelectorAll('.use-item-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const itemIdx = parseInt(e.target.dataset.idx);
+            useItem(player, itemIdx);
+            itemBagModal.classList.add('hidden');
+            itemBagModal.classList.remove('flex');
+          });
+        });
+      }
+
+      itemBagModal.classList.remove('hidden');
+      itemBagModal.classList.add('flex');
+    }
+
+    function useItem(player, itemIndex) {
+      const item = player.items.splice(itemIndex, 1)[0];
+      sound.fanfare();
+      showToast(`✨ ${player.name} used <b>${item.name}</b>!`);
+
+      if (item.id === 'double_dice') {
+        gameState.activeItemBuff = 'double_dice';
+        document.getElementById('diceStage2').classList.remove('hidden');
+      } else if (item.id === 'triple_dice') {
+        gameState.activeItemBuff = 'triple_dice';
+        document.getElementById('diceStage2').classList.remove('hidden');
+      } else if (item.id === 'swap_hook') {
+        const others = gameState.players.filter(p => p !== player);
+        const target = others[Math.floor(Math.random() * others.length)];
+        const tmp = player.currentSpaceIdx;
+        player.currentSpaceIdx = target.currentSpaceIdx;
+        target.currentSpaceIdx = tmp;
+        showToast(`🪝 Grappling Hook swapped ${player.name} & ${target.name}'s spaces!`);
+        renderBoard();
+      } else if (item.id === 'plunder_glove') {
+        const leader = [...gameState.players].sort((a,b) => b.coins - a.coins)[0];
+        if (leader && leader !== player) {
+          const stolen = Math.min(leader.coins, 5);
+          leader.coins -= stolen;
+          player.coins += stolen;
+          sound.doubloon();
+          showToast(`🧤 Plunder Glove stole ${stolen} doubloons from ${leader.name}!`);
+        } else {
+          showToast(`🧤 Plundered 3 wild doubloons from sea chests!`);
+          player.coins += 3;
+        }
+      }
+      updateScorecardsUI();
+    }
+
+    // Pirate Item Shop
+    const shopModal = document.getElementById('shopModal');
+    const shopItemsList = document.getElementById('shopItemsList');
+    const closeShopBtn = document.getElementById('closeShopBtn');
+    const shopPlayerCoins = document.getElementById('shopPlayerCoins');
+
+    function promptShop(player) {
+      return new Promise((resolve) => {
+        if (player.isCpu) {
+          // CPU automatically buys a random affordable item if inventory has space
+          if (player.items.length < 3) {
+            const affordable = PIRATE_ITEMS.filter(it => it.cost <= player.coins);
+            if (affordable.length > 0) {
+              const buyItem = affordable[Math.floor(Math.random() * affordable.length)];
+              player.coins -= buyItem.cost;
+              player.items.push(buyItem);
+              sound.doubloon();
+              showToast(`🦜 ${player.name} (CPU) bought ${buyItem.name} at the Shop!`);
+            }
+          }
+          setTimeout(resolve, 1400);
+          return;
+        }
+
+        shopPlayerCoins.textContent = player.coins;
+        shopItemsList.innerHTML = '';
+
+        PIRATE_ITEMS.forEach(it => {
+          const canAfford = player.coins >= it.cost && player.items.length < 3;
+          const row = document.createElement('div');
+          row.className = 'flex items-center justify-between p-2.5 rounded-2xl border-2 border-amber-300 bg-white shadow-sm';
+          row.innerHTML = `
+            <div>
+              <div class="flex items-center gap-1.5">
+                <h5 class="font-black text-amber-950 text-sm">${it.name}</h5>
+                <span class="text-xs font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">🪙 ${it.cost}</span>
+              </div>
+              <p class="text-[11px] font-bold text-amber-800">${it.desc}</p>
+            </div>
+            <button class="wii-btn px-3 py-1.5 rounded-xl font-black text-xs ${canAfford ? 'bg-cyan-600 hover:bg-cyan-500 text-white' : 'bg-slate-200 text-slate-400'}" 
+              ${canAfford ? '' : 'disabled'} data-id="${it.id}">
+              BUY
+            </button>
+          `;
+          shopItemsList.appendChild(row);
+        });
+
+        shopItemsList.querySelectorAll('button:not(:disabled)').forEach(b => {
+          b.addEventListener('click', (e) => {
+            const itemId = e.target.closest('button').dataset.id;
+            const chosen = PIRATE_ITEMS.find(i => i.id === itemId);
+            if (chosen && player.coins >= chosen.cost && player.items.length < 3) {
+              player.coins -= chosen.cost;
+              player.items.push(chosen);
+              sound.doubloon();
+              shopPlayerCoins.textContent = player.coins;
+              updateScorecardsUI();
+              showToast(`Bought ${chosen.name}!`);
+              promptShop(player).then(resolve);
+            }
+          });
+        });
+
+        shopModal.classList.remove('hidden');
+        shopModal.classList.add('flex');
+
+        closeShopBtn.onclick = () => {
+          shopModal.classList.add('hidden');
+          shopModal.classList.remove('flex');
+          resolve();
+        };
+      });
+    }
+
+    const rollDiceBtn = document.getElementById('rollDiceBtn');
+    const diceCube1 = document.getElementById('diceCube1');
+    const diceCube2 = document.getElementById('diceCube2');
+    const diceStage2 = document.getElementById('diceStage2');
+    const currentActionPrompt = document.getElementById('currentActionPrompt');
+
+    function rollDiceAction() {
+      if (gameState.isRolling || gameState.isMoving || gameState.inMinigame) return;
+      sound.init();
+      gameState.isRolling = true;
+      rollDiceBtn.disabled = true;
+      openItemBagBtn.disabled = true;
+
+      diceCube1.classList.add('rolling');
+      if (gameState.activeItemBuff) diceCube2.classList.add('rolling');
+
+      let ticks = 0;
+      const rollInt = setInterval(() => {
+        sound.diceTick();
+        ticks++;
+        if (ticks > 10) {
+          clearInterval(rollInt);
+          finishDiceToss();
+        }
+      }, 65);
+    }
+
+    function finishDiceToss() {
+      const d1 = Math.floor(Math.random() * 6) + 1;
+      let d2 = 0;
+      let totalSteps = d1;
+
+      if (gameState.activeItemBuff === 'double_dice') {
+        d2 = Math.floor(Math.random() * 6) + 1;
+        totalSteps = d1 + d2;
+      } else if (gameState.activeItemBuff === 'triple_dice') {
+        d2 = Math.floor(Math.random() * 6) + 1;
+        const d3 = Math.floor(Math.random() * 6) + 1;
+        totalSteps = d1 + d2 + d3;
+      }
+
+      const cubeRotations = {
+        1: 'rotateY(0deg) rotateX(0deg)',
+        2: 'rotateY(-90deg)',
+        3: 'rotateY(-180deg)',
+        4: 'rotateY(90deg)',
+        5: 'rotateX(-90deg)',
+        6: 'rotateX(90deg)'
+      };
+
+      diceCube1.classList.remove('rolling');
+      diceCube1.style.transform = cubeRotations[d1];
+
+      if (d2 > 0) {
+        diceCube2.classList.remove('rolling');
+        diceCube2.style.transform = cubeRotations[d2];
+      }
+
+      sound.diceSlam();
+      const p = gameState.players[gameState.currentPlayerIdx];
+      showToast(`🎲 ${p.name} rolled a total of <b>${totalSteps}</b>!`);
+      currentActionPrompt.textContent = `${p.name} rolled ${totalSteps}!`;
+
+      // Clear buff
+      gameState.activeItemBuff = null;
+      setTimeout(() => {
+        diceStage2.classList.add('hidden');
+        gameState.isRolling = false;
+        hopPawnMovement(p, totalSteps);
+      }, 750);
+    }
+
+    rollDiceBtn.addEventListener('click', rollDiceAction);
+
+    // Hop along track with Fork branching logic
+    async function hopPawnMovement(player, steps) {
+      gameState.isMoving = true;
+
+      for (let s = 1; s <= steps; s++) {
+        const curSpace = gameState.spaces[player.currentSpaceIdx];
+
+        // Check if current space is a Fork Decision!
+        if (curSpace.type === SPACE_TYPES.FORK && curSpace.next.length > 1) {
+          const chosenBranchIdx = await promptBranchChoice(player);
+          player.currentSpaceIdx = chosenBranchIdx;
+        } else {
+          // Standard single path forward
+          player.currentSpaceIdx = curSpace.next[0];
+        }
+
+        // Animate Hop
+        await new Promise((resolve) => {
+          player.isHopping = true;
+          player.hopOffset = 0;
+          sound.hop();
+
+          const hopTime = 190;
+          const startTime = performance.now();
+
+          function anim(now) {
+            const elapsed = now - startTime;
+            const progress = Math.min(1, elapsed / hopTime);
+            player.hopOffset = Math.sin(progress * Math.PI) * 22;
+            renderBoard();
+
+            if (progress < 1) {
+              requestAnimationFrame(anim);
+            } else {
+              player.isHopping = false;
+              player.hopOffset = 0;
+              renderBoard();
+              setTimeout(resolve, 70);
+            }
+          }
+          requestAnimationFrame(anim);
+        });
+
+        // Pass-through Star purchase check
+        if (player.currentSpaceIdx === gameState.starSpaceIdx && s < steps) {
+          await promptStarPurchase(player);
+        }
+      }
+
+      gameState.isMoving = false;
+      handleTileLand(player);
+    }
+
+    // Branching Path Fork Prompt
+    function promptBranchChoice(player) {
+      return new Promise((resolve) => {
+        if (player.isCpu) {
+          // CPU bot logic: If low coins, go North shortcut (6), else South cove (10)
+          const cpuPick = player.coins < 15 ? 6 : 10;
+          showToast(`🧭 ${player.name} (CPU) chooses the ${cpuPick === 6 ? 'North Skull Path' : 'South Cove'}!`);
+          setTimeout(() => resolve(cpuPick), 1000);
+          return;
+        }
+
+        const forkModal = document.getElementById('forkModal');
+        const northBtn = document.getElementById('choosePathNorthBtn');
+        const southBtn = document.getElementById('choosePathSouthBtn');
+
+        forkModal.classList.remove('hidden');
+        forkModal.classList.add('flex');
+
+        northBtn.onclick = () => {
+          forkModal.classList.add('hidden');
+          forkModal.classList.remove('flex');
+          resolve(6); // North Skull Path index
+        };
+        southBtn.onclick = () => {
+          forkModal.classList.add('hidden');
+          forkModal.classList.remove('flex');
+          resolve(10); // South Cove Path index
+        };
+      });
+    }
+
+    async function handleTileLand(player) {
+      const tile = gameState.spaces[player.currentSpaceIdx];
+
+      switch (tile.type) {
+        case SPACE_TYPES.BLUE:
+          player.coins += 3;
+          sound.doubloon();
+          showToast(`🪙 ${player.name} landed on Blue: +3 Doubloons!`);
+          updateScorecardsUI();
+          finishTurn();
+          break;
+
+        case SPACE_TYPES.RED:
+          player.coins = Math.max(0, player.coins - 3);
+          sound.hazard();
+          showToast(`🔻 ${player.name} landed on Red: -3 Doubloons!`);
+          updateScorecardsUI();
+          finishTurn();
+          break;
+
+        case SPACE_TYPES.SHOP:
+          showToast(`🦜 Welcome to the Quartermaster's Shack!`);
+          await promptShop(player);
+          finishTurn();
+          break;
+
+        case SPACE_TYPES.STAR:
+          await promptStarPurchase(player);
+          finishTurn();
+          break;
+
+        case SPACE_TYPES.EVENT:
+          // Track for Happening Bonus Star
+          gameState.stats.eventLandings[player.name] = (gameState.stats.eventLandings[player.name] || 0) + 1;
+          await triggerLuckyWheel(player);
+          finishTurn();
+          break;
+
+        case SPACE_TYPES.BLACKBEARD:
+          await triggerBlackbeardWrath(player);
+          finishTurn();
+          break;
+
+        default:
+          finishTurn();
+      }
+    }
+
+    // Moving Star Purchase Functionality
+    function promptStarPurchase(player) {
+      return new Promise((resolve) => {
+        if (player.coins < 20) {
+          showToast(`⭐ Treasure Star Chest! You need 20 Doubloons (You have ${player.coins})!`);
+          setTimeout(() => resolve(false), 1300);
+          return;
+        }
+
+        if (player.isCpu) {
+          player.coins -= 20;
+          player.stars += 1;
+          sound.starFanfare();
+          relocateStarChest();
+          updateScorecardsUI();
+          showToast(`⭐ ${player.name} (CPU) bought a TREASURE STAR! 🎉`, 2200);
+          setTimeout(() => resolve(true), 1600);
+          return;
+        }
+
+        const modal = document.getElementById('starModal');
+        const yesBtn = document.getElementById('buyStarYesBtn');
+        const noBtn = document.getElementById('buyStarNoBtn');
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        function cleanUp() {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+          yesBtn.replaceWith(yesBtn.cloneNode(true));
+          noBtn.replaceWith(noBtn.cloneNode(true));
+        }
+
+        document.getElementById('buyStarYesBtn').onclick = () => {
+          cleanUp();
+          player.coins -= 20;
+          player.stars += 1;
+          sound.starFanfare();
+          relocateStarChest();
+          updateScorecardsUI();
+          showToast(`⭐ ${player.name} bought a Power Star! The chest relocated!`);
+          resolve(true);
+        };
+
+        document.getElementById('buyStarNoBtn').onclick = () => {
+          cleanUp();
+          resolve(false);
+        };
+      });
+    }
+
+    function relocateStarChest() {
+      // Find candidate spaces that aren't Start, Fork, or current star
+      const validIndices = [2, 4, 8, 12, 15, 18, 21, 23].filter(idx => idx !== gameState.starSpaceIdx);
+      const newIdx = validIndices[Math.floor(Math.random() * validIndices.length)];
+      
+      // Demote old space back to blue, promote new space to Star
+      gameState.spaces[gameState.starSpaceIdx].type = SPACE_TYPES.BLUE;
+      gameState.spaces[newIdx].type = SPACE_TYPES.STAR;
+      gameState.starSpaceIdx = newIdx;
+      renderBoard();
+    }
+
+    // Captain Blackbeard Mischief Roulette
+    function triggerBlackbeardWrath(player) {
+      return new Promise((resolve) => {
+        const modal = document.getElementById('blackbeardModal');
+        const rouletteText = document.getElementById('blackbeardRouletteText');
+        const spinBtn = document.getElementById('blackbeardSpinBtn');
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        const punishments = [
+          { text: '⚖️ Doubloon Revolution (All coins pooled and divided equally!)', execute: () => {
+            const total = gameState.players.reduce((sum, p) => sum + p.coins, 0);
+            const equalShare = Math.floor(total / gameState.players.length);
+            gameState.players.forEach(p => p.coins = equalShare);
+          }},
+          { text: '🌊 Walk the Plank! Lose 8 Doubloons!', execute: () => {
+            player.coins = Math.max(0, player.coins - 8);
+          }},
+          { text: '🌪️ Maelstrom Shuffle! Everyone swaps positions!', execute: () => {
+            const allIdx = gameState.players.map(p => p.currentSpaceIdx);
+            allIdx.sort(() => Math.random() - 0.5);
+            gameState.players.forEach((p, i) => p.currentSpaceIdx = allIdx[i]);
+            renderBoard();
+          }}
+        ];
+
+        function doSpin() {
+          spinBtn.disabled = true;
+          let counter = 0;
+          const cycle = setInterval(() => {
+            sound.diceTick();
+            rouletteText.textContent = punishments[counter % punishments.length].text;
+            counter++;
+            if (counter > 12) {
+              clearInterval(cycle);
+              sound.cannon();
+              const chosen = punishments[Math.floor(Math.random() * punishments.length)];
+              rouletteText.textContent = chosen.text;
+              chosen.execute();
+              updateScorecardsUI();
+              setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                spinBtn.disabled = false;
+                resolve();
+              }, 2600);
+            }
+          }, 90);
+        }
+
+        if (player.isCpu) {
+          setTimeout(doSpin, 800);
+        } else {
+          spinBtn.onclick = doSpin;
+        }
+      });
+    }
+
+    // Fortune Compass Wheel
+    function triggerLuckyWheel(player) {
+      return new Promise((resolve) => {
+        const modal = document.getElementById('eventWheelModal');
+        const wheelCanvas = document.getElementById('wheelCanvas');
+        const wCtx = wheelCanvas.getContext('2d');
+        const spinBtn = document.getElementById('spinWheelBtn');
+        const outcomeText = document.getElementById('wheelOutcomeText');
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        outcomeText.textContent = `${player.name}'s turn to spin!`;
+
+        const slices = [
+          { label: '+5 Doubloons 🪙', action: (p) => { p.coins += 5; sound.doubloon(); } },
+          { label: '+10 Doubloons 💰', action: (p) => { p.coins += 10; sound.fanfare(); } },
+          { label: 'Free Item 🎒', action: (p) => { 
+            if (p.items.length < 3) p.items.push(PIRATE_ITEMS[0]);
+          }},
+          { label: '+1 Star ⭐', action: (p) => { p.stars += 1; sound.starFanfare(); } },
+          { label: 'Treasure Warp ⛵', action: (p) => { 
+            p.currentSpaceIdx = gameState.starSpaceIdx;
+            renderBoard();
+          }}
+        ];
+
+        let curRot = 0;
+        function drawWheel(rot) {
+          const num = slices.length;
+          const arc = (Math.PI * 2) / num;
+          wCtx.clearRect(0, 0, 260, 260);
+
+          slices.forEach((slice, i) => {
+            const startAngle = rot + i * arc;
+            wCtx.beginPath();
+            wCtx.fillStyle = ['#38bdf8', '#fbbf24', '#f472b6', '#34d399', '#a78bfa'][i % 5];
+            wCtx.moveTo(130, 130);
+            wCtx.arc(130, 130, 125, startAngle, startAngle + arc);
+            wCtx.fill();
+            wCtx.strokeStyle = '#ffffff';
+            wCtx.lineWidth = 3;
+            wCtx.stroke();
+
+            wCtx.save();
+            wCtx.translate(130, 130);
+            wCtx.rotate(startAngle + arc / 2);
+            wCtx.textAlign = 'right';
+            wCtx.fillStyle = '#ffffff';
+            wCtx.font = 'bold 12px Fredoka';
+            wCtx.fillText(slice.label, 115, 5);
+            wCtx.restore();
+          });
+        }
+        drawWheel(0);
+
+        function doSpin() {
+          spinBtn.disabled = true;
+          let speed = 0.38 + Math.random() * 0.28;
+          let friction = 0.984;
+
+          const spinLoop = () => {
+            curRot += speed;
+            speed *= friction;
+            drawWheel(curRot);
+            sound.diceTick();
+
+            if (speed > 0.005) {
+              requestAnimationFrame(spinLoop);
+            } else {
+              const normalized = ((-Math.PI / 2 - curRot) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+              const arc = (Math.PI * 2) / slices.length;
+              const winIdx = Math.floor(normalized / arc);
+              const prize = slices[winIdx];
+
+              outcomeText.innerHTML = `🎉 Won: <b>${prize.label}</b>!`;
+              prize.action(player);
+              updateScorecardsUI();
+
+              setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                spinBtn.disabled = false;
+                resolve();
+              }, 2100);
+            }
+          };
+          spinLoop();
+        }
+
+        if (player.isCpu) {
+          setTimeout(doSpin, 700);
+        } else {
+          spinBtn.onclick = doSpin;
+        }
+      });
+    }
+
+    function finishTurn() {
+      // Update Peak coins stat for end-game bonus
+      gameState.players.forEach(p => {
+        if (!gameState.stats.peakCoins[p.name] || p.coins > gameState.stats.peakCoins[p.name]) {
+          gameState.stats.peakCoins[p.name] = p.coins;
+        }
+      });
+
+      // Advance turn
+      gameState.currentPlayerIdx++;
+
+      // Full Round completed?
+      if (gameState.currentPlayerIdx >= gameState.players.length) {
+        gameState.currentPlayerIdx = 0;
+        updateScorecardsUI();
+        setTimeout(triggerEndRoundMinigame, 600);
+        return;
+      }
+
+      updateScorecardsUI();
+      rollDiceBtn.disabled = false;
+      openItemBagBtn.disabled = false;
+      const nextPlayer = gameState.players[gameState.currentPlayerIdx];
+      currentActionPrompt.textContent = `${nextPlayer.name}'s turn to roll!`;
+
+      // Auto trigger CPU turn
+      if (nextPlayer.isCpu) {
+        // CPU bot satchel item usage logic
+        if (nextPlayer.items.length > 0 && Math.random() < 0.6) {
+          setTimeout(() => {
+            useItem(nextPlayer, 0);
+            setTimeout(rollDiceAction, 900);
+          }, 700);
+        } else {
+          setTimeout(rollDiceAction, 1000);
+        }
+      }
+    }
+
+    const minigameModal = document.getElementById('minigameModal');
+    const mgCanvas = document.getElementById('mgCanvas');
+    const mgCtx = mgCanvas.getContext('2d');
+    const mgCountdownOverlay = document.getElementById('mgCountdownOverlay');
+    const mgCountdownText = document.getElementById('mgCountdownText');
+    const mgInteractiveOverlay = document.getElementById('mgInteractiveOverlay');
+    const mgActionTapBtn = document.getElementById('mgActionTapBtn');
+    const mgScoresBar = document.getElementById('mgScoresBar');
+    const mgTitle = document.getElementById('mgTitle');
+    const mgInstructions = document.getElementById('mgInstructions');
+    const mgTimerBadge = document.getElementById('mgTimerBadge');
+    const mgTimerText = document.getElementById('mgTimerText');
+
+    let mgAnimationId = null;
+
+    async function triggerEndRoundMinigame() {
+      gameState.inMinigame = true;
+      minigameModal.classList.remove('hidden');
+      minigameModal.classList.add('flex');
+
+      const mgRoster = [
+        runDoubloonCatchRain,
+        runQuickDrawCannons,
+        runRollingBarrelsJump,
+        runBumperShipsArena
+      ];
+
+      const selectedMg = mgRoster[(gameState.round - 1) % mgRoster.length];
+
+      mgCountdownOverlay.classList.remove('hidden');
+      mgCountdownText.textContent = 'READY?';
+      await new Promise(r => setTimeout(r, 900));
+      mgCountdownText.textContent = 'SCRAMBLE!';
+      sound.fanfare();
+      await new Promise(r => setTimeout(r, 600));
+      mgCountdownOverlay.classList.add('hidden');
+
+      const winnerPlayer = await selectedMg();
+
+      if (winnerPlayer) {
+        gameState.stats.minigamesWon[winnerPlayer.name] = (gameState.stats.minigamesWon[winnerPlayer.name] || 0) + 1;
+      }
+
+      minigameModal.classList.add('hidden');
+      minigameModal.classList.remove('flex');
+      gameState.inMinigame = false;
+
+      gameState.round++;
+      if (gameState.round > gameState.maxRounds) {
+        concludeGrandParty();
+      } else {
+        updateScorecardsUI();
+        const nextPlayer = gameState.players[gameState.currentPlayerIdx];
+        currentActionPrompt.textContent = `Round ${gameState.round}! ${nextPlayer.name}'s turn.`;
+        rollDiceBtn.disabled = false;
+        openItemBagBtn.disabled = false;
+        if (nextPlayer.isCpu) {
+          setTimeout(rollDiceAction, 1100);
+        }
+      }
+    }
+
+    // Mini-Game 1: Doubloon Rain & Bomb Dodger
+    function runDoubloonCatchRain() {
+      return new Promise((resolve) => {
+        mgTitle.textContent = '🪙 Pirate Doubloon Rain!';
+        mgInstructions.innerHTML = 'Catch falling <b>Doubloons (+1)</b> and dodge <b>Cannon Bombs (-2)</b> using mouse or swipe!';
+        mgInteractiveOverlay.classList.add('hidden');
+        mgTimerBadge.classList.remove('hidden');
+
+        const cw = (mgCanvas.width = 640);
+        const ch = (mgCanvas.height = 360);
+
+        const baskets = gameState.players.map((p, idx) => ({
+          player: p,
+          x: (cw / (gameState.players.length + 1)) * (idx + 1),
+          y: ch - 35,
+          targetX: (cw / (gameState.players.length + 1)) * (idx + 1),
+          score: 0
+        }));
+
+        let items = [];
+        let timeLeft = 12;
+        mgTimerText.textContent = timeLeft + 's';
+
+        const moveHandler = (e) => {
+          const rect = mgCanvas.getBoundingClientRect();
+          const scale = cw / rect.width;
+          const human = baskets.find(b => !b.player.isCpu);
+          if (human) {
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            human.targetX = Math.max(25, Math.min(cw - 25, (clientX - rect.left) * scale));
+          }
+        };
+
+        window.addEventListener('mousemove', moveHandler);
+        window.addEventListener('touchmove', moveHandler);
+
+        const timerInt = setInterval(() => {
+          timeLeft--;
+          mgTimerText.textContent = timeLeft + 's';
+          if (timeLeft <= 0) {
+            clearInterval(timerInt);
+            endMg();
+          }
+        }, 1000);
+
+        const spawnInt = setInterval(() => {
+          const isBomb = Math.random() < 0.3;
+          items.push({
+            x: 20 + Math.random() * (cw - 40),
+            y: -10,
+            speed: 2.8 + Math.random() * 2.2,
+            isBomb
+          });
+        }, 260);
+
+        function updateMiniHUD() {
+          mgScoresBar.innerHTML = '';
+          baskets.forEach(b => {
+            const d = document.createElement('div');
+            d.className = 'bg-amber-100 p-2 rounded-xl text-center font-bold text-xs flex items-center justify-between border border-amber-300';
+            d.innerHTML = `<span>${b.player.name}</span><span class="font-black text-amber-900">${b.score} 🪙</span>`;
+            mgScoresBar.appendChild(d);
+          });
+        }
+        updateMiniHUD();
+
+        function loop() {
+          mgCtx.fillStyle = '#0f172a';
+          mgCtx.fillRect(0, 0, cw, ch);
+
+          for (let i = items.length - 1; i >= 0; i--) {
+            const it = items[i];
+            it.y += it.speed;
+
+            mgCtx.font = '22px Arial';
+            mgCtx.textAlign = 'center';
+            mgCtx.fillText(it.isBomb ? '💣' : '🪙', it.x, it.y);
+
+            baskets.forEach(b => {
+              if (Math.abs(it.x - b.x) < 26 && Math.abs(it.y - b.y) < 20) {
+                if (it.isBomb) {
+                  b.score = Math.max(0, b.score - 2);
+                  sound.hazard();
+                } else {
+                  b.score += 1;
+                  sound.doubloon();
+                }
+                updateMiniHUD();
+                items.splice(i, 1);
+              }
+            });
+
+            if (it && it.y > ch + 20) items.splice(i, 1);
+          }
+
+          baskets.forEach(b => {
+            if (b.player.isCpu) {
+              const goodItems = items.filter(it => !it.isBomb && it.y < ch - 25);
+              if (goodItems.length > 0) {
+                const nearest = goodItems.reduce((prev, curr) => curr.y > prev.y ? curr : prev);
+                b.targetX += (nearest.x - b.targetX) * 0.08;
+              }
+            }
+            b.x += (b.targetX - b.x) * 0.2;
+
+            mgCtx.fillStyle = b.player.color;
+            mgCtx.beginPath();
+            mgCtx.roundRect(b.x - 20, b.y, 40, 16, 8);
+            mgCtx.fill();
+            mgCtx.strokeStyle = '#ffffff';
+            mgCtx.lineWidth = 2;
+            mgCtx.stroke();
+
+            mgCtx.fillStyle = '#ffffff';
+            mgCtx.font = 'bold 11px Fredoka';
+            mgCtx.fillText(b.player.name.substring(0, 3), b.x, b.y - 6);
+          });
+
+          if (timeLeft > 0) mgAnimationId = requestAnimationFrame(loop);
+        }
+        mgAnimationId = requestAnimationFrame(loop);
+
+        function endMg() {
+          clearInterval(spawnInt);
+          window.removeEventListener('mousemove', moveHandler);
+          window.removeEventListener('touchmove', moveHandler);
+          cancelAnimationFrame(mgAnimationId);
+
+          baskets.sort((a, b) => b.score - a.score);
+          const topWinner = baskets[0].player;
+          topWinner.coins += 10;
+          if (baskets[1]) baskets[1].player.coins += 5;
+
+          showToast(`🏆 ${topWinner.name} won Doubloon Rain (+10 Coins)!`);
+          updateScorecardsUI();
+          setTimeout(() => resolve(topWinner), 2000);
+        }
+      });
+    }
+
+    // Mini-Game 2: Quick-Draw Cannon Reflex
+    function runQuickDrawCannons() {
+      return new Promise((resolve) => {
+        mgTitle.textContent = '💣 Quick-Draw Cannon Reflex!';
+        mgInstructions.innerHTML = 'Hold steady... When you see <b>FIRE!</b>, click the big button faster than your rivals!';
+        mgInteractiveOverlay.classList.remove('hidden');
+        mgTimerBadge.classList.add('hidden');
+
+        const cw = (mgCanvas.width = 640);
+        const ch = (mgCanvas.height = 360);
+        mgCtx.fillStyle = '#1e1b4b';
+        mgCtx.fillRect(0, 0, cw, ch);
+
+        mgActionTapBtn.textContent = 'STEADY...';
+        mgActionTapBtn.disabled = true;
+
+        const reactionTimes = {};
+        let canShoot = false;
+        let signalTime = 0;
+
+        const delay = 2200 + Math.random() * 2600;
+        const delayTimeout = setTimeout(() => {
+          signalTime = performance.now();
+          canShoot = true;
+          sound.cannon();
+
+          mgActionTapBtn.textContent = '💥 FIRE NOW!!';
+          mgActionTapBtn.disabled = false;
+
+          gameState.players.forEach(p => {
+            if (p.isCpu) {
+              const cpuTime = 320 + Math.random() * 300;
+              setTimeout(() => {
+                if (!reactionTimes[p.name]) {
+                  reactionTimes[p.name] = Math.round(cpuTime);
+                  renderHUD();
+                }
+              }, cpuTime);
+            }
+          });
+        }, delay);
+
+        mgActionTapBtn.onclick = () => {
+          if (!canShoot) {
+            sound.hazard();
+            showToast('Misfire! Too early!');
+            return;
+          }
+          const human = gameState.players.find(p => !p.isCpu) || gameState.players[0];
+          if (!reactionTimes[human.name]) {
+            reactionTimes[human.name] = Math.round(performance.now() - signalTime);
+            sound.cannon();
+            renderHUD();
+          }
+        };
+
+        function renderHUD() {
+          mgScoresBar.innerHTML = '';
+          gameState.players.forEach(p => {
+            const time = reactionTimes[p.name];
+            const d = document.createElement('div');
+            d.className = 'bg-amber-100 p-2 rounded-xl text-center font-bold text-xs flex items-center justify-between border border-amber-300';
+            d.innerHTML = `<span>${p.name}</span><span class="font-black ${time ? 'text-emerald-700' : 'text-slate-400'}">${time ? time + 'ms' : '...'}</span>`;
+            mgScoresBar.appendChild(d);
+          });
+
+          if (Object.keys(reactionTimes).length >= gameState.players.length) {
+            endQuickDraw();
+          }
+        }
+        renderHUD();
+
+        function endQuickDraw() {
+          clearTimeout(delayTimeout);
+          mgActionTapBtn.disabled = true;
+
+          const sorted = Object.entries(reactionTimes).sort((a, b) => a[1] - b[1]);
+          const winner = gameState.players.find(p => p.name === sorted[0][0]);
+          winner.coins += 10;
+          showToast(`⚡ ${winner.name} fired fastest (${sorted[0][1]}ms)! +10 Doubloons!`);
+          updateScorecardsUI();
+          setTimeout(() => resolve(winner), 2200);
+        }
+      });
+    }
+
+    // Mini-Game 3: Rolling Rum Barrels Jump
+    function runRollingBarrelsJump() {
+      return new Promise((resolve) => {
+        mgTitle.textContent = '🛢️ Rolling Barrel Jump!';
+        mgInstructions.innerHTML = 'Tap Jump to leap over runaway pirate rum barrels rolling down the dock!';
+        mgInteractiveOverlay.classList.remove('hidden');
+        mgActionTapBtn.textContent = 'JUMP! ⬆️';
+        mgActionTapBtn.disabled = false;
+        mgTimerBadge.classList.remove('hidden');
+
+        const cw = (mgCanvas.width = 640);
+        const ch = (mgCanvas.height = 360);
+        const groundY = ch - 50;
+
+        let timeLeft = 12;
+        mgTimerText.textContent = timeLeft + 's';
+
+        let barrelX = -30;
+        let barrelSpeed = 5.2;
+
+        const pData = gameState.players.map((p, idx) => ({
+          player: p,
+          x: 100 + idx * 120,
+          y: groundY - 20,
+          vy: 0,
+          isJumping: false,
+          alive: true
+        }));
+
+        const timerInt = setInterval(() => {
+          timeLeft--;
+          mgTimerText.textContent = timeLeft + 's';
+          if (timeLeft <= 0) {
+            clearInterval(timerInt);
+            endBarrels();
+          }
+        }, 1000);
+
+        function doJump(d) {
+          if (!d.isJumping && d.alive) {
+            d.isJumping = true;
+            d.vy = -10.5;
+            sound.hop();
+          }
+        }
+
+        mgActionTapBtn.onclick = () => {
+          const human = pData.find(d => !d.player.isCpu);
+          if (human) doJump(human);
+        };
+
+        function loop() {
+          mgCtx.fillStyle = '#0284c7';
+          mgCtx.fillRect(0, 0, cw, ch);
+
+          // Dock Planks
+          mgCtx.fillStyle = '#78350f';
+          mgCtx.fillRect(0, groundY, cw, ch - groundY);
+
+          barrelX += barrelSpeed;
+          if (barrelX > cw + 40) {
+            barrelX = -40;
+            barrelSpeed += 0.35;
+          }
+
+          // Draw Rolling Rum Barrel
+          mgCtx.save();
+          mgCtx.fillStyle = '#92400e';
+          mgCtx.beginPath();
+          mgCtx.arc(barrelX, groundY - 14, 16, 0, Math.PI * 2);
+          mgCtx.fill();
+          mgCtx.strokeStyle = '#fef08a';
+          mgCtx.lineWidth = 3;
+          mgCtx.stroke();
+          mgCtx.restore();
+
+          // Players
+          pData.forEach(d => {
+            if (d.player.isCpu && d.alive) {
+              const dist = barrelX - d.x;
+              if (dist > -75 && dist < -25 && Math.random() < 0.94) {
+                doJump(d);
+              }
+            }
+
+            if (d.isJumping) {
+              d.y += d.vy;
+              d.vy += 0.6;
+              if (d.y >= groundY - 20) {
+                d.y = groundY - 20;
+                d.isJumping = false;
+                d.vy = 0;
+              }
+            }
+
+            if (d.alive && Math.abs(d.x - barrelX) < 18 && d.y > groundY - 30) {
+              d.alive = false;
+              sound.hazard();
+            }
+
+            mgCtx.save();
+            mgCtx.fillStyle = d.alive ? d.player.color : '#64748b';
+            mgCtx.beginPath();
+            mgCtx.arc(d.x, d.y, 14, 0, Math.PI * 2);
+            mgCtx.fill();
+            mgCtx.lineWidth = 2.5;
+            mgCtx.strokeStyle = '#ffffff';
+            mgCtx.stroke();
+            mgCtx.restore();
+          });
+
+          if (timeLeft > 0 && pData.some(d => d.alive)) {
+            mgAnimationId = requestAnimationFrame(loop);
+          } else {
+            clearInterval(timerInt);
+            endBarrels();
+          }
+        }
+        mgAnimationId = requestAnimationFrame(loop);
+
+        function endBarrels() {
+          cancelAnimationFrame(mgAnimationId);
+          mgActionTapBtn.disabled = true;
+
+          const survivors = pData.filter(d => d.alive);
+          let top = null;
+          if (survivors.length > 0) {
+            survivors.forEach(s => s.player.coins += 8);
+            top = survivors[0].player;
+            showToast(`🛢️ Survivors leaped to safety (+8 Doubloons)!`);
+          } else {
+            showToast(`All sailors took a tumble! No coins awarded!`);
+          }
+          updateScorecardsUI();
+          setTimeout(() => resolve(top), 2000);
+        }
+      });
+    }
+
+    // Mini-Game 4: Bumper Ships Lagoon Arena
+    function runBumperShipsArena() {
+      return new Promise((resolve) => {
+        mgTitle.textContent = '⛵ Bumper Ships Arena!';
+        mgInstructions.innerHTML = 'Steer your pirate boat by moving your cursor/finger! Bump rivals off the lagoon edge!';
+        mgInteractiveOverlay.classList.add('hidden');
+        mgTimerBadge.classList.remove('hidden');
+
+        const cw = (mgCanvas.width = 640);
+        const ch = (mgCanvas.height = 360);
+        const arenaRadius = 150;
+        const centerX = cw / 2;
+        const centerY = ch / 2;
+
+        let timeLeft = 14;
+        mgTimerText.textContent = timeLeft + 's';
+
+        const ships = gameState.players.map((p, idx) => {
+          const angle = (idx / gameState.players.length) * Math.PI * 2;
+          return {
+            player: p,
+            x: centerX + Math.cos(angle) * 70,
+            y: centerY + Math.sin(angle) * 70,
+            vx: 0,
+            vy: 0,
+            targetX: centerX,
+            targetY: centerY,
+            alive: true,
+            r: 16
+          };
+        });
+
+        const pointerHandler = (e) => {
+          const rect = mgCanvas.getBoundingClientRect();
+          const scaleX = cw / rect.width;
+          const scaleY = ch / rect.height;
+          const human = ships.find(s => !s.player.isCpu);
+          if (human) {
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            human.targetX = (clientX - rect.left) * scaleX;
+            human.targetY = (clientY - rect.top) * scaleY;
+          }
+        };
+
+        window.addEventListener('mousemove', pointerHandler);
+        window.addEventListener('touchmove', pointerHandler);
+
+        const timerInt = setInterval(() => {
+          timeLeft--;
+          mgTimerText.textContent = timeLeft + 's';
+          if (timeLeft <= 0) {
+            clearInterval(timerInt);
+            endBumper();
+          }
+        }, 1000);
+
+        function loop() {
+          mgCtx.fillStyle = '#0f172a';
+          mgCtx.fillRect(0, 0, cw, ch);
+
+          // Circular Ring Platform
+          mgCtx.save();
+          mgCtx.beginPath();
+          mgCtx.arc(centerX, centerY, arenaRadius, 0, Math.PI * 2);
+          mgCtx.fillStyle = '#0284c7';
+          mgCtx.fill();
+          mgCtx.lineWidth = 6;
+          mgCtx.strokeStyle = '#fef08a';
+          mgCtx.stroke();
+          mgCtx.restore();
+
+          ships.forEach(s => {
+            if (!s.alive) return;
+
+            if (s.player.isCpu) {
+              // CPU drives toward nearest alive rival to bump them
+              const targets = ships.filter(o => o !== s && o.alive);
+              if (targets.length > 0) {
+                s.targetX = targets[0].x;
+                s.targetY = targets[0].y;
+              }
+            }
+
+            s.vx += (s.targetX - s.x) * 0.02;
+            s.vy += (s.targetY - s.y) * 0.02;
+            s.vx *= 0.94;
+            s.vy *= 0.94;
+            s.x += s.vx;
+            s.y += s.vy;
+
+            // Check ring boundary
+            const distFromCenter = Math.hypot(s.x - centerX, s.y - centerY);
+            if (distFromCenter > arenaRadius) {
+              s.alive = false;
+              sound.hazard();
+            }
+          });
+
+          // Ship Collisions
+          for (let i = 0; i < ships.length; i++) {
+            for (let j = i + 1; j < ships.length; j++) {
+              const s1 = ships[i];
+              const s2 = ships[j];
+              if (!s1.alive || !s2.alive) continue;
+
+              const dx = s2.x - s1.x;
+              const dy = s2.y - s1.y;
+              const dist = Math.hypot(dx, dy);
+              if (dist < s1.r + s2.r) {
+                sound.cannon();
+                const angle = Math.atan2(dy, dx);
+                const push = 7;
+                s1.vx -= Math.cos(angle) * push;
+                s1.vy -= Math.sin(angle) * push;
+                s2.vx += Math.cos(angle) * push;
+                s2.vy += Math.sin(angle) * push;
+              }
+            }
+          }
+
+          // Draw Ships
+          ships.forEach(s => {
+            if (!s.alive) return;
+            mgCtx.save();
+            mgCtx.fillStyle = s.player.color;
+            mgCtx.beginPath();
+            mgCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            mgCtx.fill();
+            mgCtx.lineWidth = 2.5;
+            mgCtx.strokeStyle = '#ffffff';
+            mgCtx.stroke();
+
+            mgCtx.fillStyle = '#ffffff';
+            mgCtx.font = 'bold 11px Fredoka';
+            mgCtx.textAlign = 'center';
+            mgCtx.fillText(s.player.name.substring(0, 3), s.x, s.y - 18);
+            mgCtx.restore();
+          });
+
+          if (timeLeft > 0 && ships.filter(s => s.alive).length > 1) {
+            mgAnimationId = requestAnimationFrame(loop);
+          } else {
+            clearInterval(timerInt);
+            endBumper();
+          }
+        }
+        mgAnimationId = requestAnimationFrame(loop);
+
+        function endBumper() {
+          window.removeEventListener('mousemove', pointerHandler);
+          window.removeEventListener('touchmove', pointerHandler);
+          cancelAnimationFrame(mgAnimationId);
+
+          const survivors = ships.filter(s => s.alive);
+          let topWinner = null;
+          if (survivors.length > 0) {
+            topWinner = survivors[0].player;
+            topWinner.coins += 10;
+            showToast(`⛵ ${topWinner.name} ruled the Bumper Lagoon! +10 Doubloons!`);
+          } else {
+            showToast('All ships sank to Davy Jones\' Locker!');
+          }
+          updateScorecardsUI();
+          setTimeout(() => resolve(topWinner), 2000);
+        }
+      });
+    }
+
+    const winnerModal = document.getElementById('winnerModal');
+    const winnerNameHeading = document.getElementById('winnerNameHeading');
+    const podiumList = document.getElementById('podiumList');
+    const confettiCanvas = document.getElementById('confettiCanvas');
+    let confettiActive = false;
+
+    function awardSecretBonusStars() {
+      // 1. Minigame Star
+      let maxMg = -1;
+      let mgWinner = gameState.players[0];
+      gameState.players.forEach(p => {
+        const wins = gameState.stats.minigamesWon[p.name] || 0;
+        if (wins > maxMg) { maxMg = wins; mgWinner = p; }
+      });
+      mgWinner.stars += 1;
+      document.getElementById('mgStarWinner').textContent = `${mgWinner.name} (${maxMg} Wins) +⭐`;
+
+      // 2. Coin Hoarder Star
+      let maxCoins = -1;
+      let coinWinner = gameState.players[0];
+      gameState.players.forEach(p => {
+        const peak = gameState.stats.peakCoins[p.name] || p.coins;
+        if (peak > maxCoins) { maxCoins = peak; coinWinner = p; }
+      });
+      coinWinner.stars += 1;
+      document.getElementById('coinStarWinner').textContent = `${coinWinner.name} (${maxCoins} 🪙) +⭐`;
+
+      // 3. Happening Star
+      let maxEvents = -1;
+      let happeningWinner = gameState.players[0];
+      gameState.players.forEach(p => {
+        const ev = gameState.stats.eventLandings[p.name] || 0;
+        if (ev > maxEvents) { maxEvents = ev; happeningWinner = p; }
+      });
+      happeningWinner.stars += 1;
+      document.getElementById('happeningStarWinner').textContent = `${happeningWinner.name} (${maxEvents} Events) +⭐`;
+    }
+
+    function concludeGrandParty() {
+      awardSecretBonusStars();
+      sound.fanfare();
+
+      const ranking = [...gameState.players].sort((a, b) => {
+        if (b.stars !== a.stars) return b.stars - a.stars;
+        return b.coins - a.coins;
+      });
+
+      const champion = ranking[0];
+      winnerModal.classList.remove('hidden');
+      winnerModal.classList.add('flex');
+      winnerNameHeading.textContent = `${champion.name} WINS!`;
+
+      podiumList.innerHTML = '';
+      ranking.forEach((p, idx) => {
+        const medal = ['🥇 1st Place', '🥈 2nd Place', '🥉 3rd Place', '4th Place'][idx];
+        const row = document.createElement('div');
+        row.className = `flex items-center justify-between p-3 rounded-2xl border-2 ${
+          idx === 0 ? 'bg-amber-100 border-yellow-400 font-black' : 'bg-white/90 border-amber-200 font-bold'
+        }`;
+        row.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="text-sm sm:text-base">${medal}</span>
+            <span class="w-4 h-4 rounded-full inline-block" style="background:${p.color}"></span>
+            <span class="text-amber-950">${p.name}</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-amber-800">${p.coins} 🪙</span>
+            <span class="text-yellow-600 font-black text-base">${p.stars} ⭐</span>
+          </div>
+        `;
+        podiumList.appendChild(row);
+      });
+
+      startConfettiCannon();
+    }
+
+    function startConfettiCannon() {
+      const cCtx = confettiCanvas.getContext('2d');
+      confettiCanvas.width = confettiCanvas.parentElement.clientWidth;
+      confettiCanvas.height = confettiCanvas.parentElement.clientHeight;
+
+      const particles = [];
+      for (let i = 0; i < 75; i++) {
+        particles.push({
+          x: Math.random() * confettiCanvas.width,
+          y: -20 - Math.random() * 200,
+          vx: (Math.random() - 0.5) * 4,
+          vy: 2 + Math.random() * 4,
+          color: ['#f59e0b', '#3b82f6', '#ec4899', '#10b981', '#a855f7', '#fbbf24'][Math.floor(Math.random() * 6)],
+          size: 6 + Math.random() * 6
+        });
+      }
+
+      confettiActive = true;
+      function render() {
+        if (!confettiActive) return;
+        cCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.y > confettiCanvas.height + 10) {
+            p.y = -10;
+            p.x = Math.random() * confettiCanvas.width;
+          }
+          cCtx.fillStyle = p.color;
+          cCtx.fillRect(p.x, p.y, p.size, p.size);
+        });
+        requestAnimationFrame(render);
+      }
+      render();
+    }
+
+    startGameBtn.addEventListener('click', () => {
+      sound.init();
+      sound.click();
+
+      const newPlayers = [];
+      for (let i = 0; i < selectedPlayerCount; i++) {
+        const nameInput = document.getElementById(`pname_${i}`);
+        const cpuInput = document.getElementById(`pcpu_${i}`);
+        const avatar = PIRATE_AVATARS[i];
+
+        newPlayers.push({
+          id: i,
+          name: nameInput.value.trim() || avatar.name,
+          color: avatar.color,
+          icon: avatar.icon,
+          isCpu: cpuInput.checked,
+          coins: 10,
+          stars: 0,
+          items: [],
+          currentSpaceIdx: 0,
+          isHopping: false,
+          hopOffset: 0
+        });
+      }
+
+      gameState.players = newPlayers;
+      gameState.currentPlayerIdx = 0;
+      gameState.round = 1;
+      gameState.maxRounds = parseInt(document.getElementById('roundsSelect').value);
+      gameState.starSpaceIdx = 12;
+
+      setupModal.classList.add('hidden');
+      updateScorecardsUI();
+      renderBoard();
+      showToast('🏴‍☠️ Set sail on Pirate Island! Roll the dice to begin!', 2300);
+
+      if (gameState.players[0].isCpu) {
+        setTimeout(rollDiceAction, 1200);
+      }
+    });
+
+    document.getElementById('playAgainBtn').addEventListener('click', () => {
+      sound.click();
+      confettiActive = false;
+      winnerModal.classList.add('hidden');
+      winnerModal.classList.remove('flex');
+      setupModal.classList.remove('hidden');
+    });
+
+    // Sound toggle and rules dialogs
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const soundIcon = document.getElementById('soundIcon');
+    soundToggleBtn.addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      if (sound.enabled) {
+        sound.init();
+        sound.click();
+        soundIcon.className = 'fa-solid fa-volume-high text-yellow-400';
+      } else {
+        soundIcon.className = 'fa-solid fa-volume-xmark text-slate-400';
+      }
+    });
+
+    const rulesModal = document.getElementById('rulesModal');
+    document.getElementById('rulesBtn').onclick = () => {
+      sound.click();
+      rulesModal.classList.remove('hidden');
+      rulesModal.classList.add('flex');
+    };
+    document.getElementById('closeRulesBtn').onclick = () => rulesModal.classList.add('hidden');
+    document.getElementById('rulesGotItBtn').onclick = () => rulesModal.classList.add('hidden');
+
+    document.getElementById('newGameHeaderBtn').onclick = () => {
+      sound.click();
+      setupModal.classList.remove('hidden');
+    };
+
+    window.onload = function () {
+      initBoardSpaces();
+      renderSetupPlayerRows();
+      resizeBoardCanvas();
+      window.addEventListener('resize', resizeBoardCanvas);
+    };
+  </script>
+</body>
+</html>
