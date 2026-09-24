@@ -342,21 +342,33 @@
        ========================================================================== */
     const INITIAL_STATE = {
       player: {
-        name: "Alex Mercer",
+        name: "",
         position: "ST",
-        nationality: "Portugal",
-        club: "Sporting CP", // STRICT STARTING TEAM SPORTING CP
-        ovr: 75.0,           // STRICT BASE 75 OVR (MAX 99)
+        nationality: "Spain",
+        club: "Sporting CP",
+        ovr: 75.0,
         stamina: 100,
         bank: 35000,
         injuryGamesLeft: 0,
         injuryName: null
-      },
-      season: 1,
-      matchday: 1,
-      totalMatchdays: 30,
-      seasonStats: { apps: 0, goals: 0, assists: 0, ratingsSum: 0 },
-      leagueTable: []
+      }
+    };
+
+    function setPlayerName() {
+      const input = document.getElementById("playerNameInput");
+      const trimmedName = input.value.trim();
+
+      if (trimmedName === "") {
+        alert("Please enter a valid name.");
+        return;
+      }
+      gameState = {
+        season: 1,
+        matchday: 1,
+        totalMatchdays: 30,
+        seasonStats: { apps: 0, goals: 0, assists: 0, ratingsSum: 0 },
+        leagueTable: []
+      }
     };
 
     let gameState = null;
