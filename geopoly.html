@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Geopoly - World Economy Board Game</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'sans-serif'],
+            mono: ['Space Grotesk', 'monospace'],
+          },
+          colors: {
+            brand: {
+              dark: '#080d1a',
+              card: '#0f172a',
+              border: '#1e293b',
+              gold: '#f59e0b',
+              cyan: '#06b6d4',
+              accent: '#3b82f6',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0b1120; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+
+    /* Board Grid System: 11x11 Grid classic layout */
+    .geopoly-board {
+      display: grid;
+      grid-template-columns: 1.4fr repeat(9, 1fr) 1.4fr;
+      grid-template-rows: 1.4fr repeat(9, 1fr) 1.4fr;
+      width: 100%;
+      height: 100%;
+      max-width: 960px;
+      max-height: 960px;
+      aspect-ratio: 1 / 1;
+      background: #090e17;
+      border: 3px solid #1e293b;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 40px rgba(14, 165, 233, 0.12);
+    }
+
+    .tile-corner {
+      z-index: 10;
+    }
+
+    /* Player Token Animations */
+    .token-chip {
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+    }
+
+    /* Glassmorphism elements */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* 3D Dice styling */
+    .dice-cube {
+      width: 50px;
+      height: 50px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 1s ease-out;
+    }
+    .dice-face {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      background: #ffffff;
+      border: 2px solid #cbd5e1;
+      border-radius: 10px;
+      display: grid;
+      grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+      padding: 6px;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.15);
+    }
+    .pip {
+      background-color: #0f172a;
+      border-radius: 50%;
+      width: 8px;
+      height: 8px;
+      justify-self: center;
+      align-self: center;
+    }
+    .dice-face-1 { transform: rotateY(0deg) translateZ(25px); }
+    .dice-face-6 { transform: rotateY(180deg) translateZ(25px); }
+    .dice-face-2 { transform: rotateY(90deg) translateZ(25px); }
+    .dice-face-5 { transform: rotateY(-90deg) translateZ(25px); }
+    .dice-face-3 { transform: rotateX(90deg) translateZ(25px); }
+    .dice-face-4 { transform: rotateX(-90deg) translateZ(25px); }
+
+    .pulse-glow {
+      animation: pulse-ring 2s infinite;
+    }
+    @keyframes pulse-ring {
+      0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
+      70% { box-shadow: 0 0 0 12px rgba(59, 130, 246, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+    }
+  </style>
+</head>
+<body class="bg-[#050811] text-slate-100 min-h-screen flex flex-col font-sans selection:bg-cyan-500 selection:text-white">
+
+  <header class="w-full border-b border-slate-800 bg-[#090e1a]/90 backdrop-blur z-20 sticky top-0 px-4 py-2.5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+        <i class="fa-solid fa-earth-americas text-white text-lg"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent flex items-center gap-2">
+          GEOPOLY <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">GLOBAL ED.</span>
+        </h1>
+        <p class="text-xs text-slate-400 hidden sm:block">The International Macroeconomics Board Game</p>
+      </div>
+    </div>
+
+    <!-- Top Quick Stats & Audio Toggle -->
+    <div class="flex items-center gap-2 sm:gap-4">
+      <button id="soundToggleBtn" onclick="toggleAudio()" class="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs flex items-center gap-1.5 transition">
+        <i id="soundIcon" class="fa-solid fa-volume-high text-cyan-400"></i>
+        <span class="hidden sm:inline" id="soundStatus">SFX On</span>
+      </button>
+
+      <button onclick="openRulesModal()" class="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-circle-question text-amber-400"></i>
+        <span>Rules</span>
+      </button>
+
+      <button onclick="openNewGameModal()" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold text-xs shadow-md shadow-blue-500/20 flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-rotate-right"></i>
+        <span>New Game</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 w-full max-w-[1720px] mx-auto p-2 sm:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+    
+    <!-- LEFT COLUMN: Player Status Cards & Portfolio Overview -->
+    <aside class="lg:col-span-3 flex flex-col gap-3 order-2 lg:order-1">
+      <!-- Player cards container -->
+      <div class="glass-panel rounded-2xl p-3 border border-slate-800">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-users text-cyan-400"></i> Sovereign Delegations
+          </span>
+          <span class="text-xs text-slate-500 font-mono" id="turnIndicatorBadge">Turn 1</span>
+        </div>
+        <div id="playerListContainer" class="flex flex-col gap-2">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- Quick Portfolio & Trade View -->
+      <div class="glass-panel rounded-2xl p-3.5 border border-slate-800 flex flex-col gap-2.5">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-landmark-flag text-amber-400"></i> Active Property Manager
+          </h3>
+          <span class="text-[11px] text-cyan-400 font-medium" id="managerPlayerName">Player 1</span>
+        </div>
+        
+        <p class="text-[11px] text-slate-400">Manage development & upgrades across your sovereign acquisitions:</p>
+
+        <div id="propertyQuickList" class="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto pr-1">
+          <div class="text-center py-6 text-slate-500 text-xs italic">
+            Acquire countries and airports to unlock Embassy and Consulate building upgrades.
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800 flex gap-2">
+          <button onclick="openManageAllModal()" class="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-lg font-medium border border-slate-700 transition">
+            <i class="fa-solid fa-list-check mr-1 text-cyan-400"></i> Manage Portfolio
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Action Feed -->
+      <div class="glass-panel rounded-2xl p-3 border border-slate-800 flex flex-col h-[210px]">
+        <div class="flex items-center justify-between pb-2 mb-1 border-b border-slate-800">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-satellite-dish text-blue-400"></i> World Wire Log
+          </span>
+          <button onclick="clearEventLog()" class="text-[10px] text-slate-500 hover:text-slate-300">Clear</button>
+        </div>
+        <div id="gameLog" class="flex-1 overflow-y-auto font-mono text-xs space-y-1.5 pr-1">
+          <div class="text-slate-400">Welcome to Geopoly! Roll the dice to begin global economic expansion.</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER COLUMN: Interactive 40-Tile Board -->
+    <div class="lg:col-span-9 flex flex-col items-center justify-center order-1 lg:order-2">
+      <div class="w-full flex justify-center items-center relative">
+        
+        <!-- THE 11x11 BOARD CONTAINER -->
+        <div id="boardContainer" class="geopoly-board rounded-2xl relative select-none">
+          
+          <!-- Board Tiles are injected dynamically via JavaScript to ensure correct 40-cell grid positioning -->
+
+          <!-- BOARD CENTER STAGE / CONSOLE (Spans 9x9 inner area) -->
+          <div style="grid-column: 2 / span 9; grid-row: 2 / span 9;" class="bg-gradient-to-br from-[#0c1322] via-[#090d18] to-[#0a1120] relative flex flex-col items-center justify-between p-4 sm:p-6 overflow-hidden rounded-xl border border-slate-800/80">
+            
+            <!-- Ambient World Map Background SVG -->
+            <div class="absolute inset-0 opacity-10 pointer-events-none flex items-center justify-center">
+              <svg viewBox="0 0 1000 500" class="w-full h-full object-contain">
+                <path fill="#38bdf8" d="M150,150 Q180,100 240,120 T350,160 T420,240 T280,320 T180,260 Z M600,100 Q650,80 720,110 T800,140 T880,220 T800,320 T700,280 T610,210 Z M450,220 Q480,200 520,210 T560,280 T500,360 T440,300 Z M750,340 Q790,320 830,350 T820,400 T760,400 Z"/>
+              </svg>
+            </div>
+
+            <!-- Central Top: Geopoly Emblem & Status -->
+            <div class="text-center z-10">
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-800/50 text-cyan-300 text-xs font-mono mb-1">
+                <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                <span>G20 GLOBAL SUMMIT IN SESSION</span>
+              </div>
+              <h2 class="text-2xl sm:text-4xl font-black tracking-tight text-white font-mono drop-shadow-md">
+                G E O P O L Y
+              </h2>
+              <p class="text-xs sm:text-sm text-slate-400 font-medium">Global Markets • Sovereign Property • Trade Alliances</p>
+            </div>
+
+            <!-- Central Middle: Dynamic Turn & Dice Action Console -->
+            <div class="z-10 flex flex-col items-center gap-3 my-auto w-full max-w-md">
+              
+              <!-- Turn notification banner -->
+              <div id="turnBanner" class="w-full p-2.5 rounded-xl border border-blue-500/30 bg-blue-950/40 text-center shadow-lg backdrop-blur flex items-center justify-center gap-3">
+                <div id="currentTurnAvatar" class="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center font-bold text-white text-xs shadow">
+                  P1
+                </div>
+                <div class="text-left">
+                  <div class="text-xs font-bold text-white flex items-center gap-1.5" id="currentTurnName">
+                    Player 1's Turn
+                  </div>
+                  <div class="text-[11px] text-slate-400" id="currentTurnSubtext">
+                    Roll the dice to navigate sovereign territories
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3D Dice Display Box -->
+              <div class="flex items-center gap-4 py-2">
+                <div class="dice-cube" id="die1">
+                  <div class="dice-face dice-face-1"><div class="pip col-start-2 row-start-2"></div></div>
+                  <div class="dice-face dice-face-2"><div class="pip col-start-1 row-start-1"></div><div class="pip col-start-3 row-start-3"></div></div>
+                  <div class="dice-face dice-face-3"><div class="pip col-start-1 row-start-1"></div><div class="pip col-start-2 row-start-2"></div><div class="pip col-start-3 row-start-3"></div></div>
+                  <div class="dice-face dice-face-4"><div class="pip col-start-1 row-start-1"></div><div class="pip col-start-3 row-start-1"></div><div class="pip col-start-1 row-start-3"></div><div class="pip col-start-3 row-start-3"></div></div>
+                  <div class="dice-face dice-face-5"><div class="pip col-start-1 row-start-1"></div><div class="pip col-start-3 row-start-1"></div><div class="pip col-start-2 row-start-2"></div><div class="pip col-start-1 row-start-3"></div><div class="pip col-start-3 row-start-3"></div></div>
+                  <div class="dice-face dice-face-6"><div class="pip col-start-1 row-start-1"></div><div class="pip col-start-1 row-start-2"></div><div class="pip col-start-1 row-start-3"></div><div class="pip col-start-3 row-start-1"></div><div class="pip col-start-3 row-start-2"></div><div class="pip col-start-3 row-start-3"></div></div>
+                </div>
+                <div class="dice-cube" id="die2">
+                  <div class="dice-face dice-face-1"><div class="pip col-start-2 row-start-2"></div></div>
+                  <div class="dice-face dice-face-2"><div class="pip col-start-1 row-start-1"></div><div class="pip col-start-3 row-start-3"></div></div>
+                  <div class="dice-face dice-face-3"><div class="pip col-start-1 row-start-1"></div><div class="pip col-start-2 row-start-2"></div><div class="pip col-start-3 row-start-3"></div></div>
+                  <div class="dice-face dice-face-4"><div class="pip col-start-1 row-start-1"></div><div class="pip col-start-3 row-start-1"></div><div class="pip col-start-1 row-start-3"></div><div class="pip col-start-3 row-start-3"></div></div>
+                  <div class="dice-face dice-face-5"><div class="pip col-start-1 row-start-1"></div><div class="pip col-start-3 row-start-1"></div><div class="pip col-start-2 row-start-2"></div><div class="pip col-start-1 row-start-3"></div><div class="pip col-start-3 row-start-3"></div></div>
+                  <div class="dice-face dice-face-6"><div class="pip col-start-1 row-start-1"></div><div class="pip col-start-1 row-start-2"></div><div class="pip col-start-1 row-start-3"></div><div class="pip col-start-3 row-start-1"></div><div class="pip col-start-3 row-start-2"></div><div class="pip col-start-3 row-start-3"></div></div>
+                </div>
+              </div>
+
+              <!-- Main Action Buttons -->
+              <div class="flex items-center gap-3 w-full justify-center">
+                <button id="rollDiceBtn" onclick="handleRollDice()" class="px-6 py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white shadow-lg shadow-blue-500/25 active:scale-95 transition flex items-center gap-2">
+                  <i class="fa-solid fa-dice text-base animate-bounce"></i>
+                  <span>Roll Dice</span>
+                </button>
+
+                <button id="endTurnBtn" onclick="handleEndTurn()" disabled class="px-5 py-2.5 rounded-xl font-semibold text-sm bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-arrow-right"></i>
+                  <span>End Turn</span>
+                </button>
+              </div>
+
+              <!-- Double dice indicator -->
+              <div id="doubleNotice" class="text-amber-400 font-mono text-[11px] h-4 font-semibold opacity-0 transition">
+                🎉 Doubles! Roll again!
+              </div>
+            </div>
+
+            <!-- Central Bottom: Continental Legend -->
+            <div class="z-10 w-full flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-800/80 pt-2 px-2">
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Americas</div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Africa</div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Europe</div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Asia</div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  
+  <!-- MODAL: Property Purchase & Land Action -->
+  <div id="propertyModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0f172a] border border-slate-700 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl transform transition-all">
+      <!-- Modal Header Banner -->
+      <div id="modalHeaderColor" class="h-3 bg-blue-500 w-full"></div>
+      
+      <div class="p-5">
+        <div class="flex items-start justify-between">
+          <div>
+            <span id="modalTileCategory" class="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+              Country
+            </span>
+            <h3 id="modalTileName" class="text-xl font-bold text-white mt-1">Country Name</h3>
+            <p id="modalTileRegion" class="text-xs text-slate-400">Region</p>
+          </div>
+          <div class="text-right">
+            <span class="text-[10px] text-slate-400 block uppercase">Price</span>
+            <span id="modalTilePrice" class="text-lg font-bold text-cyan-400 font-mono">$0M</span>
+          </div>
+        </div>
+
+        <!-- Photo preview -->
+        <div class="mt-3.5 relative h-36 rounded-xl overflow-hidden border border-slate-700">
+          <img id="modalTileImage" src="" alt="Landmark" class="w-full h-full object-cover">
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
+          <div id="modalTileFact" class="absolute bottom-2 left-2 right-2 text-[11px] text-slate-200 bg-black/60 backdrop-blur px-2.5 py-1 rounded-md">
+            Trivia / Fact
+          </div>
+        </div>
+
+        <!-- Rent and Upgrade Schedule -->
+        <div class="mt-4 p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs space-y-1.5">
+          <div class="flex justify-between text-slate-300">
+            <span>Base Sovereign Rent:</span>
+            <span id="modalRentBase" class="font-mono font-semibold">$0M</span>
+          </div>
+          <div class="flex justify-between text-slate-400 text-[11px]">
+            <span>With 1 Consulate:</span>
+            <span id="modalRent1" class="font-mono">$0M</span>
+          </div>
+          <div class="flex justify-between text-slate-400 text-[11px]">
+            <span>With 2 Consulates:</span>
+            <span id="modalRent2" class="font-mono">$0M</span>
+          </div>
+          <div class="flex justify-between text-slate-400 text-[11px]">
+            <span>With Embassy (Max):</span>
+            <span id="modalRent3" class="font-mono text-amber-400">$0M</span>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="mt-5 flex gap-3">
+          <button id="modalBuyBtn" onclick="confirmTilePurchase()" class="flex-1 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-sm rounded-xl transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/20">
+            <i class="fa-solid fa-cart-shopping"></i>
+            <span>Acquire Property</span>
+          </button>
+          <button onclick="closePropertyModal()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm rounded-xl border border-slate-700 transition">
+            Decline
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Global Summit / Event Card -->
+  <div id="cardModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0f172a] border border-cyan-500/40 rounded-2xl max-w-md w-full p-6 shadow-2xl text-center relative overflow-hidden">
+      <div class="w-14 h-14 rounded-2xl bg-cyan-950 border border-cyan-700 flex items-center justify-center mx-auto text-2xl text-cyan-400 mb-3 shadow-lg">
+        <i id="cardIcon" class="fa-solid fa-landmark"></i>
+      </div>
+      <span id="cardTypeTag" class="text-xs font-mono uppercase tracking-widest text-cyan-400 px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-800">
+        World Economic Summit
+      </span>
+      <h3 id="cardTitle" class="text-xl font-bold text-white mt-2">Resolution Adopted</h3>
+      <p id="cardDescription" class="text-sm text-slate-300 mt-2 px-2">Card details description will appear right here.</p>
+      
+      <div id="cardEffectAmount" class="my-4 font-mono text-2xl font-black text-amber-400">
+        +$150M
+      </div>
+
+      <button onclick="closeCardModal()" class="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl transition">
+        Execute Decision
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: Portfolio Management (Consulates, Embassies, Mortgages) -->
+  <div id="manageModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0f172a] border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-white text-base flex items-center gap-2">
+            <i class="fa-solid fa-city text-cyan-400"></i> International Infrastructure & Upgrades
+          </h3>
+          <p class="text-xs text-slate-400">Build Consulates and Embassies to multiply territorial fees</p>
+        </div>
+        <button onclick="closeManageModal()" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-4 flex-1 overflow-y-auto space-y-3" id="manageModalList">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div class="p-3 border-t border-slate-800 bg-slate-900/60 flex justify-end">
+        <button onclick="closeManageModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Rules & How To Play -->
+  <div id="rulesModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0f172a] border border-slate-700 rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+        <h3 class="font-bold text-white text-base flex items-center gap-2">
+          <i class="fa-solid fa-book-atlas text-amber-400"></i> Geopoly Game Rules
+        </h3>
+        <button onclick="closeRulesModal()" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <div class="p-5 overflow-y-auto text-xs text-slate-300 space-y-3.5 leading-relaxed">
+        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+          <h4 class="font-bold text-cyan-400 mb-1">🌍 The 4 Continents & 40 Tiles</h4>
+          <p>The board features four economic quadrants: Americas (Green), Africa (Orange), Europe (Blue), and Asia (Red). Property costs reflect real-world economic clout in descending or ascending tiers.</p>
+        </div>
+        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+          <h4 class="font-bold text-amber-400 mb-1">✈️ Continental Hub Airports</h4>
+          <p>Each side boasts one international airport. Holding more airports doubles transit revenues when rivals land in your transit corridor ($25M → $50M → $100M → $200M).</p>
+        </div>
+        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+          <h4 class="font-bold text-purple-400 mb-1">🏛️ Consulates & Embassies</h4>
+          <p>Once you own all countries in an economic pair or quadrant, develop Consulates (up to 2) and an Embassy to supercharge sovereign toll collection.</p>
+        </div>
+        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+          <h4 class="font-bold text-red-400 mb-1">⚠️ Sanctions & Tariffs</h4>
+          <p>Watch out for Import Tariffs ($200M) and Carbon Taxes ($100M). Landing on "Trade Sanction" sends you to diplomatic detention until you pay $50M or roll doubles.</p>
+        </div>
+      </div>
+      <div class="p-3 border-t border-slate-800 bg-slate-900/60 flex justify-end">
+        <button onclick="closeRulesModal()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-lg">
+          Understood
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: New Game Setup -->
+  <div id="newGameModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0f172a] border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl">
+      <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+        <i class="fa-solid fa-gamepad text-cyan-400"></i> Start New Geopoly Match
+      </h3>
+      <p class="text-xs text-slate-400 mb-4">Select players and delegate bots for economic competition.</p>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Total Players (2 - 4):</label>
+          <div class="grid grid-cols-3 gap-2" id="playerCountSelect">
+            <button onclick="selectPlayerCount(2)" class="p-2 rounded-lg border border-slate-700 bg-slate-800 text-xs font-bold hover:border-cyan-500 count-btn active-count" data-count="2">2 Players</button>
+            <button onclick="selectPlayerCount(3)" class="p-2 rounded-lg border border-slate-700 bg-slate-800 text-xs font-bold hover:border-cyan-500 count-btn" data-count="3">3 Players</button>
+            <button onclick="selectPlayerCount(4)" class="p-2 rounded-lg border border-slate-700 bg-slate-800 text-xs font-bold hover:border-cyan-500 count-btn" data-count="4">4 Players</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Opponent Delegation:</label>
+          <select id="botSetupSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+            <option value="all_ai">Play Solo vs AI Bots</option>
+            <option value="pass_and_play">Pass & Play (All Humans)</option>
+            <option value="one_bot">1 Human, 1 Friend + Rest AI</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Starting Treasury:</label>
+          <select id="startingTreasurySelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+            <option value="1500">$1,500 Million (Standard Rule)</option>
+            <option value="2000">$2,000 Million (Fast Game)</option>
+            <option value="1000">$1,000 Million (Hardcore Austerity)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end gap-2">
+        <button onclick="closeNewGameModal()" class="px-4 py-2 bg-slate-800 text-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-700">Cancel</button>
+        <button onclick="initNewGame()" class="px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-blue-500/20 hover:from-blue-500 hover:to-cyan-400">Launch Game</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================================
+       AUDIO SYNTHESIS SYSTEM (Web Audio API - No external files required)
+       ========================================================================= */
+    let audioCtx = null;
+    let soundEnabled = true;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playTone(freq, type = 'sine', duration = 0.15, vol = 0.1) {
+      if (!soundEnabled) return;
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {
+        console.warn('Audio play error:', e);
+      }
+    }
+
+    function playSound(name) {
+      if (!soundEnabled) return;
+      switch(name) {
+        case 'dice':
+          for (let i = 0; i < 4; i++) {
+            setTimeout(() => playTone(180 + Math.random() * 120, 'triangle', 0.05, 0.1), i * 60);
+          }
+          break;
+        case 'step':
+          playTone(480, 'sine', 0.05, 0.04);
+          break;
+        case 'buy':
+          playTone(523.25, 'triangle', 0.1, 0.12);
+          setTimeout(() => playTone(659.25, 'triangle', 0.15, 0.12), 100);
+          setTimeout(() => playTone(783.99, 'triangle', 0.25, 0.12), 200);
+          break;
+        case 'rent':
+          playTone(329.63, 'sawtooth', 0.1, 0.08);
+          setTimeout(() => playTone(261.63, 'sawtooth', 0.2, 0.08), 100);
+          break;
+        case 'tax':
+          playTone(220, 'sawtooth', 0.25, 0.1);
+          break;
+        case 'go':
+          playTone(587.33, 'sine', 0.1, 0.1);
+          setTimeout(() => playTone(880, 'sine', 0.25, 0.1), 120);
+          break;
+        case 'jail':
+          playTone(180, 'sawtooth', 0.35, 0.15);
+          break;
+        default:
+          playTone(440, 'sine', 0.1, 0.05);
+      }
+    }
+
+    function toggleAudio() {
+      soundEnabled = !soundEnabled;
+      const icon = document.getElementById('soundIcon');
+      const text = document.getElementById('soundStatus');
+      if (soundEnabled) {
+        icon.className = 'fa-solid fa-volume-high text-cyan-400';
+        text.innerText = 'SFX On';
+        playSound('buy');
+      } else {
+        icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+        text.innerText = 'SFX Off';
+      }
+    }
+
+    /*
+      BOARD POSITIONING MAP:
+      Bottom row (Tiles 0 to 10): Americas & Go
+      Left col (Tiles 10 to 20): Africa & Sanctions
+      Top row (Tiles 20 to 30): Europe & Summit
+      Right col (Tiles 30 to 39, then wrap to 0): Asia & Go to Sanctions
+    */
+    const TILES = [
+      // SIDE 1: AMERICAS (Bottom row: indices 0 to 10)
+      { id: 0, name: "START / GO", type: "go", region: "corner", icon: "fa-solid fa-arrow-left", desc: "Collect $200M grant each time you pass." },
+      { id: 1, name: "Colombia", type: "country", region: "americas", color: "#10b981", price: 60, rent: [2, 10, 30, 90, 160], upgradeCost: 50, photo: "https://images.unsplash.com/photo-1596401057633-54a8fe8ef647?auto=format&fit=crop&w=400&q=80", fact: "Global powerhouse in Arabica coffee and rich biodiversity." },
+      { id: 2, name: "World Bank Aid", type: "chest", region: "special", icon: "fa-solid fa-hand-holding-dollar", desc: "Draw a multilateral development card." },
+      { id: 3, name: "Argentina", type: "country", region: "americas", color: "#10b981", price: 80, rent: [4, 20, 60, 180, 320], upgradeCost: 50, photo: "https://images.unsplash.com/photo-1589553416260-f586c8f1514f?auto=format&fit=crop&w=400&q=80", fact: "Famed for the Pampas agricultural breadbasket and lithium reserves." },
+      { id: 4, name: "Import Tariff", type: "tax", region: "special", price: 200, icon: "fa-solid fa-receipt", desc: "Pay $200M import customs duties to the central reserve." },
+      { id: 5, name: "Americas Hub Airport", type: "airport", region: "airport", price: 200, rent: [25, 50, 100, 200], icon: "fa-solid fa-plane-departure", photo: "https://images.unsplash.com/photo-1530521954074-e64f6810b32d?auto=format&fit=crop&w=400&q=80", fact: "Hub linking Miami, Panama, and South American logistics networks." },
+      { id: 6, name: "Mexico", type: "country", region: "americas", color: "#10b981", price: 100, rent: [6, 30, 90, 270, 400], upgradeCost: 50, photo: "https://images.unsplash.com/photo-1512813195386-6cf811ad3542?auto=format&fit=crop&w=400&q=80", fact: "Key manufacturing center and critical North American trade partner." },
+      { id: 7, name: "Global Summit", type: "chance", region: "special", icon: "fa-solid fa-earth-americas", desc: "Draw an international policy directive card." },
+      { id: 8, name: "Brazil", type: "country", region: "americas", color: "#059669", price: 120, rent: [8, 40, 100, 300, 450], upgradeCost: 60, photo: "https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&w=400&q=80", fact: "Latin America's largest economy and vital agro-industrial hub." },
+      { id: 9, name: "Canada", type: "country", region: "americas", color: "#059669", price: 140, rent: [10, 50, 150, 450, 620], upgradeCost: 80, photo: "https://images.unsplash.com/photo-1503614472-8c93d56e92ce?auto=format&fit=crop&w=400&q=80", fact: "Abundant mineral wealth, technology hubs, and energy exporter." },
+
+      // SIDE 2: AFRICA (Left col: indices 10 to 20)
+      { id: 10, name: "Diplomatic Detention", type: "jail", region: "corner", icon: "fa-solid fa-handcuffs", desc: "Trade Sanctions detention zone / Just visiting." },
+      { id: 11, name: "Ethiopia", type: "country", region: "africa", color: "#f59e0b", price: 140, rent: [10, 50, 150, 450, 625], upgradeCost: 100, photo: "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=400&q=80", fact: "One of Africa's fastest-growing aviation and textile manufacturing hubs." },
+      { id: 12, name: "Kenya", type: "country", region: "africa", color: "#f59e0b", price: 150, rent: [12, 60, 180, 500, 700], upgradeCost: 100, photo: "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=400&q=80", fact: "Silicon Savannah: leader in mobile fintech and geothermal energy." },
+      { id: 13, name: "Morocco", type: "country", region: "africa", color: "#f59e0b", price: 160, rent: [12, 60, 180, 500, 700], upgradeCost: 100, photo: "https://images.unsplash.com/photo-1539020140153-e479b8c22e70?auto=format&fit=crop&w=400&q=80", fact: "Gateway to the Mediterranean and dominant global phosphate supplier." },
+      { id: 14, name: "African Hub Airport", type: "airport", region: "airport", price: 200, rent: [25, 50, 100, 200], icon: "fa-solid fa-plane-departure", photo: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=400&q=80", fact: "Major continental connector connecting Cairo, Addis Ababa & Jo'burg." },
+      { id: 15, name: "Egypt", type: "country", region: "africa", color: "#d97706", price: 180, rent: [14, 70, 200, 550, 750], upgradeCost: 100, photo: "https://images.unsplash.com/photo-1503177119275-0aa32b3a9368?auto=format&fit=crop&w=400&q=80", fact: "Suez Canal controller, linking 12% of worldwide maritime transit." },
+      { id: 16, name: "World Bank Aid", type: "chest", region: "special", icon: "fa-solid fa-hand-holding-dollar", desc: "Multilateral development grant opportunity." },
+      { id: 17, name: "Nigeria", type: "country", region: "africa", color: "#d97706", price: 180, rent: [14, 70, 200, 550, 750], upgradeCost: 100, photo: "https://images.unsplash.com/photo-1618828665011-0abd973f7bb8?auto=format&fit=crop&w=400&q=80", fact: "Africa's most populous market with an explosive creative & digital economy." },
+      { id: 18, name: "South Africa", type: "country", region: "africa", color: "#d97706", price: 200, rent: [16, 80, 220, 600, 800], upgradeCost: 100, photo: "https://images.unsplash.com/photo-1507034589631-9433cc6bc453?auto=format&fit=crop&w=400&q=80", fact: "Sophisticated banking and abundant platinum group metals reserves." },
+      { id: 19, name: "Global Summit", type: "chance", region: "special", icon: "fa-solid fa-earth-americas", desc: "Draw an international policy directive card." },
+
+      // SIDE 3: EUROPE (Top row: indices 20 to 30)
+      { id: 20, name: "Free Summit Zone", type: "parking", region: "corner", icon: "fa-solid fa-handshake", desc: "Neutral international waters. Rest freely." },
+      { id: 21, name: "Poland", type: "country", region: "europe", color: "#3b82f6", price: 220, rent: [18, 90, 250, 700, 875], upgradeCost: 150, photo: "https://images.unsplash.com/photo-1519197924294-4ba991a11128?auto=format&fit=crop&w=400&q=80", fact: "Central Europe's industrial dynamo with deep software development depth." },
+      { id: 22, name: "World Bank Aid", type: "chest", region: "special", icon: "fa-solid fa-hand-holding-dollar", desc: "Draw a multilateral development card." },
+      { id: 23, name: "Netherlands", type: "country", region: "europe", color: "#3b82f6", price: 220, rent: [18, 90, 250, 700, 875], upgradeCost: 150, photo: "https://images.unsplash.com/photo-1512470876302-972faa2aa9a4?auto=format&fit=crop&w=400&q=80", fact: "Rotterdam super-port and premier advanced semiconductor lithography." },
+      { id: 24, name: "Spain", type: "country", region: "europe", color: "#3b82f6", price: 240, rent: [20, 100, 300, 750, 925], upgradeCost: 150, photo: "https://images.unsplash.com/photo-1543783207-ec64e4d95325?auto=format&fit=crop&w=400&q=80", fact: "Global tourism leader and pioneer in commercial solar & wind generation." },
+      { id: 25, name: "European Skyport", type: "airport", region: "airport", price: 200, rent: [25, 50, 100, 200], icon: "fa-solid fa-plane-departure", photo: "https://images.unsplash.com/photo-1520437358207-323b43b50729?auto=format&fit=crop&w=400&q=80", fact: "Critical airspace linking Frankfurt, London Heathrow & Paris CDG." },
+      { id: 26, name: "Italy", type: "country", region: "europe", color: "#2563eb", price: 260, rent: [22, 110, 330, 800, 975], upgradeCost: 150, photo: "https://images.unsplash.com/photo-1529260830199-42c24126f198?auto=format&fit=crop&w=400&q=80", fact: "Eighth largest economy worldwide; precision machinery & luxury design." },
+      { id: 27, name: "France", type: "country", region: "europe", color: "#2563eb", price: 260, rent: [22, 110, 330, 800, 975], upgradeCost: 150, photo: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=400&q=80", fact: "Nuclear aerospace powerhouse and leading agricultural exporter." },
+      { id: 28, name: "Carbon Tax", type: "tax", region: "special", price: 100, icon: "fa-solid fa-smog", desc: "Pay $100M environmental regulatory offset to the central pool." },
+      { id: 29, name: "Germany", type: "country", region: "europe", color: "#1d4ed8", price: 280, rent: [24, 120, 360, 850, 1025], upgradeCost: 150, photo: "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?auto=format&fit=crop&w=400&q=80", fact: "Europe's largest economy: automotive engineering and capital equipment." },
+
+      // SIDE 4: ASIA (Right col: indices 30 to 39)
+      { id: 30, name: "Trade Sanction!", type: "gotojail", region: "corner", icon: "fa-solid fa-triangle-exclamation", desc: "Severe trade embargo. Move straight to Detention." },
+      { id: 31, name: "Vietnam", type: "country", region: "asia", color: "#f43f5e", price: 300, rent: [26, 130, 390, 900, 1100], upgradeCost: 200, photo: "https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=400&q=80", fact: "Global supply-chain magnet for electronics and consumer device assembly." },
+      { id: 32, name: "Indonesia", type: "country", region: "asia", color: "#f43f5e", price: 300, rent: [26, 130, 390, 900, 1100], upgradeCost: 200, photo: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=400&q=80", fact: "Southeast Asia's largest market, leading global nickel supplier." },
+      { id: 33, name: "World Bank Aid", type: "chest", region: "special", icon: "fa-solid fa-hand-holding-dollar", desc: "Multilateral development grant opportunity." },
+      { id: 34, name: "Saudi Arabia", type: "country", region: "asia", color: "#f43f5e", price: 320, rent: [28, 150, 450, 1000, 1200], upgradeCost: 200, photo: "https://images.unsplash.com/photo-1586724237569-f3d0c1dee8c6?auto=format&fit=crop&w=400&q=80", fact: "World energy titan transitioning into global sovereign investment and AI." },
+      { id: 35, name: "Asian Megahub Airport", type: "airport", region: "airport", price: 200, rent: [25, 50, 100, 200], icon: "fa-solid fa-plane-departure", photo: "https://images.unsplash.com/photo-1508873696983-2df5293cb325?auto=format&fit=crop&w=400&q=80", fact: "Connecting Singapore Changi, Incheon, Tokyo Haneda & Hong Kong." },
+      { id: 36, name: "South Korea", type: "country", region: "asia", color: "#e11d48", price: 350, rent: [35, 175, 500, 1100, 1300], upgradeCost: 200, photo: "https://images.unsplash.com/photo-1538485399081-7191377e8241?auto=format&fit=crop&w=400&q=80", fact: "World leader in memory semiconductors, shipbuilding, and battery storage." },
+      { id: 37, name: "Global Summit", type: "chance", region: "special", icon: "fa-solid fa-earth-americas", desc: "International diplomacy card." },
+      { id: 38, name: "India", type: "country", region: "asia", color: "#be123c", price: 350, rent: [35, 175, 500, 1100, 1300], upgradeCost: 200, photo: "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=400&q=80", fact: "World's fastest expanding major economy; IT services & pharmaceutical powerhouse." },
+      { id: 39, name: "USA / Economic Hegemon", type: "country", region: "asia", color: "#9f1239", price: 400, rent: [50, 200, 600, 1400, 2000], upgradeCost: 200, photo: "https://images.unsplash.com/photo-1485738422979-f5c462d49f74?auto=format&fit=crop&w=400&q=80", fact: "World's largest GDP, reserve currency issuer, and tech innovation nucleus." }
+    ];
+
+    const SUMMIT_CARDS = [
+      { title: "IMF Emergency Allocation", desc: "Special Drawing Rights (SDRs) issued. Collect $150M in reserve liquidity.", amount: 150, type: "gain", icon: "fa-solid fa-coins" },
+      { title: "Supply Chain Bottleneck", desc: "Port congestion and microchip shortages. Pay $80M in contingency logistics.", amount: -80, type: "loss", icon: "fa-solid fa-ship" },
+      { title: "Clean Energy Transition Subsidies", desc: "International green initiative pays out dividends for decarbonization.", amount: 100, type: "gain", icon: "fa-solid fa-seedling" },
+      { title: "Geopolitical Cyber Escalation", desc: "Infrastructure defense spending spike. Remit $120M in emergency tech bonds.", amount: -120, type: "loss", icon: "fa-solid fa-shield-halved" },
+      { title: "Bilateral Trade Agreement", desc: "Tariff exemptions negotiated with international partners. Collect $120M.", amount: 120, type: "gain", icon: "fa-solid fa-file-contract" },
+      { title: "Direct Flight to European Skyport", desc: "Fast-track charter approved. Advance directly to European Skyport.", teleport: 25, type: "move", icon: "fa-solid fa-plane" },
+      { title: "Currency Devaluation Crisis", desc: "Foreign exchange volatility hits treasuries. Pay $50M in stabilization funds.", amount: -50, type: "loss", icon: "fa-solid fa-chart-line-down" }
+    ];
+
+    let gameState = {
+      players: [],
+      activePlayerIndex: 0,
+      turnNumber: 1,
+      isRolling: false,
+      rolledThisTurn: false,
+      pendingActionTile: null,
+      consecutiveDoubles: 0,
+      ownership: {}, // tileId -> { ownerId, consulates: 0 (0-2, 3 = Embassy) }
+      taxPool: 0
+    };
+
+    const PLAYER_COLORS = [
+      { name: "Blue Sovereign", hex: "#3b82f6", bg: "bg-blue-600", border: "border-blue-400" },
+      { name: "Emerald Union", hex: "#10b981", bg: "bg-emerald-600", border: "border-emerald-400" },
+      { name: "Amber Coalition", hex: "#f59e0b", bg: "bg-amber-600", border: "border-amber-400" },
+      { name: "Purple Federation", hex: "#a855f7", bg: "bg-purple-600", border: "border-purple-400" }
+    ];
+
+    /*
+      Formula for standard 11x11 Monopoly perimeter:
+      Tile 0 (GO): col 11, row 11
+      Tile 1..9: col 10..2, row 11
+      Tile 10 (Jail): col 1, row 11
+      Tile 11..19: col 1, row 10..2
+      Tile 20 (Free Parking): col 1, row 1
+      Tile 21..29: col 2..10, row 1
+      Tile 30 (Go to Jail): col 11, row 1
+      Tile 31..39: col 11, row 2..10
+    */
+    function getTileGridStyle(id) {
+      if (id === 0) return { col: 11, row: 11 };
+      if (id >= 1 && id <= 9) return { col: 11 - id, row: 11 };
+      if (id === 10) return { col: 1, row: 11 };
+      if (id >= 11 && id <= 19) return { col: 1, row: 11 - (id - 10) };
+      if (id === 20) return { col: 1, row: 1 };
+      if (id >= 21 && id <= 29) return { col: 1 + (id - 20), row: 1 };
+      if (id === 30) return { col: 11, row: 1 };
+      if (id >= 31 && id <= 39) return { col: 11, row: 1 + (id - 30) };
+      return { col: 1, row: 1 };
+    }
+
+    function renderBoardTiles() {
+      const container = document.getElementById('boardContainer');
+      
+      // Clear existing tiles except center stage
+      const existingTiles = container.querySelectorAll('.board-cell');
+      existingTiles.forEach(el => el.remove());
+
+      TILES.forEach(tile => {
+        const { col, row } = getTileGridStyle(tile.id);
+        const cell = document.createElement('div');
+        cell.id = `tile-cell-${tile.id}`;
+        cell.className = `board-cell relative flex flex-col justify-between overflow-hidden border border-slate-800/80 cursor-pointer select-none transition-colors hover:border-cyan-500/60 ${getTileBgClass(tile)}`;
+        cell.style.gridColumn = col;
+        cell.style.gridRow = row;
+        cell.onclick = () => inspectTile(tile.id);
+
+        let content = '';
+
+        if (tile.type === 'country') {
+          content = `
+            <div class="h-1.5 sm:h-2 w-full" style="background-color: ${tile.color};"></div>
+            <div class="p-1 flex-1 flex flex-col justify-between">
+              <div class="flex items-center justify-between gap-1">
+                <span class="text-[9px] sm:text-[10px] font-bold text-slate-200 truncate leading-tight">${tile.name}</span>
+                <span id="badge-upgrade-${tile.id}" class="hidden text-[8px] px-1 rounded bg-amber-500 text-black font-extrabold">E</span>
+              </div>
+              <div class="my-auto hidden sm:block h-6 rounded overflow-hidden opacity-40">
+                <img src="${tile.photo}" alt="" class="w-full h-full object-cover">
+              </div>
+              <div class="flex items-center justify-between text-[8px] sm:text-[9px] font-mono text-cyan-400">
+                <span>$${tile.price}M</span>
+                <span id="owner-tag-${tile.id}" class="w-2.5 h-2.5 rounded-full border border-slate-700 bg-transparent"></span>
+              </div>
+            </div>
+          `;
+        } else if (tile.type === 'airport') {
+          content = `
+            <div class="h-1.5 w-full bg-slate-600"></div>
+            <div class="p-1 flex-1 flex flex-col items-center justify-between text-center">
+              <i class="fa-solid fa-plane-departure text-slate-400 text-xs sm:text-sm mt-0.5"></i>
+              <span class="text-[8px] sm:text-[9.5px] font-bold text-slate-200 line-clamp-2 leading-tight">${tile.name.replace(' Airport', '')}</span>
+              <div class="flex items-center justify-between w-full text-[8px] sm:text-[9px] font-mono text-cyan-400">
+                <span>$${tile.price}M</span>
+                <span id="owner-tag-${tile.id}" class="w-2.5 h-2.5 rounded-full border border-slate-700 bg-transparent"></span>
+              </div>
+            </div>
+          `;
+        } else if (tile.region === 'corner') {
+          content = `
+            <div class="w-full h-full p-1.5 flex flex-col items-center justify-center text-center bg-slate-900/90">
+              <i class="${tile.icon} text-cyan-400 text-sm sm:text-lg mb-1"></i>
+              <span class="text-[9px] sm:text-[11px] font-black uppercase tracking-tight text-white leading-tight">${tile.name}</span>
+            </div>
+          `;
+        } else if (tile.type === 'tax') {
+          content = `
+            <div class="w-full h-full p-1 flex flex-col items-center justify-between text-center bg-red-950/20">
+              <span class="text-[8px] font-bold text-red-400 uppercase tracking-tighter">Levy</span>
+              <i class="${tile.icon} text-red-400 text-xs sm:text-base my-auto"></i>
+              <span class="text-[8px] sm:text-[9.5px] font-bold text-slate-200">${tile.name}</span>
+              <span class="text-[8px] sm:text-[9px] font-mono text-red-300 font-bold">$${tile.price}M</span>
+            </div>
+          `;
+        } else {
+          // Special Cards (Chance / World Bank Aid)
+          const isSummit = tile.type === 'chance';
+          content = `
+            <div class="w-full h-full p-1 flex flex-col items-center justify-between text-center ${isSummit ? 'bg-cyan-950/20' : 'bg-amber-950/20'}">
+              <span class="text-[8px] font-bold ${isSummit ? 'text-cyan-400' : 'text-amber-400'} uppercase">Card</span>
+              <i class="${tile.icon} ${isSummit ? 'text-cyan-400' : 'text-amber-400'} text-xs sm:text-sm my-auto"></i>
+              <span class="text-[8px] sm:text-[9px] font-medium text-slate-300 line-clamp-2 leading-tight">${tile.name}</span>
+            </div>
+          `;
+        }
+
+        // Add player token anchor container
+        content += `<div id="tokens-tile-${tile.id}" class="absolute inset-0 pointer-events-none p-1 flex flex-wrap items-center justify-center gap-1 z-20"></div>`;
+
+        cell.innerHTML = content;
+        container.appendChild(cell);
+      });
+    }
+
+    function getTileBgClass(tile) {
+      if (tile.region === 'corner') return 'bg-slate-900 tile-corner';
+      return 'bg-slate-900/70 hover:bg-slate-800/80';
+    }
+
+    function initializePlayers(count, mode, startingCash) {
+      gameState.players = [];
+      const botNames = ["Nexus Capital (AI)", "Apex Sovereign (AI)", "Meridian Reserve (AI)"];
+
+      for (let i = 0; i < count; i++) {
+        let isAi = false;
+        let pName = `Delegate ${i + 1}`;
+
+        if (mode === 'all_ai' && i > 0) {
+          isAi = true;
+          pName = botNames[i - 1];
+        } else if (mode === 'one_bot' && i === count - 1) {
+          isAi = true;
+          pName = botNames[0];
+        }
+
+        gameState.players.push({
+          id: i,
+          name: pName,
+          isAi: isAi,
+          color: PLAYER_COLORS[i],
+          money: startingCash,
+          position: 0,
+          inJail: false,
+          jailTurns: 0,
+          properties: [], // list of tile IDs
+          bankrupt: false
+        });
+      }
+
+      gameState.activePlayerIndex = 0;
+      gameState.turnNumber = 1;
+      gameState.ownership = {};
+      gameState.rolledThisTurn = false;
+      gameState.isRolling = false;
+
+      updatePlayerListUI();
+      renderTokens();
+      updateTurnBanner();
+      logEvent(`Game started with ${count} delegates. Starting reserves: $${startingCash}M each.`);
+    }
+
+    function renderTokens() {
+      // Clear all token anchors
+      for (let i = 0; i < 40; i++) {
+        const anchor = document.getElementById(`tokens-tile-${i}`);
+        if (anchor) anchor.innerHTML = '';
+      }
+
+      // Re-place active players
+      gameState.players.forEach(p => {
+        if (p.bankrupt) return;
+        const anchor = document.getElementById(`tokens-tile-${p.position}`);
+        if (anchor) {
+          const token = document.createElement('div');
+          token.className = `w-4 h-4 sm:w-5 sm:h-5 rounded-full ${p.color.bg} border-2 border-white token-chip flex items-center justify-center font-bold text-[9px] text-white shadow-md cursor-pointer`;
+          token.title = `${p.name} ($${p.money}M)`;
+          token.innerText = (p.id + 1);
+          anchor.appendChild(token);
+        }
+      });
+    }
+
+    function updatePlayerListUI() {
+      const container = document.getElementById('playerListContainer');
+      container.innerHTML = '';
+
+      gameState.players.forEach(p => {
+        const isActive = p.id === gameState.activePlayerIndex;
+        const card = document.createElement('div');
+        card.className = `p-2.5 rounded-xl border transition-all ${
+          p.bankrupt ? 'opacity-40 bg-slate-900 border-slate-800' :
+          isActive ? 'bg-slate-800/90 border-cyan-500/80 shadow-md shadow-cyan-500/10' : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+        }`;
+
+        // Calculate net worth
+        let propertyValue = 0;
+        p.properties.forEach(tid => {
+          propertyValue += TILES[tid].price;
+          const upgradeInfo = gameState.ownership[tid];
+          if (upgradeInfo && upgradeInfo.consulates > 0) {
+            propertyValue += upgradeInfo.consulates * (TILES[tid].upgradeCost || 50);
+          }
+        });
+        const netWorth = p.money + propertyValue;
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-full ${p.color.bg} border border-white/50 flex items-center justify-center text-[10px] font-bold text-white">
+                ${p.id + 1}
+              </div>
+              <div>
+                <div class="text-xs font-bold text-white flex items-center gap-1.5">
+                  ${p.name} ${p.isAi ? '<span class="text-[9px] px-1 rounded bg-slate-700 text-slate-300 font-normal">BOT</span>' : ''}
+                </div>
+                <div class="text-[10px] text-slate-400">
+                  ${p.bankrupt ? '<span class="text-red-400 font-bold">INSOLVENT</span>' : (p.inJail ? '<span class="text-amber-400">Under Sanctions</span>' : `On: ${TILES[p.position].name}`)}
+                </div>
+              </div>
+            </div>
+            <div class="text-right font-mono">
+              <div class="text-xs font-bold text-cyan-400">$${p.money}M</div>
+              <div class="text-[10px] text-slate-500 font-sans">Net: $${netWorth}M</div>
+            </div>
+          </div>
+          <div class="mt-2 flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-800/60 pt-1.5">
+            <span>Properties: <strong class="text-slate-200 font-mono">${p.properties.length}</strong></span>
+            <button onclick="viewPlayerAssets(${p.id})" class="text-cyan-400 hover:text-cyan-300 text-[10px]">Inspect Holdings</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      // Update active manager quick property panel
+      updatePropertyQuickList();
+    }
+
+    function updateTurnBanner() {
+      const activeP = gameState.players[gameState.activePlayerIndex];
+      if (!activeP) return;
+
+      document.getElementById('turnIndicatorBadge').innerText = `Turn ${gameState.turnNumber}`;
+      document.getElementById('currentTurnAvatar').className = `w-7 h-7 rounded-full ${activeP.color.bg} flex items-center justify-center font-bold text-white text-xs shadow`;
+      document.getElementById('currentTurnAvatar').innerText = `P${activeP.id + 1}`;
+      document.getElementById('currentTurnName').innerHTML = `${activeP.name} ${activeP.isAi ? '<span class="text-[9px] px-1 rounded bg-slate-700 text-slate-300 font-normal">BOT</span>' : ''}`;
+      
+      const subtext = document.getElementById('currentTurnSubtext');
+      const rollBtn = document.getElementById('rollDiceBtn');
+      const endBtn = document.getElementById('endTurnBtn');
+
+      if (activeP.inJail) {
+        subtext.innerText = `Under Sanctions! Roll doubles or pay $50M diplomatic exit fee.`;
+      } else if (!gameState.rolledThisTurn) {
+        subtext.innerText = `Roll the dice to advance across international territories.`;
+      } else {
+        subtext.innerText = `Turn actions complete. End turn or manage upgrades.`;
+      }
+
+      if (gameState.rolledThisTurn) {
+        rollBtn.disabled = true;
+        rollBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        endBtn.disabled = false;
+        endBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-800', 'text-slate-500');
+        endBtn.classList.add('bg-blue-600', 'hover:bg-blue-500', 'text-white');
+      } else {
+        rollBtn.disabled = false;
+        rollBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        endBtn.disabled = true;
+        endBtn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-slate-800', 'text-slate-500');
+        endBtn.classList.remove('bg-blue-600', 'hover:bg-blue-500', 'text-white');
+      }
+
+      // If active player is AI, trigger turn routine automatically
+      if (activeP.isAi && !activeP.bankrupt) {
+        setTimeout(handleAITurnRoutine, 900);
+      }
+    }
+
+    function animateDice(d1, d2) {
+      const die1 = document.getElementById('die1');
+      const die2 = document.getElementById('die2');
+      
+      const faceRotations = {
+        1: { x: 0, y: 0 },
+        2: { x: 0, y: -90 },
+        3: { x: -90, y: 0 },
+        4: { x: 90, y: 0 },
+        5: { x: 0, y: 90 },
+        6: { x: 0, y: 180 }
+      };
+
+      const rot1 = faceRotations[d1];
+      const rot2 = faceRotations[d2];
+
+      const extraRotX1 = (Math.floor(Math.random() * 3) + 2) * 360;
+      const extraRotY1 = (Math.floor(Math.random() * 3) + 2) * 360;
+      const extraRotX2 = (Math.floor(Math.random() * 3) + 2) * 360;
+      const extraRotY2 = (Math.floor(Math.random() * 3) + 2) * 360;
+
+      die1.style.transform = `rotateX(${rot1.x + extraRotX1}deg) rotateY(${rot1.y + extraRotY1}deg)`;
+      die2.style.transform = `rotateX(${rot2.x + extraRotX2}deg) rotateY(${rot2.y + extraRotY2}deg)`;
+    }
+
+    function handleRollDice() {
+      if (gameState.isRolling || gameState.rolledThisTurn) return;
+      const p = gameState.players[gameState.activePlayerIndex];
+      if (p.bankrupt) return;
+
+      gameState.isRolling = true;
+      playSound('dice');
+
+      const d1 = Math.floor(Math.random() * 6) + 1;
+      const d2 = Math.floor(Math.random() * 6) + 1;
+      const total = d1 + d2;
+      const isDoubles = d1 === d2;
+
+      animateDice(d1, d2);
+
+      const doubleNotice = document.getElementById('doubleNotice');
+      if (isDoubles) {
+        doubleNotice.style.opacity = '1';
+        gameState.consecutiveDoubles++;
+      } else {
+        doubleNotice.style.opacity = '0';
+        gameState.consecutiveDoubles = 0;
+      }
+
+      setTimeout(() => {
+        gameState.isRolling = false;
+        
+        // 3 consecutive doubles sends delegate to sanctions
+        if (gameState.consecutiveDoubles >= 3) {
+          logEvent(`🚨 ${p.name} rolled 3 consecutive doubles! Sanctioned for market speculation.`);
+          sendToJail(p);
+          gameState.rolledThisTurn = true;
+          updateTurnBanner();
+          return;
+        }
+
+        // Handle Jail conditions
+        if (p.inJail) {
+          if (isDoubles) {
+            logEvent(`🔓 ${p.name} rolled doubles (${d1} & ${d2}) and exits Diplomatic Detention freely!`);
+            p.inJail = false;
+            p.jailTurns = 0;
+            movePlayer(p, total);
+          } else {
+            p.jailTurns++;
+            if (p.jailTurns >= 3) {
+              logEvent(`⚖️ ${p.name} served maximum detention turns. Remitting $50M release fee.`);
+              chargeMoney(p, 50);
+              p.inJail = false;
+              p.jailTurns = 0;
+              movePlayer(p, total);
+            } else {
+              logEvent(`${p.name} failed to roll doubles (rolled ${d1}+${d2}). Remains under detention.`);
+              gameState.rolledThisTurn = true;
+              updateTurnBanner();
+            }
+          }
+          return;
+        }
+
+        // Regular movement
+        movePlayer(p, total);
+
+        if (isDoubles) {
+          gameState.rolledThisTurn = false; // Allow another roll
+          logEvent(`🎲 ${p.name} rolled ${d1}+${d2}=${total} (Doubles! Roll granted again).`);
+        } else {
+          gameState.rolledThisTurn = true;
+          logEvent(`🎲 ${p.name} rolled ${d1}+${d2}=${total}.`);
+        }
+        updateTurnBanner();
+      }, 1000);
+    }
+
+    function movePlayer(player, steps) {
+      let currentSteps = 0;
+
+      function step() {
+        if (currentSteps < steps) {
+          player.position = (player.position + 1) % 40;
+          currentSteps++;
+          playSound('step');
+          renderTokens();
+
+          // Passing START / GO
+          if (player.position === 0) {
+            player.money += 200;
+            playSound('go');
+            logEvent(`🌐 ${player.name} passed START / GO and received $200M sovereign liquidity grant!`);
+            updatePlayerListUI();
+          }
+
+          setTimeout(step, 140);
+        } else {
+          // Landing finished
+          handleTileLanded(player, TILES[player.position]);
+        }
+      }
+      step();
+    }
+
+    function handleTileLanded(player, tile) {
+      logEvent(`📍 ${player.name} landed on ${tile.name} (#${tile.id}).`);
+      updatePlayerListUI();
+
+      if (tile.type === 'country' || tile.type === 'airport') {
+        const ownershipInfo = gameState.ownership[tile.id];
+
+        if (!ownershipInfo) {
+          // Unowned property - prompt buy
+          if (player.isAi) {
+            handleAIBuyDecision(player, tile);
+          } else {
+            promptBuyModal(tile);
+          }
+        } else if (ownershipInfo.ownerId !== player.id) {
+          // Owned by rival - collect rent
+          const owner = gameState.players[ownershipInfo.ownerId];
+          if (!owner.inJail) {
+            const rentDue = calculateRent(tile, ownershipInfo);
+            logEvent(`💸 ${player.name} must pay $${rentDue}M territorial fee to ${owner.name}.`);
+            playSound('rent');
+            transferMoney(player, owner, rentDue);
+          } else {
+            logEvent(`🛡️ ${owner.name} is in Diplomatic Detention; transit fees waived!`);
+          }
+        } else {
+          logEvent(`🏰 ${player.name} rests safely at their sovereign territory in ${tile.name}.`);
+        }
+      } else if (tile.type === 'tax') {
+        playSound('tax');
+        logEvent(`🏛️ ${player.name} pays $${tile.price}M for ${tile.name}.`);
+        chargeMoney(player, tile.price);
+        gameState.taxPool += tile.price;
+      } else if (tile.type === 'gotojail') {
+        sendToJail(player);
+      } else if (tile.type === 'chance' || tile.type === 'chest') {
+        drawEventCard(player, tile.type);
+      } else if (tile.type === 'parking') {
+        if (gameState.taxPool > 0) {
+          player.money += gameState.taxPool;
+          logEvent(`🎁 Global Summit Grant: ${player.name} collected accumulated climate fund of $${gameState.taxPool}M!`);
+          gameState.taxPool = 0;
+          playSound('buy');
+          updatePlayerListUI();
+        } else {
+          logEvent(`🤝 ${player.name} rests in the Free Summit Zone.`);
+        }
+      }
+    }
+
+    function calculateRent(tile, ownershipInfo) {
+      if (tile.type === 'airport') {
+        const ownerId = ownershipInfo.ownerId;
+        const ownedAirports = TILES.filter(t => t.type === 'airport' && gameState.ownership[t.id]?.ownerId === ownerId).length;
+        const airportRents = [25, 50, 100, 200];
+        return airportRents[Math.min(ownedAirports - 1, 3)] || 25;
+      }
+
+      const consulates = ownershipInfo.consulates || 0;
+      let base = tile.rent[consulates] || tile.rent[0];
+
+      // If owner holds the full regional color set and no consulates are built, double base rent
+      if (consulates === 0 && hasFullRegionalMonopoly(ownershipInfo.ownerId, tile.region)) {
+        base = base * 2;
+      }
+      return base;
+    }
+
+    function hasFullRegionalMonopoly(ownerId, region) {
+      if (region === 'special' || region === 'airport' || region === 'corner') return false;
+      const regionCountries = TILES.filter(t => t.region === region && t.type === 'country');
+      return regionCountries.every(t => gameState.ownership[t.id]?.ownerId === ownerId);
+    }
+
+    function sendToJail(player) {
+      playSound('jail');
+      player.position = 10; // Diplomatic Detention space
+      player.inJail = true;
+      player.jailTurns = 0;
+      renderTokens();
+      logEvent(`⛔ ${player.name} is placed under international Trade Sanctions (Diplomatic Detention)!`);
+      updatePlayerListUI();
+    }
+
+    function promptBuyModal(tile) {
+      gameState.pendingActionTile = tile;
+      const modal = document.getElementById('propertyModal');
+      document.getElementById('modalTileCategory').innerText = tile.type === 'airport' ? 'Continental Airport Hub' : 'Sovereign Country';
+      document.getElementById('modalTileName').innerText = tile.name;
+      document.getElementById('modalTileRegion').innerText = tile.region.toUpperCase() + (tile.type === 'country' ? ' DIVISION' : '');
+      document.getElementById('modalTilePrice').innerText = `$${tile.price}M`;
+      document.getElementById('modalTileImage').src = tile.photo;
+      document.getElementById('modalTileFact').innerText = tile.fact;
+      document.getElementById('modalHeaderColor').style.backgroundColor = tile.color || '#475569';
+
+      if (tile.type === 'country') {
+        document.getElementById('modalRentBase').innerText = `$${tile.rent[0]}M`;
+        document.getElementById('modalRent1').innerText = `$${tile.rent[1]}M`;
+        document.getElementById('modalRent2').innerText = `$${tile.rent[2]}M`;
+        document.getElementById('modalRent3').innerText = `$${tile.rent[4]}M`;
+      } else {
+        document.getElementById('modalRentBase').innerText = '$25M (1 Hub)';
+        document.getElementById('modalRent1').innerText = '$50M (2 Hubs)';
+        document.getElementById('modalRent2').innerText = '$100M (3 Hubs)';
+        document.getElementById('modalRent3').innerText = '$200M (All 4 Hubs)';
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function confirmTilePurchase() {
+      const tile = gameState.pendingActionTile;
+      const p = gameState.players[gameState.activePlayerIndex];
+
+      if (!tile || !p) return;
+
+      if (p.money >= tile.price) {
+        p.money -= tile.price;
+        p.properties.push(tile.id);
+        gameState.ownership[tile.id] = { ownerId: p.id, consulates: 0 };
+        playSound('buy');
+        logEvent(`🏛️ ${p.name} acquired ${tile.name} for $${tile.price}M.`);
+
+        // Tag owner chip on the board cell
+        const ownerTag = document.getElementById(`owner-tag-${tile.id}`);
+        if (ownerTag) {
+          ownerTag.className = `w-2.5 h-2.5 rounded-full ${p.color.bg} border border-white`;
+        }
+
+        updatePlayerListUI();
+      } else {
+        logEvent(`❌ ${p.name} lacks sufficient sovereign capital to acquire ${tile.name}.`);
+      }
+
+      closePropertyModal();
+    }
+
+    function closePropertyModal() {
+      gameState.pendingActionTile = null;
+      document.getElementById('propertyModal').classList.add('hidden');
+    }
+
+    function drawEventCard(player, type) {
+      const card = SUMMIT_CARDS[Math.floor(Math.random() * SUMMIT_CARDS.length)];
+      
+      const modal = document.getElementById('cardModal');
+      const tag = document.getElementById('cardTypeTag');
+      const title = document.getElementById('cardTitle');
+      const desc = document.getElementById('cardDescription');
+      const amount = document.getElementById('cardEffectAmount');
+      const icon = document.getElementById('cardIcon');
+
+      tag.innerText = type === 'chance' ? 'G20 Summit Directive' : 'World Bank Multilateral Aid';
+      title.innerText = card.title;
+      desc.innerText = card.desc;
+      icon.className = card.icon;
+
+      if (card.type === 'gain') {
+        amount.innerText = `+$${card.amount}M`;
+        amount.className = "my-4 font-mono text-2xl font-black text-emerald-400";
+        player.money += card.amount;
+        playSound('buy');
+      } else if (card.type === 'loss') {
+        amount.innerText = `-$${Math.abs(card.amount)}M`;
+        amount.className = "my-4 font-mono text-2xl font-black text-rose-400";
+        chargeMoney(player, Math.abs(card.amount));
+        playSound('tax');
+      } else if (card.type === 'move') {
+        amount.innerText = "Transit Fast-Track";
+        amount.className = "my-4 font-mono text-xl font-bold text-cyan-400";
+        player.position = card.teleport;
+        renderTokens();
+        setTimeout(() => handleTileLanded(player, TILES[card.teleport]), 800);
+      }
+
+      modal.classList.remove('hidden');
+      logEvent(`📜 ${player.name} received directive: "${card.title}"`);
+      updatePlayerListUI();
+    }
+
+    function closeCardModal() {
+      document.getElementById('cardModal').classList.add('hidden');
+    }
+
+    function chargeMoney(player, amount) {
+      player.money -= amount;
+      if (player.money < 0) {
+        checkBankruptcy(player);
+      }
+      updatePlayerListUI();
+    }
+
+    function transferMoney(fromPlayer, toPlayer, amount) {
+      fromPlayer.money -= amount;
+      toPlayer.money += amount;
+      if (fromPlayer.money < 0) {
+        checkBankruptcy(fromPlayer, toPlayer);
+      }
+      updatePlayerListUI();
+    }
+
+    function checkBankruptcy(player, creditor = null) {
+      logEvent(`⚠️ FINANCIAL EMERGENCY: ${player.name} has fallen into liquidity deficit ($${player.money}M)!`);
+      
+      // Auto-liquidate or declare insolvency if unable to recover
+      let liquidValue = player.money;
+      player.properties.forEach(tid => {
+        liquidValue += Math.floor(TILES[tid].price * 0.5);
+      });
+
+      if (liquidValue < 0) {
+        // True bankruptcy
+        player.bankrupt = true;
+        logEvent(`☠️ INSOLVENCY DECLARED: ${player.name} has exited the global market!`);
+        
+        player.properties.forEach(tid => {
+          if (creditor) {
+            gameState.ownership[tid].ownerId = creditor.id;
+            creditor.properties.push(tid);
+            const tag = document.getElementById(`owner-tag-${tid}`);
+            if (tag) tag.className = `w-2.5 h-2.5 rounded-full ${creditor.color.bg} border border-white`;
+          } else {
+            delete gameState.ownership[tid];
+            const tag = document.getElementById(`owner-tag-${tid}`);
+            if (tag) tag.className = `w-2.5 h-2.5 rounded-full border border-slate-700 bg-transparent`;
+          }
+        });
+        player.properties = [];
+        renderTokens();
+
+        // Check victory condition
+        const activeSurvivors = gameState.players.filter(p => !p.bankrupt);
+        if (activeSurvivors.length === 1) {
+          showVictoryModal(activeSurvivors[0]);
+        }
+      }
+    }
+
+    function showVictoryModal(winner) {
+      logEvent(`🏆 VICTORY: ${winner.name} has achieved complete global economic dominance!`);
+      alert(`🎉 VICTORY!\n\n${winner.name} controls the global economy and wins Geopoly!`);
+    }
+
+    function updatePropertyQuickList() {
+      const activeP = gameState.players[gameState.activePlayerIndex];
+      const container = document.getElementById('propertyQuickList');
+      const managerLabel = document.getElementById('managerPlayerName');
+      if (!activeP || activeP.bankrupt) return;
+
+      managerLabel.innerText = activeP.name;
+
+      if (activeP.properties.length === 0) {
+        container.innerHTML = `<div class="text-center py-6 text-slate-500 text-xs italic">Acquire countries to unlock development upgrades.</div>`;
+        return;
+      }
+
+      container.innerHTML = '';
+      activeP.properties.forEach(tid => {
+        const tile = TILES[tid];
+        const ownership = gameState.ownership[tid];
+        if (!ownership) return;
+
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between p-2 rounded-lg bg-slate-900/90 border border-slate-800 text-xs';
+
+        const upgradeLevel = ownership.consulates || 0;
+        let upgradeText = 'Base';
+        if (upgradeLevel === 1) upgradeText = '1 Consulate';
+        if (upgradeLevel === 2) upgradeText = '2 Consulates';
+        if (upgradeLevel === 3) upgradeText = 'Embassy (Max)';
+
+        row.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full" style="background-color: ${tile.color || '#64748b'};"></span>
+            <div>
+              <div class="font-bold text-slate-200">${tile.name}</div>
+              <div class="text-[10px] text-amber-400 font-mono">${upgradeText}</div>
+            </div>
+          </div>
+          <div>
+            ${tile.type === 'country' && upgradeLevel < 3 ? `
+              <button onclick="upgradeProperty(${tid})" class="px-2 py-1 bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black rounded text-[10px] font-bold border border-amber-500/40 transition">
+                + Upgrade ($${tile.upgradeCost}M)
+              </button>
+            ` : '<span class="text-[10px] text-slate-500 font-mono">Maxed</span>'}
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function upgradeProperty(tileId) {
+      const tile = TILES[tileId];
+      const ownership = gameState.ownership[tileId];
+      const p = gameState.players[gameState.activePlayerIndex];
+
+      if (!tile || !ownership || ownership.ownerId !== p.id) return;
+      if (ownership.consulates >= 3) return;
+
+      const cost = tile.upgradeCost || 50;
+      if (p.money >= cost) {
+        p.money -= cost;
+        ownership.consulates = (ownership.consulates || 0) + 1;
+        playSound('buy');
+        logEvent(`🏗️ ${p.name} upgraded ${tile.name} to ${ownership.consulates === 3 ? 'Embassy' : `${ownership.consulates} Consulate(s)`}!`);
+        
+        // Show upgrade badge on cell
+        const badge = document.getElementById(`badge-upgrade-${tileId}`);
+        if (badge) {
+          badge.classList.remove('hidden');
+          badge.innerText = ownership.consulates === 3 ? '★ EMBASSY' : `${ownership.consulates}C`;
+        }
+
+        updatePlayerListUI();
+        renderManageModalList();
+      } else {
+        logEvent(`❌ Insufficient funds to upgrade infrastructure in ${tile.name}.`);
+      }
+    }
+
+    function openManageAllModal() {
+      renderManageModalList();
+      document.getElementById('manageModal').classList.remove('hidden');
+    }
+
+    function closeManageModal() {
+      document.getElementById('manageModal').classList.add('hidden');
+    }
+
+    function renderManageModalList() {
+      const activeP = gameState.players[gameState.activePlayerIndex];
+      const container = document.getElementById('manageModalList');
+      if (!activeP) return;
+
+      container.innerHTML = '';
+      if (activeP.properties.length === 0) {
+        container.innerHTML = `<div class="text-center py-10 text-slate-400 text-xs">No sovereign titles registered under your delegation.</div>`;
+        return;
+      }
+
+      activeP.properties.forEach(tid => {
+        const tile = TILES[tid];
+        const ownership = gameState.ownership[tid];
+        const level = ownership.consulates || 0;
+
+        const item = document.createElement('div');
+        item.className = 'p-3 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-between gap-3';
+        item.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg overflow-hidden border border-slate-700 hidden sm:block">
+              <img src="${tile.photo || ''}" alt="" class="w-full h-full object-cover">
+            </div>
+            <div>
+              <div class="text-sm font-bold text-white">${tile.name}</div>
+              <div class="text-xs text-slate-400">Current Rent: <strong class="text-emerald-400 font-mono">$${calculateRent(tile, ownership)}M</strong></div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            ${tile.type === 'country' && level < 3 ? `
+              <button onclick="upgradeProperty(${tid})" class="px-3 py-1.5 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-black font-bold text-xs rounded-lg shadow transition">
+                Build ${level === 2 ? 'Embassy' : 'Consulate'} ($${tile.upgradeCost}M)
+              </button>
+            ` : '<span class="text-xs text-slate-500 font-mono">Max Infrastructure</span>'}
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function handleAITurnRoutine() {
+      const activeP = gameState.players[gameState.activePlayerIndex];
+      if (!activeP.isAi || activeP.bankrupt) return;
+
+      // Step 1: If in jail, try to pay if rich
+      if (activeP.inJail && activeP.money > 400) {
+        activeP.money -= 50;
+        activeP.inJail = false;
+        activeP.jailTurns = 0;
+        logEvent(`🏛️ ${activeP.name} paid $50M diplomatic penalty to resume international trade.`);
+        updatePlayerListUI();
+      }
+
+      // Step 2: Roll dice
+      handleRollDice();
+
+      // Step 3: End turn after short contemplation delay
+      setTimeout(() => {
+        if (!activeP.bankrupt) {
+          // AI upgrades infrastructure if treasury is healthy
+          attemptAIUpgrades(activeP);
+          handleEndTurn();
+        }
+      }, 2600);
+    }
+
+    function handleAIBuyDecision(player, tile) {
+      const reserveThreshold = 180;
+      if (player.money - tile.price >= reserveThreshold) {
+        player.money -= tile.price;
+        player.properties.push(tile.id);
+        gameState.ownership[tile.id] = { ownerId: player.id, consulates: 0 };
+        playSound('buy');
+        logEvent(`🤖 ${player.name} acquired ${tile.name} for $${tile.price}M.`);
+
+        const ownerTag = document.getElementById(`owner-tag-${tile.id}`);
+        if (ownerTag) {
+          ownerTag.className = `w-2.5 h-2.5 rounded-full ${player.color.bg} border border-white`;
+        }
+        updatePlayerListUI();
+      } else {
+        logEvent(`🤖 ${player.name} declined to acquire ${tile.name} to preserve capital liquidity.`);
+      }
+    }
+
+    function attemptAIUpgrades(player) {
+      if (player.money < 300) return;
+      for (const tid of player.properties) {
+        const tile = TILES[tid];
+        const ownership = gameState.ownership[tid];
+        if (tile.type === 'country' && ownership && ownership.consulates < 3 && player.money > 250) {
+          upgradeProperty(tid);
+          break;
+        }
+      }
+    }
+
+    function handleEndTurn() {
+      if (!gameState.rolledThisTurn && !gameState.players[gameState.activePlayerIndex].inJail) {
+        return;
+      }
+
+      // Rotate to next solvent player
+      let nextIndex = (gameState.activePlayerIndex + 1) % gameState.players.length;
+      let loopCheck = 0;
+      while (gameState.players[nextIndex].bankrupt && loopCheck < gameState.players.length) {
+        nextIndex = (nextIndex + 1) % gameState.players.length;
+        loopCheck++;
+      }
+
+      if (nextIndex <= gameState.activePlayerIndex) {
+        gameState.turnNumber++;
+      }
+
+      gameState.activePlayerIndex = nextIndex;
+      gameState.rolledThisTurn = false;
+      gameState.isRolling = false;
+      gameState.consecutiveDoubles = 0;
+
+      updateTurnBanner();
+      updatePlayerListUI();
+    }
+
+    function logEvent(msg) {
+      const log = document.getElementById('gameLog');
+      const entry = document.createElement('div');
+      entry.className = "text-slate-300 text-[11px] leading-relaxed pb-1 border-b border-slate-800/40";
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      entry.innerHTML = `<span class="text-slate-500 font-mono text-[9px] mr-1.5">[${time}]</span> ${msg}`;
+      log.prepend(entry);
+    }
+
+    function clearEventLog() {
+      document.getElementById('gameLog').innerHTML = '<div class="text-slate-500 text-xs italic">World wire log cleared.</div>';
+    }
+
+    function inspectTile(tileId) {
+      promptBuyModal(TILES[tileId]);
+    }
+
+    function viewPlayerAssets(playerId) {
+      gameState.activePlayerIndex = playerId;
+      updateTurnBanner();
+      updatePlayerListUI();
+      openManageAllModal();
+    }
+
+    function openRulesModal() {
+      document.getElementById('rulesModal').classList.remove('hidden');
+    }
+    function closeRulesModal() {
+      document.getElementById('rulesModal').classList.add('hidden');
+    }
+    function openNewGameModal() {
+      document.getElementById('newGameModal').classList.remove('hidden');
+    }
+    function closeNewGameModal() {
+      document.getElementById('newGameModal').classList.add('hidden');
+    }
+
+    let selectedPlayerCount = 4;
+    function selectPlayerCount(count) {
+      selectedPlayerCount = count;
+      document.querySelectorAll('.count-btn').forEach(btn => {
+        if (parseInt(btn.getAttribute('data-count')) === count) {
+          btn.classList.add('border-cyan-500', 'bg-cyan-950', 'text-cyan-300');
+          btn.classList.remove('bg-slate-800', 'border-slate-700');
+        } else {
+          btn.classList.remove('border-cyan-500', 'bg-cyan-950', 'text-cyan-300');
+          btn.classList.add('bg-slate-800', 'border-slate-700');
+        }
+      });
+    }
+
+    function initNewGame() {
+      const mode = document.getElementById('botSetupSelect').value;
+      const treasury = parseInt(document.getElementById('startingTreasurySelect').value);
+      closeNewGameModal();
+      initializePlayers(selectedPlayerCount, mode, treasury);
+    }
+
+    window.onload = function () {
+      renderBoardTiles();
+      selectPlayerCount(4);
+      initializePlayers(4, 'all_ai', 1500);
+      logEvent('Geopoly board initialized. Welcome sovereign delegates!');
+    };
+  </script>
+</body>
+</html>
