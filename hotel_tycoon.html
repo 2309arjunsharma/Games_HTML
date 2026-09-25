@@ -1,0 +1,2681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Human Hotel Tycoon - Resort & Mega Expansion</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      font-family: 'Fredoka', 'Plus Jakarta Sans', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    body {
+      background-color: #0b1120;
+      margin: 0;
+      overflow: hidden;
+    }
+    @keyframes floatUp {
+      0% { transform: translateY(0px) scale(0.9); opacity: 1; }
+      100% { transform: translateY(-55px) scale(1.18); opacity: 0; }
+    }
+    .float-fx {
+      position: absolute;
+      pointer-events: none;
+      animation: floatUp 0.95s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+      font-weight: 800;
+      z-index: 60;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    }
+    #joystickZone {
+      position: absolute;
+      bottom: 28px;
+      left: 28px;
+      width: 124px;
+      height: 124px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 3px solid rgba(255, 255, 255, 0.28);
+      backdrop-filter: blur(6px);
+      display: none;
+      touch-action: none;
+      z-index: 45;
+    }
+    #joystickKnob {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 52px;
+      height: 52px;
+      margin: -26px 0 0 -26px;
+      border-radius: 9999px;
+      background: radial-gradient(circle, #38bdf8, #0284c7);
+      border: 3px solid #ffffff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      pointer-events: none;
+    }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); border-radius: 8px; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 8px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  </style>
+</head>
+<body class="w-screen h-screen relative select-none bg-slate-950">
+
+  <div class="absolute top-0 left-0 right-0 z-30 p-2 sm:p-4 flex items-center justify-between pointer-events-none">
+    
+    <!-- Left HUD: Hotel Vault, Prestige, Yelp Reviews, Multi-Floor Switcher -->
+    <div class="pointer-events-auto flex items-center gap-2 sm:gap-3 flex-wrap">
+      
+      <!-- Hotel Vault -->
+      <div class="bg-slate-900/90 border-2 border-amber-400 shadow-2xl rounded-full px-3 sm:px-4 py-1.5 sm:py-2 flex items-center gap-2 sm:gap-3 backdrop-blur-md">
+        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-white text-base sm:text-xl shadow-inner font-black">
+          $
+        </div>
+        <div>
+          <div class="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Hotel Vault</div>
+          <div id="cashDisplay" class="text-lg sm:text-2xl font-black text-amber-300 leading-tight">$600</div>
+        </div>
+      </div>
+
+      <!-- Star Rating & Prestige -->
+      <div class="bg-slate-900/90 border-2 border-purple-500/80 rounded-2xl px-3 py-1.5 flex items-center gap-2 backdrop-blur-md shadow-xl">
+        <div class="w-7 h-7 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-sm">
+          <i class="fa-solid fa-crown"></i>
+        </div>
+        <div>
+          <div class="text-[9px] uppercase font-bold text-slate-400">Prestige</div>
+          <div class="flex items-center gap-1 text-amber-400 text-xs font-black">
+            <span id="starLevelDisplay">★ 1</span>
+            <div class="w-12 sm:w-16 bg-slate-800 rounded-full h-1.5 overflow-hidden ml-1">
+              <div id="prestigeProgressBar" class="bg-amber-400 h-full w-1/4 transition-all"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reviews Tablet Button -->
+      <button onclick="openReviewModal()" class="bg-slate-900/90 border-2 border-sky-400 hover:border-sky-300 rounded-2xl px-3 py-1.5 flex items-center gap-2 backdrop-blur-md shadow-xl transition active:scale-95">
+        <div class="w-7 h-7 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center text-sm">
+          <i class="fa-solid fa-tablet-screen-button"></i>
+        </div>
+        <div>
+          <div class="text-[9px] uppercase font-bold text-slate-400">Yelp Reviews</div>
+          <div class="text-xs font-black text-sky-300 flex items-center gap-1">
+            <span id="reviewAvgScore">4.9 ★</span>
+            <span id="tipMultiplierBadge" class="text-[10px] bg-sky-500/20 px-1 rounded text-sky-300">1.5x Tips</span>
+          </div>
+        </div>
+      </button>
+
+      <!-- Multi-Floor Switcher -->
+      <div class="bg-slate-900/90 border-2 border-indigo-400/90 rounded-2xl p-1 flex items-center gap-1 backdrop-blur-md shadow-xl">
+        <button onclick="switchFloor(-1)" id="flBtnMinus1" class="px-2.5 py-1 rounded-xl text-xs font-black transition text-purple-400 hover:text-white">
+          FL -1 (CASINO $500)
+        </button>
+        <button onclick="switchFloor(1)" id="flBtn1" class="px-2.5 py-1 rounded-xl text-xs font-black transition bg-indigo-600 text-white shadow">
+          FL 1 (LOBBY)
+        </button>
+        <button onclick="switchFloor(2)" id="flBtn2" class="px-2.5 py-1 rounded-xl text-xs font-black transition text-slate-400 hover:text-white">
+          FL 2 (PENTHOUSE $500)
+        </button>
+        <button onclick="switchFloor(3)" id="flBtn3" class="px-2.5 py-1 rounded-xl text-xs font-black transition text-slate-400 hover:text-white">
+          FL 3 (WATERPARK $350)
+        </button>
+      </div>
+
+      <!-- Live Weather Indicator Pill -->
+      <div id="weatherPill" class="bg-slate-900/90 border border-slate-700/80 rounded-2xl px-3 py-1.5 hidden xl:flex items-center gap-2 backdrop-blur-md shadow-lg">
+        <span id="weatherIcon" class="text-amber-400 text-sm"><i class="fa-solid fa-sun"></i></span>
+        <div>
+          <div class="text-[9px] uppercase font-bold text-slate-400">Atmosphere</div>
+          <div id="weatherLabel" class="text-xs font-black text-amber-300">Sunny Heatwave</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right HUD: Save, Wardrobe, Themes, Sound, Staff -->
+    <div class="pointer-events-auto flex items-center gap-2 flex-wrap justify-end">
+      
+      <!-- Save Game -->
+      <button onclick="saveGame()" id="saveBtn" class="px-3 h-10 sm:h-11 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-xl border-2 border-emerald-300 active:scale-95 transition backdrop-blur-md">
+        <i class="fa-solid fa-floppy-disk"></i>
+        <span>SAVE</span>
+      </button>
+
+      <!-- Manager Wardrobe Button -->
+      <button onclick="openWardrobeModal()" class="px-2.5 sm:px-3 h-10 sm:h-11 rounded-2xl bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-black text-xs flex items-center gap-1.5 shadow-xl border-2 border-pink-300 active:scale-95 transition" title="Wardrobe & Skins">
+        <i class="fa-solid fa-shirt text-amber-300"></i>
+        <span class="hidden md:inline">WARDROBE</span>
+      </button>
+
+      <!-- Lucky Luggage Wheel Modal -->
+      <button onclick="openWheelModal()" class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black flex items-center justify-center text-base sm:text-lg shadow-xl border-2 border-yellow-200 active:scale-95 transition" title="Lucky Mystery Suitcase">
+        <i class="fa-solid fa-gift animate-bounce"></i>
+      </button>
+
+      <!-- Themes Customizer Button -->
+      <button onclick="openThemeModal()" class="px-2.5 sm:px-3 h-10 sm:h-11 rounded-2xl bg-purple-700 hover:bg-purple-600 text-white font-black text-xs flex items-center gap-1.5 shadow-xl border-2 border-purple-300 active:scale-95 transition">
+        <i class="fa-solid fa-paint-roller text-amber-300"></i>
+        <span class="hidden md:inline">THEMES</span>
+      </button>
+
+      <!-- Vehicle Scooter Toggle Button -->
+      <button id="vehicleToggleBtn" onclick="toggleVehicleMount()" class="hidden px-3 h-10 sm:h-11 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-xl border-2 border-cyan-300 active:scale-95 transition backdrop-blur-md">
+        <i class="fa-solid fa-bolt"></i>
+        <span id="vehicleBtnLabel">SCOOTER ON</span>
+      </button>
+
+      <!-- World Franchise Resort Map Button -->
+      <button onclick="openFranchiseModal()" class="px-2.5 sm:px-3 h-10 sm:h-11 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs flex items-center gap-1.5 shadow-xl border-2 border-teal-300 active:scale-95 transition" title="Franchise & World Resorts">
+        <i class="fa-solid fa-earth-americas text-amber-300"></i>
+        <span class="hidden md:inline">FRANCHISE</span>
+      </button>
+
+      <!-- Audio Sound Toggle -->
+      <button onclick="toggleSound()" id="soundBtn" class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-slate-900/90 border-2 border-slate-700 hover:border-amber-400 text-amber-400 flex items-center justify-center text-base sm:text-lg shadow-lg active:scale-95 transition backdrop-blur-md">
+        <i id="soundIcon" class="fa-solid fa-volume-high"></i>
+      </button>
+
+      <!-- Staff & Upgrades Hub -->
+      <button onclick="openStaffModal()" class="px-3 sm:px-4 h-10 sm:h-11 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-xl border-2 border-amber-300 active:scale-95 transition">
+        <i class="fa-solid fa-user-gear"></i>
+        <span class="hidden sm:inline">STAFF & UPGRADES</span>
+        <span class="sm:hidden">STAFF</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Carried Items Capacity Bar -->
+  <div id="capacityBarContainer" class="absolute top-16 sm:top-20 left-1/2 -translate-x-1/2 z-20 bg-slate-900/90 border border-slate-700/80 rounded-full px-4 py-1.5 flex items-center gap-3 text-xs font-bold text-white shadow-xl backdrop-blur-md hidden pointer-events-auto">
+    <div class="flex items-center gap-2">
+      <i class="fa-solid fa-layer-group text-sky-400"></i>
+      <span>Hands: <span id="carriedCount">0</span>/<span id="maxCapacityCount">5</span></span>
+      <div id="stackItemsList" class="flex items-center gap-1.5 ml-1"></div>
+    </div>
+    <button onclick="dumpAllItems()" title="Discard all carried items" class="px-2 py-0.5 bg-rose-600/80 hover:bg-rose-500 text-white text-[10px] uppercase font-black rounded-lg transition active:scale-95 flex items-center gap-1">
+      <i class="fa-solid fa-trash-can"></i> DUMP
+    </button>
+  </div>
+
+  <!-- Zone Switch Indicator Pill -->
+  <div id="zoneIndicator" class="absolute bottom-5 left-5 z-20 bg-slate-900/90 border border-slate-700 text-slate-300 text-xs px-3.5 py-2 rounded-2xl shadow-xl flex items-center gap-2.5 backdrop-blur-md">
+    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+    <span id="zoneNameLabel" class="font-bold">LOBBY & SUITES WING</span>
+  </div>
+
+  <!-- Controls hint -->
+  <div id="controlsHint" class="absolute bottom-5 right-5 z-20 bg-slate-900/90 border border-slate-700 text-slate-300 text-xs px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-3 pointer-events-none transition-opacity duration-500 backdrop-blur-md">
+    <div class="flex gap-1 text-[11px] font-mono">
+      <span class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-600">W</span>
+      <span class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-600">A</span>
+      <span class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-600">S</span>
+      <span class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-600">D</span>
+    </div>
+    <span>or Drag/Touch to run!</span>
+  </div>
+
+  <!-- Main Canvas & Virtual Joystick -->
+  <canvas id="gameCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+
+  <div id="joystickZone">
+    <div id="joystickKnob"></div>
+  </div>
+
+  <!-- Staff Modal -->
+  <div id="staffModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-3 sm:p-4">
+    <div class="bg-slate-900 border-2 border-slate-700 rounded-3xl max-w-xl w-full p-4 sm:p-6 shadow-2xl flex flex-col gap-4">
+      
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-hotel"></i>
+          </div>
+          <div>
+            <h2 class="text-lg sm:text-xl font-bold text-white">Hotel Staff & Upgrades</h2>
+            <p class="text-xs text-slate-400">Automate your service pipeline & unlock new helpers!</p>
+          </div>
+        </div>
+        <button onclick="closeStaffModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Upgrade Cards List -->
+      <div class="flex flex-col gap-2.5 max-h-[60vh] overflow-y-auto pr-1">
+        
+        <!-- Manager Speed -->
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-person-running"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm text-white">Manager Running Speed</div>
+              <div class="text-xs text-slate-400">Lv. <span id="speedLevelLabel">1</span> (+Sprint Boost)</div>
+            </div>
+          </div>
+          <button onclick="buyPlayerSpeed()" id="btnBuySpeed" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow transition">
+            Upgrade ($<span id="speedCostLabel">120</span>)
+          </button>
+        </div>
+
+        <!-- Manager Capacity -->
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm text-white">Manager Carrying Stack</div>
+              <div class="text-xs text-slate-400">Stack size: <span id="capacityLevelLabel">5 items</span></div>
+            </div>
+          </div>
+          <button onclick="buyPlayerCapacity()" id="btnBuyCapacity" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow transition">
+            Upgrade ($<span id="capacityCostLabel">150</span>)
+          </button>
+        </div>
+
+        <!-- Receptionist -->
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-bell-concierge"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm text-white">Front Desk Clerk (Receptionist)</div>
+              <div class="text-xs text-slate-400">Auto check-in & keys assignment</div>
+            </div>
+          </div>
+          <button onclick="hireReceptionist()" id="btnHireReceptionist" class="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow transition">
+            Hire ($<span id="receptionistCostLabel">220</span>)
+          </button>
+        </div>
+
+        <!-- Valet Attendant -->
+        <div class="bg-slate-800/80 border border-cyan-500/60 rounded-2xl p-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-car-side"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm text-white">Driveway Valet Attendant</div>
+              <div class="text-xs text-slate-400">Parks arriving cars & washes muddy tires automatically</div>
+            </div>
+          </div>
+          <button onclick="hireValet()" id="btnHireValet" class="px-3.5 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs rounded-xl shadow transition">
+            Hire ($<span id="valetCostLabel">280</span>)
+          </button>
+        </div>
+
+        <!-- Autonomous Patrol Roomba -->
+        <div class="bg-slate-800/80 border border-emerald-500/60 rounded-2xl p-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-robot"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm text-white">Patrol Robo-Vac (Roomba 3000)</div>
+              <div class="text-xs text-slate-400">Cruises halls automatically mopping puddles & dirty footprints</div>
+            </div>
+          </div>
+          <button onclick="buyRoomba()" id="btnBuyRoomba" class="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow transition">
+            Deploy ($<span id="roombaCostLabel">320</span>)
+          </button>
+        </div>
+
+        <!-- Housekeeper Maid -->
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-broom"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm text-white">Housekeeping Maid</div>
+              <div class="text-xs text-slate-400">Cleans dirty rooms & delivers fresh linens</div>
+            </div>
+          </div>
+          <button onclick="hireCleaner()" id="btnHireCleaner" class="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow transition">
+            Hire ($<span id="cleanerCostLabel">280</span>)
+          </button>
+        </div>
+
+        <!-- Head Butler Promotion -->
+        <div class="bg-slate-800/80 border border-amber-500/60 rounded-2xl p-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-user-tie"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm text-white">Promote to Head Butler</div>
+              <div class="text-xs text-slate-400">2x speed, carries dual linen bundles & cleans instantly</div>
+            </div>
+          </div>
+          <button onclick="promoteHeadButler()" id="btnPromoteButler" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow transition">
+            Promote ($<span id="butlerCostLabel">450</span>)
+          </button>
+        </div>
+
+        <!-- Laundry Porter -->
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-shirt"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm text-white">Laundry Room Porter</div>
+              <div class="text-xs text-slate-400">Transfers dirty hampers to washer & restocks shelves</div>
+            </div>
+          </div>
+          <button onclick="hireLaundryPorter()" id="btnHirePorter" class="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow transition">
+            Hire ($<span id="porterCostLabel">300</span>)
+          </button>
+        </div>
+
+        <!-- Barista Chef -->
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-600/20 text-amber-400 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-mug-hot"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm text-white">Lobby Cafe Barista & Chef</div>
+              <div class="text-xs text-slate-400">Brews hot espresso & serves waffle buffet</div>
+            </div>
+          </div>
+          <button onclick="hireBarista()" id="btnHireBarista" class="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow transition">
+            Hire ($<span id="baristaCostLabel">260</span>)
+          </button>
+        </div>
+
+        <!-- Gift Shop Cashier -->
+        <div class="bg-slate-800/80 border border-pink-500/60 rounded-2xl p-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-bag-shopping"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm text-white">Gift Shop Cashier</div>
+              <div class="text-xs text-slate-400">Rings up souvenirs, umbrellas & postcards automatically</div>
+            </div>
+          </div>
+          <button onclick="hireCashier()" id="btnHireCashier" class="px-3.5 py-2 bg-pink-500 hover:bg-pink-400 text-slate-950 font-black text-xs rounded-xl shadow transition">
+            Hire ($<span id="cashierCostLabel">290</span>)
+          </button>
+        </div>
+
+        <!-- Security Guard -->
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm text-white">Hotel Security Bouncer</div>
+              <div class="text-xs text-slate-400">Patrols lobby, tackles thieves & recovers stolen cash</div>
+            </div>
+          </div>
+          <button onclick="hireSecurity()" id="btnHireSecurity" class="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow transition">
+            Hire ($<span id="securityCostLabel">340</span>)
+          </button>
+        </div>
+
+      </div>
+
+      <div class="pt-2 border-t border-slate-800 flex justify-between items-center">
+        <span class="text-xs text-slate-400 font-semibold">Step on unlock rings to auto-build!</span>
+        <button onclick="closeStaffModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition">
+          Return to Hotel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wardrobe & Skins Modal -->
+  <div id="wardrobeModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-3 sm:p-4">
+    <div class="bg-slate-900 border-2 border-pink-500 rounded-3xl max-w-md w-full p-5 shadow-2xl flex flex-col gap-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-pink-500/20 text-pink-400 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-shirt"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-white">Manager Wardrobe & Skins</h2>
+            <p class="text-xs text-slate-400">Equip stylish outfits with passive tycoon perks!</p>
+          </div>
+        </div>
+        <button onclick="closeWardrobeModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="flex flex-col gap-2.5 max-h-[50vh] overflow-y-auto pr-1">
+        <!-- Default Manager -->
+        <div onclick="equipSkin('default')" class="cursor-pointer p-3 rounded-2xl border-2 border-slate-700 hover:border-slate-500 bg-slate-800/80 flex items-center justify-between transition">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-slate-700 flex items-center justify-center text-xl">👔</div>
+            <div>
+              <div class="font-bold text-white text-sm">Classic Manager</div>
+              <div class="text-xs text-slate-400">Standard crisp black blazer outfit</div>
+            </div>
+          </div>
+          <span class="text-xs font-bold text-emerald-400">EQUIP</span>
+        </div>
+
+        <!-- Golden Tycoon Tux -->
+        <div onclick="equipSkin('golden_tux')" class="cursor-pointer p-3 rounded-2xl border-2 border-amber-500 hover:border-amber-400 bg-amber-950/40 flex items-center justify-between transition">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-xl">✨</div>
+            <div>
+              <div class="font-bold text-amber-300 text-sm">Golden Tycoon Tux</div>
+              <div class="text-xs text-amber-400">+25% all tip values from every guest</div>
+            </div>
+          </div>
+          <span class="text-xs font-bold text-amber-300 bg-amber-900/60 px-2 py-1 rounded">EQUIP</span>
+        </div>
+
+        <!-- Speedy Bellhop -->
+        <div onclick="equipSkin('bellhop')" class="cursor-pointer p-3 rounded-2xl border-2 border-rose-500 hover:border-rose-400 bg-rose-950/40 flex items-center justify-between transition">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center text-xl">🛎️</div>
+            <div>
+              <div class="font-bold text-rose-300 text-sm">Speedy Bellhop</div>
+              <div class="text-xs text-rose-400">+4 extra carrying stack capacity</div>
+            </div>
+          </div>
+          <span class="text-xs font-bold text-rose-300 bg-rose-900/60 px-2 py-1 rounded">EQUIP</span>
+        </div>
+
+        <!-- Master Executive Chef -->
+        <div onclick="equipSkin('chef')" class="cursor-pointer p-3 rounded-2xl border-2 border-sky-500 hover:border-sky-400 bg-sky-950/40 flex items-center justify-between transition">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-sky-500/20 flex items-center justify-center text-xl">👨‍🍳</div>
+            <div>
+              <div class="font-bold text-sky-300 text-sm">Master Executive Chef</div>
+              <div class="text-xs text-sky-400">Instant gourmet food cooking & trolley speed</div>
+            </div>
+          </div>
+          <span class="text-xs font-bold text-sky-300 bg-sky-900/60 px-2 py-1 rounded">EQUIP</span>
+        </div>
+
+        <!-- Island Floral Resort -->
+        <div onclick="equipSkin('island')" class="cursor-pointer p-3 rounded-2xl border-2 border-emerald-500 hover:border-emerald-400 bg-emerald-950/40 flex items-center justify-between transition">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-xl">🌺</div>
+            <div>
+              <div class="font-bold text-emerald-300 text-sm">Island Floral Resort</div>
+              <div class="text-xs text-emerald-400">+35% run speed outdoors & in waterpark</div>
+            </div>
+          </div>
+          <span class="text-xs font-bold text-emerald-300 bg-emerald-900/60 px-2 py-1 rounded">EQUIP</span>
+        </div>
+      </div>
+
+      <button onclick="closeWardrobeModal()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition">
+        Close Wardrobe
+      </button>
+    </div>
+  </div>
+
+  <!-- Review Modal -->
+  <div id="reviewModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-3 sm:p-4">
+    <div class="bg-slate-900 border-2 border-sky-400 rounded-3xl max-w-lg w-full p-4 sm:p-6 shadow-2xl flex flex-col gap-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-sky-500/20 text-sky-400 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-star"></i>
+          </div>
+          <div>
+            <h2 class="text-lg sm:text-xl font-bold text-white">Guest Reviews Tablet</h2>
+            <p class="text-xs text-slate-400">High ratings boost your hotel tips multiplier!</p>
+          </div>
+        </div>
+        <button onclick="closeReviewModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div id="reviewsListContainer" class="flex flex-col gap-2.5 max-h-[50vh] overflow-y-auto pr-1"></div>
+
+      <div class="pt-2 border-t border-slate-800 flex justify-between items-center">
+        <div class="text-xs text-slate-400">Tip Multiplier: <span id="reviewMultiplierLabel" class="text-amber-400 font-bold">1.5x</span></div>
+        <button onclick="closeReviewModal()" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl transition">
+          Close Tablet
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Theme Selector Modal -->
+  <div id="themeModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-3 sm:p-4">
+    <div class="bg-slate-900 border-2 border-purple-500 rounded-3xl max-w-md w-full p-5 shadow-2xl flex flex-col gap-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-white">Room Themes & Styling</h2>
+            <p class="text-xs text-slate-400">Re-style suites to permanently multiply tips!</p>
+          </div>
+        </div>
+        <button onclick="closeThemeModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="flex flex-col gap-2.5">
+        <div onclick="applyTheme('classic')" class="cursor-pointer p-3 rounded-2xl border-2 border-slate-700 hover:border-slate-500 bg-slate-800/80 flex items-center justify-between transition">
+          <div>
+            <div class="font-bold text-white text-sm">Classic Hotel Suites</div>
+            <div class="text-xs text-slate-400">Standard crisp linen sheets (+0% bonus)</div>
+          </div>
+          <span class="text-xs font-bold text-slate-400 bg-slate-700 px-2 py-1 rounded">DEFAULT</span>
+        </div>
+
+        <div onclick="applyTheme('tiki')" class="cursor-pointer p-3 rounded-2xl border-2 border-emerald-600 hover:border-emerald-400 bg-emerald-950/40 flex items-center justify-between transition">
+          <div>
+            <div class="font-bold text-emerald-300 text-sm">🌴 Tropical Tiki Suites</div>
+            <div class="text-xs text-emerald-400">Bamboo headboards, palm duvets (+25% tips)</div>
+          </div>
+          <span class="text-xs font-bold text-emerald-300 bg-emerald-900/60 px-2 py-1 rounded">SELECT</span>
+        </div>
+
+        <div onclick="applyTheme('velvet')" class="cursor-pointer p-3 rounded-2xl border-2 border-purple-500 hover:border-purple-300 bg-purple-950/40 flex items-center justify-between transition">
+          <div>
+            <div class="font-bold text-purple-300 text-sm">👑 Royal Velvet Penthouse</div>
+            <div class="text-xs text-purple-400">Deep purple duvets, gold-leaf trimming (+50% tips)</div>
+          </div>
+          <span class="text-xs font-bold text-purple-300 bg-purple-900/60 px-2 py-1 rounded">SELECT</span>
+        </div>
+
+        <div onclick="applyTheme('cyberpunk')" class="cursor-pointer p-3 rounded-2xl border-2 border-cyan-400 hover:border-cyan-200 bg-cyan-950/40 flex items-center justify-between transition">
+          <div>
+            <div class="font-bold text-cyan-300 text-sm">⚡ Neon Cyberpunk Suites</div>
+            <div class="text-xs text-cyan-400">Glowing cyan/magenta LED strips (+75% tips)</div>
+          </div>
+          <span class="text-xs font-bold text-cyan-300 bg-cyan-900/60 px-2 py-1 rounded">SELECT</span>
+        </div>
+      </div>
+
+      <button onclick="closeThemeModal()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition">
+        Close Theme Selector
+      </button>
+    </div>
+  </div>
+
+  <!-- Lucky Wheel Modal -->
+  <div id="wheelModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-3 sm:p-4">
+    <div class="bg-slate-900 border-2 border-yellow-400 rounded-3xl max-w-sm w-full p-5 shadow-2xl flex flex-col items-center gap-4 text-center">
+      <div class="w-12 h-12 rounded-2xl bg-yellow-500/20 text-yellow-400 flex items-center justify-center text-2xl">
+        <i class="fa-solid fa-gift"></i>
+      </div>
+      <div>
+        <h2 class="text-lg font-bold text-white">Lucky Mystery Suitcase</h2>
+        <p class="text-xs text-slate-400">Spin the lost-luggage wheel for instant tycoon prizes!</p>
+      </div>
+
+      <div class="relative w-48 h-48 my-2">
+        <div id="wheelSpinner" class="w-full h-full rounded-full border-4 border-yellow-400 shadow-xl bg-gradient-to-tr from-amber-500 via-purple-600 to-cyan-500 transition-transform duration-[3000ms] flex items-center justify-center text-white font-black text-sm">
+          SPIN ME
+        </div>
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 text-2xl text-yellow-300">▼</div>
+      </div>
+
+      <button onclick="spinWheel()" id="spinBtn" class="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-sm rounded-2xl shadow-xl transition active:scale-95">
+        SPIN LUCKY WHEEL (FREE)
+      </button>
+      <button onclick="closeWheelModal()" class="text-xs text-slate-400 hover:text-white">
+        Back to Hotel
+      </button>
+    </div>
+  </div>
+
+  <!-- Franchise & World Resorts Modal -->
+  <div id="franchiseModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-3 sm:p-4">
+    <div class="bg-slate-900 border-2 border-teal-400 rounded-3xl max-w-lg w-full p-5 shadow-2xl flex flex-col gap-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-teal-500/20 text-teal-300 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-earth-americas"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-white">World Resort Franchising</h2>
+            <p class="text-xs text-slate-400">Prestige your hotel to unlock worldwide resort empires!</p>
+          </div>
+        </div>
+        <button onclick="closeFranchiseModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="flex flex-col gap-3 max-h-[55vh] overflow-y-auto pr-1">
+        <!-- Current Property -->
+        <div class="p-3.5 rounded-2xl border-2 border-emerald-500 bg-emerald-950/40 flex items-center justify-between">
+          <div>
+            <div class="font-bold text-emerald-300 text-sm flex items-center gap-2">
+              <span>🏨 Grand Metropolis Hotel</span>
+              <span class="bg-emerald-500/30 text-emerald-200 text-[10px] px-2 py-0.5 rounded-full font-black">ACTIVE RESORT</span>
+            </div>
+            <div class="text-xs text-slate-300">4-Floor Flagship property with Casino, Penthouse & Waterpark</div>
+          </div>
+        </div>
+
+        <!-- Alpine Ski Chalet -->
+        <div class="p-3.5 rounded-2xl border-2 border-sky-600 bg-slate-800/80 flex items-center justify-between">
+          <div>
+            <div class="font-bold text-sky-300 text-sm">🏔️ Alpine Winter Ski Chalet</div>
+            <div class="text-xs text-slate-400">Fireplaces, hot cocoa bar & snowmobile valet (+50% tips)</div>
+          </div>
+          <button onclick="franchiseResort('alpine')" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-black text-xs rounded-xl shadow transition">
+            PREVIEW
+          </button>
+        </div>
+
+        <!-- Tropical Island Overwater Villa -->
+        <div class="p-3.5 rounded-2xl border-2 border-amber-600 bg-slate-800/80 flex items-center justify-between">
+          <div>
+            <div class="font-bold text-amber-300 text-sm">🌴 Tropical Overwater Bungalows</div>
+            <div class="text-xs text-slate-400">Stilted ocean villas, jet skis & private hammock decks (+75% tips)</div>
+          </div>
+          <button onclick="franchiseResort('tropical')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-black text-xs rounded-xl shadow transition">
+            PREVIEW
+          </button>
+        </div>
+
+        <!-- Cyberpunk Neo-Tokyo Capsule -->
+        <div class="p-3.5 rounded-2xl border-2 border-fuchsia-600 bg-slate-800/80 flex items-center justify-between">
+          <div>
+            <div class="font-bold text-fuchsia-300 text-sm">⚡ Neo-Tokyo Capsule Hotel</div>
+            <div class="text-xs text-slate-400">Futuristic sleep pods, neon ramen bar & AI bellhops (+100% tips)</div>
+          </div>
+          <button onclick="franchiseResort('cyberpunk')" class="px-3 py-1.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-black text-xs rounded-xl shadow transition">
+            PREVIEW
+          </button>
+        </div>
+      </div>
+
+      <button onclick="closeFranchiseModal()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition">
+        Return to Hotel
+      </button>
+    </div>
+  </div>
+
+  <script>
+    class SoundFX {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      playTone(freq, duration = 0.1, type = 'sine', gainVal = 0.12) {
+        if (!this.enabled) return;
+        try {
+          this.init();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch(e) {}
+      }
+      pop() { this.playTone(580 + Math.random() * 120, 0.08, 'triangle', 0.14); }
+      coin() {
+        this.playTone(987.77, 0.06, 'sine', 0.12);
+        setTimeout(() => this.playTone(1318.51, 0.1, 'sine', 0.14), 50);
+      }
+      tick() { this.playTone(400, 0.03, 'square', 0.05); }
+      fanfare() {
+        const notes = [440, 554.37, 659.25, 880, 1108.73];
+        notes.forEach((f, i) => setTimeout(() => this.playTone(f, 0.14, 'sine', 0.18), i * 70));
+      }
+      whistle() {
+        this.playTone(1800, 0.08, 'sawtooth', 0.1);
+        setTimeout(() => this.playTone(2200, 0.12, 'sawtooth', 0.12), 90);
+      }
+      splash() { this.playTone(280, 0.2, 'sine', 0.18); }
+      trash() {
+        this.playTone(180, 0.12, 'sawtooth', 0.15);
+        setTimeout(() => this.playTone(110, 0.15, 'triangle', 0.12), 50);
+      }
+      washer() {
+        this.playTone(320, 0.15, 'triangle', 0.08);
+        setTimeout(() => this.playTone(440, 0.2, 'sine', 0.1), 100);
+      }
+      elevator() {
+        this.playTone(523.25, 0.18, 'sine', 0.14);
+        setTimeout(() => this.playTone(659.25, 0.22, 'sine', 0.16), 180);
+      }
+    }
+    const sfx = new SoundFX();
+
+    function toggleSound() {
+      sfx.enabled = !sfx.enabled;
+      const icon = document.getElementById('soundIcon');
+      if (sfx.enabled) icon.className = 'fa-solid fa-volume-high text-amber-400';
+      else icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+    }
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const WORLD_WIDTH = 2800;
+    const WORLD_HEIGHT = 1350;
+
+    let viewportWidth = window.innerWidth;
+    let viewportHeight = window.innerHeight;
+
+    function resizeCanvas() {
+      viewportWidth = window.innerWidth;
+      viewportHeight = window.innerHeight;
+      canvas.width = viewportWidth;
+      canvas.height = viewportHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    const gameState = {
+      cash: 600,
+      totalEarned: 600,
+      vaultSavings: 150,
+      currentFloor: 1, // -1: Casino & Nightclub, 1: Lobby & Suites, 2: Penthouse & Helipad, 3: Waterpark
+      floorUnlocks: {
+        '-1': false, // $500
+        '1': true,   // Default unlocked
+        '2': false,  // $500
+        '3': false   // $350
+      },
+      floorCosts: {
+        '-1': 500,
+        '2': 500,
+        '3': 350
+      },
+      currentTheme: 'classic',
+      themeMultiplier: 1.0,
+      prestigeStars: 1,
+      prestigePoints: 40,
+      prestigeTarget: 150,
+      tipMultiplier: 1.5,
+      weather: 'sunny',
+      weatherTimer: 0,
+      rainDrops: [],
+      currentSkin: 'default',
+      djRushTimer: 0,
+      player: {
+        x: 480,
+        y: 650,
+        radius: 24,
+        speed: 5.2,
+        speedLevel: 1,
+        speedCost: 120,
+        maxCapacity: 5,
+        capacityLevel: 1,
+        capacityCost: 150,
+        stack: [],
+        walkTimer: 0,
+        facingAngle: 0,
+        mountedVehicle: null,
+        pushingTrolley: false,
+        hasGhostVacuum: true
+      },
+      vehicles: {
+        scooter: { unlocked: false, x: 260, y: 440 },
+        forklift: { unlocked: true, x: 1240, y: 350 }
+      },
+      helicopter: {
+        active: true,
+        x: 1350,
+        y: 340,
+        rotorAngle: 0,
+        state: 'landed',
+        refueled: false,
+        timer: 0,
+        vipSpawned: false
+      },
+      ghost: {
+        active: false,
+        x: 1120,
+        y: 260,
+        hp: 100,
+        timer: 0,
+        targetRoomId: 101
+      },
+      petDaycare: {
+        puppyCount: 3,
+        puppies: [
+          { x: 110, y: 440, vx: 0.8, vy: 0.5, color: '#f59e0b', type: '🐶' },
+          { x: 150, y: 490, vx: -0.6, vy: 0.7, color: '#d97706', type: '🐕' },
+          { x: 210, y: 460, vx: 0.7, vy: -0.5, color: '#ea580c', type: '🐩' }
+        ],
+        groomingStation: { x: 90, y: 380, w: 90, h: 65, bubbles: 0 }
+      },
+      droneDelivery: {
+        droneX: 1180,
+        droneY: 180,
+        crateReady: true,
+        crateX: 1180,
+        crateY: 220,
+        timer: 0
+      },
+      casino: {
+        rouletteChips: 180,
+        mixologyStock: 8,
+        danceLightsTimer: 0
+      },
+      staff: {
+        receptionist: { hired: false, cost: 220, x: 515, y: 375, speed: 2.5, timer: 0 },
+        cleaner: { hired: false, isHeadButler: false, cost: 280, butlerCost: 450, x: 780, y: 680, speed: 3.2, stack: [], target: null },
+        laundryPorter: { hired: false, cost: 300, x: 720, y: 790, speed: 3.1, stack: [], timer: 0 },
+        barista: { hired: false, cost: 260, x: 325, y: 840, speed: 3.0, stack: [], timer: 0 },
+        valet: { hired: false, cost: 280, x: 160, y: 220, speed: 3.2, timer: 0 },
+        cashier: { hired: false, cost: 290, x: 800, y: 410, speed: 2.8, timer: 0 },
+        roomba: { deployed: false, cost: 320, x: 600, y: 520, vx: 2.2, vy: 1.4, radius: 16 },
+        security: { hired: false, cost: 340, x: 440, y: 550, speed: 3.8, timer: 0 }
+      },
+      stations: {
+        // Floor 1 Lobby Stations
+        receptionDesk: { x: 440, y: 410, w: 150, h: 70, label: 'RECEPTION', color: '#10b981' },
+        vaultSafe: { x: 440, y: 275, w: 90, h: 75, label: 'VAULT SAFE', color: '#eab308' },
+        elevatorShaft: { x: 90, y: 410, w: 75, h: 70, label: 'ELEVATOR' },
+        towelShelf: { x: 760, y: 640, w: 100, h: 70, stock: 12, maxStock: 12, label: 'CLEAN TOWELS', color: '#38bdf8' },
+        trashBin: { x: 630, y: 640, w: 70, h: 70, label: 'TRASH BIN', color: '#475569' },
+        laundryWasher: { x: 670, y: 760, w: 110, h: 75, status: 'idle', timer: 0, maxTimer: 180, inputStock: 0, label: 'LAUNDROMAT' },
+        laundryChute: { x: 880, y: 640, w: 75, h: 70, label: 'LAUNDRY CHUTE' },
+        coffeeBar: { x: 280, y: 870, w: 90, h: 65, stock: 8, maxStock: 8, label: 'ESPRESSO BAR', unlocked: false },
+        gourmetKitchen: { x: 160, y: 870, w: 100, h: 70, stock: 6, maxStock: 8, label: 'CHEF KITCHEN', unlocked: false },
+        wheeledTrolleyBay: { x: 100, y: 740, w: 70, h: 70, label: 'DINING TROLLEY', unlocked: false },
+        giftShop: { x: 740, y: 440, w: 120, h: 75, stock: 10, maxStock: 12, label: 'GIFT SHOP', unlocked: false },
+        umbrellaStand: { x: 880, y: 440, w: 70, h: 70, umbrellas: 8, maxUmbrellas: 8, label: 'UMBRELLAS' },
+        // Curbside Valet & Car Wash (Outside Compound)
+        valetDropZone: { x: 220, y: 160, w: 110, h: 70, label: 'VALET DROP' },
+        carWashBay: { x: 100, y: 160, w: 100, h: 70, label: 'CAR WASH' },
+        // Floor 2 Helipad Refueling & Drone Bay
+        helipadFuelNozzle: { x: 1470, y: 340, w: 80, h: 70, label: 'JET FUEL' },
+        // Floor 3 Waterpark Stations
+        tubeRentalShack: { x: 220, y: 240, w: 120, h: 75, stock: 8, maxStock: 8, label: 'TUBE RENTALS' },
+        // Floor -1 Casino & Lounge Stations
+        rouletteTable: { x: 420, y: 320, w: 130, h: 80, label: 'ROULETTE' },
+        blackjackTable: { x: 620, y: 320, w: 130, h: 80, label: 'BLACKJACK' },
+        djBooth: { x: 840, y: 260, w: 120, h: 75, label: 'DJ BOOTH' },
+        cocktailBar: { x: 240, y: 480, w: 120, h: 75, label: 'MIXOLOGY BAR' }
+      },
+      curbsideCars: [
+        { id: 'car1', x: 220, y: 90, type: 'taxi', dirty: true, timer: 0 }
+      ],
+      // Rooms: Floor 2 suites cost $400 each and start locked
+      rooms: [
+        { id: 101, name: 'Room 101', floor: 1, x: 1000, y: 190, w: 230, h: 210, bedX: 1120, bedY: 260, serviceSpot: { x: 1060, y: 350 }, unlocked: true, status: 'dirty', guest: null },
+        { id: 102, name: 'Room 102', floor: 1, x: 1300, y: 190, w: 230, h: 210, bedX: 1420, bedY: 260, serviceSpot: { x: 1360, y: 350 }, unlocked: false, status: 'clean', guest: null },
+        { id: 103, name: 'Deluxe 103', floor: 1, x: 1000, y: 860, w: 230, h: 210, bedX: 1120, bedY: 930, serviceSpot: { x: 1060, y: 1020 }, unlocked: false, status: 'clean', guest: null },
+        { id: 104, name: 'Deluxe 104', floor: 1, x: 1300, y: 860, w: 230, h: 210, bedX: 1420, bedY: 930, serviceSpot: { x: 1360, y: 1020 }, unlocked: false, status: 'clean', guest: null },
+        // Floor 2 Penthouse Sky Suites: EACH COSTS $400
+        { id: 201, name: 'Presidential Sky Suite 201 ($400)', floor: 2, x: 380, y: 220, w: 340, h: 280, bedX: 550, bedY: 340, serviceSpot: { x: 450, y: 440 }, unlocked: false, cost: 400, status: 'clean', guest: null },
+        { id: 202, name: 'Penthouse Terrace 202 ($400)', floor: 2, x: 800, y: 220, w: 340, h: 280, bedX: 970, bedY: 340, serviceSpot: { x: 870, y: 440 }, unlocked: false, cost: 400, status: 'clean', guest: null }
+      ],
+      waterparkSwimmers: [
+        { angle: 0, radiusX: 280, radiusY: 160, centerX: 860, centerY: 560, tubeColor: '#f43f5e' },
+        { angle: 2.1, radiusX: 280, radiusY: 160, centerX: 860, centerY: 560, tubeColor: '#0ea5e9' },
+        { angle: 4.2, radiusX: 280, radiusY: 160, centerX: 860, centerY: 560, tubeColor: '#eab308' }
+      ],
+      unlockPads: [
+        { id: 'pad_scooter', floor: 1, type: 'vehicle', targetId: 'scooter', x: 260, y: 440, radius: 42, price: 180, paid: 0, title: 'ELECTRIC SCOOTER' },
+        { id: 'pad_kitchen', floor: 1, type: 'station', targetId: 'gourmetKitchen', x: 210, y: 900, radius: 44, price: 230, paid: 0, title: 'GOURMET KITCHEN' },
+        { id: 'pad_giftshop', floor: 1, type: 'station', targetId: 'giftShop', x: 800, y: 475, radius: 46, price: 260, paid: 0, title: 'LOBBY GIFT SHOP' },
+        { id: 'pad_trolley', floor: 1, type: 'station', targetId: 'wheeledTrolleyBay', x: 135, y: 775, radius: 42, price: 220, paid: 0, title: 'DINING TROLLEY' },
+        { id: 'pad_coffee', floor: 1, type: 'station', targetId: 'coffeeBar', x: 325, y: 900, radius: 44, price: 210, paid: 0, title: 'UNLOCK COFFEE BAR' },
+        { id: 'pad_room102', floor: 1, type: 'room', targetId: 102, x: 1410, y: 295, radius: 46, price: 240, paid: 0, title: 'UNLOCK ROOM 102' },
+        { id: 'pad_room103', floor: 1, type: 'room', targetId: 103, x: 1110, y: 965, radius: 46, price: 340, paid: 0, title: 'UNLOCK DELUXE 103' },
+        { id: 'pad_room104', floor: 1, type: 'room', targetId: 104, x: 1410, y: 965, radius: 46, price: 460, paid: 0, title: 'UNLOCK DELUXE 104' },
+        // Floor 2 Sky Suites Unlock Pads: $400 EACH
+        { id: 'pad_room201', floor: 2, type: 'room', targetId: 201, x: 550, y: 350, radius: 48, price: 400, paid: 0, title: 'BUY SKY SUITE 201 ($400)' },
+        { id: 'pad_room202', floor: 2, type: 'room', targetId: 202, x: 970, y: 350, radius: 48, price: 400, paid: 0, title: 'BUY PENTHOUSE 202 ($400)' }
+      ],
+      cashDrops: [{ x: 480, y: 480, amount: 60, isGold: false }],
+      puddles: [{ x: 740, y: 550 }],
+      guests: [],
+      particles: [],
+      reviews: [
+        { name: "Sophia K.", role: "Influencer", stars: 5, text: "The Floor 3 Waterpark lazy river and coral aquarium is stunning!" },
+        { name: "Mr. Sterling", role: "Executive", stars: 5, text: "Fast valet car wash and pristine room towels. Superb management!" }
+      ]
+    };
+
+    const camera = { x: gameState.player.x, y: gameState.player.y };
+    const keys = {};
+
+    window.addEventListener('keydown', (e) => {
+      keys[e.key.toLowerCase()] = true;
+      hideHint();
+    });
+    window.addEventListener('keyup', (e) => {
+      keys[e.key.toLowerCase()] = false;
+    });
+
+    let pointerMoving = false;
+    let pointerTarget = { x: 0, y: 0 };
+
+    window.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('#staffModal') || e.target.closest('#reviewModal') || e.target.closest('#themeModal') || e.target.closest('#wheelModal') || e.target.closest('#wardrobeModal') || e.target.closest('#franchiseModal') || e.target.closest('button')) return;
+      pointerMoving = true;
+      updatePointerPos(e);
+      hideHint();
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (pointerMoving) updatePointerPos(e);
+    });
+    window.addEventListener('pointerup', () => { pointerMoving = false; });
+    window.addEventListener('pointercancel', () => { pointerMoving = false; });
+
+    function updatePointerPos(e) {
+      pointerTarget.x = e.clientX - (viewportWidth / 2) + camera.x;
+      pointerTarget.y = e.clientY - (viewportHeight / 2) + camera.y;
+    }
+
+    function hideHint() {
+      const hint = document.getElementById('controlsHint');
+      if (hint) {
+        hint.style.opacity = '0';
+        setTimeout(() => hint && hint.remove(), 600);
+      }
+    }
+
+    // Touch Virtual Joystick
+    const joystickZone = document.getElementById('joystickZone');
+    const joystickKnob = document.getElementById('joystickKnob');
+    let joystickActive = false;
+    let joystickOrigin = { x: 0, y: 0 };
+    let joystickVector = { x: 0, y: 0 };
+
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+      joystickZone.style.display = 'block';
+    }
+
+    joystickZone.addEventListener('touchstart', (e) => {
+      joystickActive = true;
+      const touch = e.touches[0];
+      const rect = joystickZone.getBoundingClientRect();
+      joystickOrigin = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      handleJoystickTouch(touch);
+    }, { passive: false });
+
+    joystickZone.addEventListener('touchmove', (e) => {
+      if (!joystickActive) return;
+      handleJoystickTouch(e.touches[0]);
+      e.preventDefault();
+    }, { passive: false });
+
+    joystickZone.addEventListener('touchend', () => {
+      joystickActive = false;
+      joystickVector = { x: 0, y: 0 };
+      joystickKnob.style.transform = `translate(0px, 0px)`;
+    });
+
+    function handleJoystickTouch(touch) {
+      const dx = touch.clientX - joystickOrigin.x;
+      const dy = touch.clientY - joystickOrigin.y;
+      const dist = Math.hypot(dx, dy);
+      const maxR = 40;
+      const angle = Math.atan2(dy, dx);
+      const clampedDist = Math.min(dist, maxR);
+      joystickVector.x = Math.cos(angle) * (clampedDist / maxR);
+      joystickVector.y = Math.sin(angle) * (clampedDist / maxR);
+      joystickKnob.style.transform = `translate(${Math.cos(angle) * clampedDist}px, ${Math.sin(angle) * clampedDist}px)`;
+    }
+
+    let guestCounter = 0;
+    const GUEST_PALETTES = [
+      { skin: '#ffd1a4', hair: '#4a2c11', shirt: '#ef4444', luggage: '#3b82f6' },
+      { skin: '#fcd5b8', hair: '#eab308', shirt: '#10b981', luggage: '#ec4899' },
+      { skin: '#b97a57', hair: '#1e293b', shirt: '#8b5cf6', luggage: '#f59e0b' },
+      { skin: '#8d5524', hair: '#0f172a', shirt: '#06b6d4', luggage: '#ef4444' }
+    ];
+
+    class HotelGuest {
+      constructor(archetype = 'standard') {
+        this.id = ++guestCounter;
+        this.archetype = archetype;
+        this.isVIP = archetype === 'vip';
+        this.outfit = this.isVIP 
+          ? { skin: '#ffd1a4', hair: '#f59e0b', shirt: '#facc15', luggage: '#eab308' }
+          : GUEST_PALETTES[Math.floor(Math.random() * GUEST_PALETTES.length)];
+
+        this.x = 60;
+        this.y = 520;
+        // Queuing position inside the lobby in front of reception desk
+        this.targetX = 500;
+        this.targetY = 490;
+        this.speed = this.isVIP ? 3.4 : 2.7 + Math.random() * 0.4;
+        this.state = 'entering'; // 'entering', 'queued', 'moving_to_room', 'in_room', 'leaving'
+        this.assignedRoom = null;
+        this.stayDuration = this.isVIP ? 850 : 650;
+        this.stayProgress = 0;
+        this.wantsCoffee = false;
+        this.wantsFood = false;
+        this.patience = 800;
+      }
+
+      update() {
+        const dx = this.targetX - this.x;
+        const dy = this.targetY - this.y;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist > 5) {
+          this.x += (dx / dist) * this.speed;
+          this.y += (dy / dist) * this.speed;
+        } else {
+          if (this.state === 'entering') this.state = 'queued';
+          else if (this.state === 'moving_to_room') this.state = 'in_room';
+          else if (this.state === 'leaving') {
+            const idx = gameState.guests.indexOf(this);
+            if (idx !== -1) gameState.guests.splice(idx, 1);
+          }
+        }
+
+        if (this.state === 'in_room') {
+          this.stayProgress++;
+          if (gameState.stations.coffeeBar.unlocked && !this.wantsCoffee && this.stayProgress > 100 && this.stayProgress < 350 && Math.random() < 0.007) {
+            this.wantsCoffee = true;
+            sfx.pop();
+          }
+          if (gameState.stations.gourmetKitchen.unlocked && !this.wantsFood && this.stayProgress > 150 && this.stayProgress < 450 && Math.random() < 0.007) {
+            this.wantsFood = true;
+            sfx.pop();
+          }
+          if (this.stayProgress >= this.stayDuration) {
+            this.checkout();
+          }
+        }
+      }
+
+      checkout() {
+        this.state = 'leaving';
+        this.targetX = 40;
+        this.targetY = 520;
+        this.wantsCoffee = false;
+        this.wantsFood = false;
+
+        if (this.assignedRoom) {
+          this.assignedRoom.status = 'dirty';
+          this.assignedRoom.guest = null;
+
+          const basePay = (this.assignedRoom.floor === 2 ? 350 : (this.isVIP ? 200 : 75));
+          const skinBonus = gameState.currentSkin === 'golden_tux' ? 1.25 : 1.0;
+          const tip = Math.round(basePay * gameState.tipMultiplier * gameState.themeMultiplier * skinBonus);
+          
+          // Drop cash on floor and send share to vault safe
+          gameState.cashDrops.push({
+            x: this.assignedRoom.serviceSpot.x + (Math.random() * 20 - 10),
+            y: this.assignedRoom.serviceSpot.y + (Math.random() * 20 - 10),
+            amount: tip,
+            isGold: this.isVIP || this.assignedRoom.floor === 2
+          });
+          gameState.vaultSavings += Math.round(tip * 0.35);
+          sfx.pop();
+        }
+      }
+    }
+
+    function switchFloor(fl) {
+      if (fl !== 1 && !gameState.floorUnlocks[fl]) {
+        const cost = gameState.floorCosts[fl];
+        const flTitle = fl === 2 ? 'FLOOR 2 PENTHOUSE' : fl === 3 ? 'WATERPARK' : 'SUB-LEVEL -1 CASINO';
+        if (gameState.cash >= cost) {
+          gameState.cash -= cost;
+          gameState.floorUnlocks[fl] = true;
+          sfx.fanfare();
+          spawnBurst(gameState.player.x, gameState.player.y, 30, '#10b981');
+          spawnFloatingText(gameState.player.x, gameState.player.y - 45, `UNLOCKED ${flTitle}! -$${cost}`, '#10b981');
+          updateUI();
+        } else {
+          sfx.pop();
+          spawnFloatingText(gameState.player.x, gameState.player.y - 40, `NEED $${cost} TO UNLOCK ${flTitle}!`, '#f87171');
+          return;
+        }
+      }
+
+      if (gameState.currentFloor === fl) return;
+      sfx.elevator();
+      gameState.currentFloor = fl;
+
+      const btnMinus1 = document.getElementById('flBtnMinus1');
+      const btn1 = document.getElementById('flBtn1');
+      const btn2 = document.getElementById('flBtn2');
+      const btn3 = document.getElementById('flBtn3');
+
+      const activeClass = 'px-2.5 py-1 rounded-xl text-xs font-black transition bg-indigo-600 text-white shadow';
+      const inactiveClass = 'px-2.5 py-1 rounded-xl text-xs font-black transition text-slate-400 hover:text-white';
+
+      if (btnMinus1) btnMinus1.className = fl === -1 ? activeClass : inactiveClass;
+      if (btn1) btn1.className = fl === 1 ? activeClass : inactiveClass;
+      if (btn2) btn2.className = fl === 2 ? activeClass : inactiveClass;
+      if (btn3) btn3.className = fl === 3 ? activeClass : inactiveClass;
+
+      gameState.player.x = 180;
+      gameState.player.y = 440;
+      const flName = fl === 1 ? 'FLOOR 1 (LOBBY & SUITES)' : fl === 2 ? 'FLOOR 2 (PENTHOUSE & HELIPAD)' : fl === 3 ? 'FLOOR 3 (WATERPARK & AQUARIUM)' : 'SUB-LEVEL -1 (CASINO & NIGHTCLUB)';
+      spawnFloatingText(gameState.player.x, gameState.player.y - 40, `🛗 TRANSFERRED TO ${flName}`, '#38bdf8');
+      updateUI();
+    }
+
+    function openFranchiseModal() { sfx.tick(); document.getElementById('franchiseModal').classList.replace('hidden', 'flex'); }
+    function closeFranchiseModal() { sfx.tick(); document.getElementById('franchiseModal').classList.replace('flex', 'hidden'); }
+
+    function franchiseResort(type) {
+      sfx.fanfare();
+      const names = { alpine: 'Alpine Ski Chalet', tropical: 'Tropical Overwater Villa', cyberpunk: 'Neo-Tokyo Capsule Resort' };
+      spawnFloatingText(gameState.player.x, gameState.player.y - 45, `🌍 FRANCHISE PREVIEW: ${names[type].toUpperCase()}!`, '#2dd4bf');
+      closeFranchiseModal();
+    }
+
+    function spawnFloatingText(x, y, text, color = '#fbbf24') {
+      const el = document.createElement('div');
+      el.className = 'float-fx';
+      el.style.left = `${x - camera.x + (viewportWidth / 2)}px`;
+      el.style.top = `${y - camera.y + (viewportHeight / 2)}px`;
+      el.style.color = color;
+      el.textContent = text;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 950);
+    }
+
+    function spawnBurst(x, y, count = 12, color = '#f59e0b') {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 2 + Math.random() * 4;
+        gameState.particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          radius: 3 + Math.random() * 3,
+          color,
+          alpha: 1,
+          life: 25 + Math.random() * 15
+        });
+      }
+    }
+
+    function saveGame() {
+      try {
+        const saveData = {
+          cash: gameState.cash,
+          totalEarned: gameState.totalEarned,
+          vaultSavings: gameState.vaultSavings,
+          prestigeStars: gameState.prestigeStars,
+          prestigePoints: gameState.prestigePoints,
+          floorUnlocks: gameState.floorUnlocks,
+          currentSkin: gameState.currentSkin,
+          currentTheme: gameState.currentTheme,
+          themeMultiplier: gameState.themeMultiplier,
+          player: {
+            speed: gameState.player.speed,
+            speedLevel: gameState.player.speedLevel,
+            speedCost: gameState.player.speedCost,
+            maxCapacity: gameState.player.maxCapacity,
+            capacityLevel: gameState.player.capacityLevel,
+            capacityCost: gameState.player.capacityCost
+          },
+          scooterUnlocked: gameState.vehicles.scooter.unlocked,
+          unlockedRooms: gameState.rooms.filter(r => r.unlocked).map(r => r.id),
+          unlockedStations: {
+            coffeeBar: gameState.stations.coffeeBar.unlocked,
+            gourmetKitchen: gameState.stations.gourmetKitchen.unlocked,
+            wheeledTrolleyBay: gameState.stations.wheeledTrolleyBay.unlocked,
+            giftShop: gameState.stations.giftShop.unlocked
+          },
+          unlockPads: gameState.unlockPads.map(p => ({ id: p.id, paid: p.paid })),
+          staff: {
+            receptionist: gameState.staff.receptionist.hired,
+            cleaner: gameState.staff.cleaner.hired,
+            isHeadButler: gameState.staff.cleaner.isHeadButler,
+            laundryPorter: gameState.staff.laundryPorter.hired,
+            barista: gameState.staff.barista.hired,
+            valet: gameState.staff.valet.hired,
+            cashier: gameState.staff.cashier.hired,
+            roomba: gameState.staff.roomba.deployed,
+            security: gameState.staff.security.hired
+          }
+        };
+        localStorage.setItem('human_hotel_tycoon_save', JSON.stringify(saveData));
+        sfx.coin();
+        spawnFloatingText(gameState.player.x, gameState.player.y - 40, '💾 GAME PROGRESS SAVED!', '#10b981');
+      } catch(e) {}
+    }
+
+    function loadGame() {
+      try {
+        const saved = localStorage.getItem('human_hotel_tycoon_save');
+        if (!saved) return;
+        const d = JSON.parse(saved);
+        if (typeof d.cash === 'number') gameState.cash = d.cash;
+        if (typeof d.totalEarned === 'number') gameState.totalEarned = d.totalEarned;
+        if (typeof d.vaultSavings === 'number') gameState.vaultSavings = d.vaultSavings;
+        if (d.floorUnlocks) gameState.floorUnlocks = { ...gameState.floorUnlocks, ...d.floorUnlocks };
+        if (d.prestigeStars) gameState.prestigeStars = d.prestigeStars;
+        if (d.prestigePoints) gameState.prestigePoints = d.prestigePoints;
+        if (d.currentSkin) gameState.currentSkin = d.currentSkin;
+        if (d.currentTheme) applyTheme(d.currentTheme);
+        if (d.player) {
+          gameState.player.speed = d.player.speed || gameState.player.speed;
+          gameState.player.speedLevel = d.player.speedLevel || 1;
+          gameState.player.speedCost = d.player.speedCost || 120;
+          gameState.player.maxCapacity = d.player.maxCapacity || 5;
+          gameState.player.capacityLevel = d.player.capacityLevel || 1;
+          gameState.player.capacityCost = d.player.capacityCost || 150;
+        }
+        if (d.scooterUnlocked) gameState.vehicles.scooter.unlocked = true;
+        if (Array.isArray(d.unlockedRooms)) {
+          gameState.rooms.forEach(r => {
+            if (d.unlockedRooms.includes(r.id)) r.unlocked = true;
+          });
+        }
+        if (d.unlockedStations) {
+          if (d.unlockedStations.coffeeBar) gameState.stations.coffeeBar.unlocked = true;
+          if (d.unlockedStations.gourmetKitchen) gameState.stations.gourmetKitchen.unlocked = true;
+          if (d.unlockedStations.wheeledTrolleyBay) gameState.stations.wheeledTrolleyBay.unlocked = true;
+          if (d.unlockedStations.giftShop) gameState.stations.giftShop.unlocked = true;
+        }
+        if (Array.isArray(d.unlockPads)) {
+          d.unlockPads.forEach(sp => {
+            const pad = gameState.unlockPads.find(p => p.id === sp.id);
+            if (pad && typeof sp.paid === 'number') pad.paid = sp.paid;
+          });
+        }
+        if (d.staff) {
+          gameState.staff.receptionist.hired = !!d.staff.receptionist;
+          gameState.staff.cleaner.hired = !!d.staff.cleaner;
+          gameState.staff.cleaner.isHeadButler = !!d.staff.isHeadButler;
+          gameState.staff.laundryPorter.hired = !!d.staff.laundryPorter;
+          gameState.staff.barista.hired = !!d.staff.barista;
+          gameState.staff.valet.hired = !!d.staff.valet;
+          gameState.staff.cashier.hired = !!d.staff.cashier;
+          gameState.staff.roomba.deployed = !!d.staff.roomba;
+          gameState.staff.security.hired = !!d.staff.security;
+        }
+      } catch(e) {}
+    }
+
+    function openWardrobeModal() { sfx.tick(); document.getElementById('wardrobeModal').classList.replace('hidden', 'flex'); }
+    function closeWardrobeModal() { sfx.tick(); document.getElementById('wardrobeModal').classList.replace('flex', 'hidden'); }
+
+    function equipSkin(skinKey) {
+      gameState.currentSkin = skinKey;
+      sfx.fanfare();
+      spawnFloatingText(gameState.player.x, gameState.player.y - 40, `OUTFIT: ${skinKey.toUpperCase()}!`, '#ec4899');
+      closeWardrobeModal();
+      updateUI();
+    }
+
+    function openReviewModal() {
+      sfx.tick();
+      const container = document.getElementById('reviewsListContainer');
+      container.innerHTML = gameState.reviews.map(r => `
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3 flex flex-col gap-1">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-white text-sm">${r.name} <span class="text-[10px] text-sky-400 font-normal">(${r.role})</span></span>
+            <span class="text-amber-400 font-black text-xs">${'★'.repeat(r.stars)}</span>
+          </div>
+          <p class="text-xs text-slate-300 italic">"${r.text}"</p>
+        </div>
+      `).join('');
+      document.getElementById('reviewModal').classList.replace('hidden', 'flex');
+    }
+    function closeReviewModal() { sfx.tick(); document.getElementById('reviewModal').classList.replace('flex', 'hidden'); }
+
+    function openThemeModal() { sfx.tick(); document.getElementById('themeModal').classList.replace('hidden', 'flex'); }
+    function closeThemeModal() { sfx.tick(); document.getElementById('themeModal').classList.replace('flex', 'hidden'); }
+
+    function applyTheme(themeKey) {
+      gameState.currentTheme = themeKey;
+      if (themeKey === 'tiki') gameState.themeMultiplier = 1.25;
+      else if (themeKey === 'velvet') gameState.themeMultiplier = 1.50;
+      else if (themeKey === 'cyberpunk') gameState.themeMultiplier = 1.75;
+      else gameState.themeMultiplier = 1.0;
+      sfx.fanfare();
+      closeThemeModal();
+    }
+
+    function openWheelModal() { sfx.tick(); document.getElementById('wheelModal').classList.replace('hidden', 'flex'); }
+    function closeWheelModal() { sfx.tick(); document.getElementById('wheelModal').classList.replace('flex', 'hidden'); }
+
+    let wheelSpinning = false;
+    function spinWheel() {
+      if (wheelSpinning) return;
+      wheelSpinning = true;
+      sfx.fanfare();
+      const spinner = document.getElementById('wheelSpinner');
+      const randomDeg = 1440 + Math.floor(Math.random() * 360);
+      spinner.style.transform = `rotate(${randomDeg}deg)`;
+
+      setTimeout(() => {
+        wheelSpinning = false;
+        const rewards = [
+          { name: '+$350 Cash Bonus!', act: () => { gameState.cash += 350; } },
+          { name: '+2 Min Sprint Boost!', act: () => { gameState.player.speed += 2.0; setTimeout(() => gameState.player.speed -= 2.0, 120000); } },
+          { name: 'Restocked All Towels!', act: () => { gameState.stations.towelShelf.stock = 12; } },
+          { name: '+$200 Vault Savings!', act: () => { gameState.vaultSavings += 200; } }
+        ];
+        const picked = rewards[Math.floor(Math.random() * rewards.length)];
+        picked.act();
+        sfx.coin();
+        spawnFloatingText(gameState.player.x, gameState.player.y - 45, `PRIZE: ${picked.name}`, '#facc15');
+        closeWheelModal();
+        updateUI();
+      }, 3100);
+    }
+
+    function toggleVehicleMount() {
+      const p = gameState.player;
+      if (p.mountedVehicle) {
+        p.mountedVehicle = null;
+        sfx.pop();
+        document.getElementById('vehicleBtnLabel').textContent = 'SCOOTER ON';
+      } else {
+        p.mountedVehicle = 'scooter';
+        sfx.pop();
+        document.getElementById('vehicleBtnLabel').textContent = 'DISMOUNT';
+      }
+      updateUI();
+    }
+
+    function dumpAllItems() {
+      const p = gameState.player;
+      if (p.stack.length === 0) return;
+      sfx.trash();
+      const count = p.stack.length;
+      p.stack = [];
+      spawnFloatingText(p.x, p.y - 30, `DISCARDED ${count} ITEMS 🗑️`, '#f87171');
+      updateUI();
+    }
+
+    function openStaffModal() { sfx.tick(); updateUI(); document.getElementById('staffModal').classList.replace('hidden', 'flex'); }
+    function closeStaffModal() { sfx.tick(); document.getElementById('staffModal').classList.replace('flex', 'hidden'); }
+
+    function buyPlayerSpeed() {
+      if (gameState.cash >= gameState.player.speedCost) {
+        gameState.cash -= gameState.player.speedCost;
+        gameState.player.speed += 0.7;
+        gameState.player.speedLevel++;
+        gameState.player.speedCost = Math.round(gameState.player.speedCost * 1.6);
+        sfx.fanfare();
+        updateUI();
+      }
+    }
+
+    function buyPlayerCapacity() {
+      if (gameState.cash >= gameState.player.capacityCost) {
+        gameState.cash -= gameState.player.capacityCost;
+        gameState.player.maxCapacity += 2;
+        gameState.player.capacityLevel++;
+        gameState.player.capacityCost = Math.round(gameState.player.capacityCost * 1.55);
+        sfx.fanfare();
+        updateUI();
+      }
+    }
+
+    function hireReceptionist() {
+      if (!gameState.staff.receptionist.hired && gameState.cash >= gameState.staff.receptionist.cost) {
+        gameState.cash -= gameState.staff.receptionist.cost;
+        gameState.staff.receptionist.hired = true;
+        sfx.fanfare();
+        updateUI();
+      }
+    }
+
+    function hireValet() {
+      if (!gameState.staff.valet.hired && gameState.cash >= gameState.staff.valet.cost) {
+        gameState.cash -= gameState.staff.valet.cost;
+        gameState.staff.valet.hired = true;
+        sfx.fanfare();
+        updateUI();
+      }
+    }
+
+    function buyRoomba() {
+      if (!gameState.staff.roomba.deployed && gameState.cash >= gameState.staff.roomba.cost) {
+        gameState.cash -= gameState.staff.roomba.cost;
+        gameState.staff.roomba.deployed = true;
+        sfx.fanfare();
+        spawnFloatingText(gameState.player.x, gameState.player.y - 40, '🤖 ROOMBA ACTIVE IN HALLWAYS!', '#10b981');
+        updateUI();
+      }
+    }
+
+    function hireCleaner() {
+      if (!gameState.staff.cleaner.hired && gameState.cash >= gameState.staff.cleaner.cost) {
+        gameState.cash -= gameState.staff.cleaner.cost;
+        gameState.staff.cleaner.hired = true;
+        sfx.fanfare();
+        updateUI();
+      }
+    }
+
+    function promoteHeadButler() {
+      if (gameState.staff.cleaner.hired && !gameState.staff.cleaner.isHeadButler && gameState.cash >= gameState.staff.cleaner.butlerCost) {
+        gameState.cash -= gameState.staff.cleaner.butlerCost;
+        gameState.staff.cleaner.isHeadButler = true;
+        gameState.staff.cleaner.speed = 4.8;
+        sfx.fanfare();
+        updateUI();
+      }
+    }
+
+    function hireLaundryPorter() {
+      if (!gameState.staff.laundryPorter.hired && gameState.cash >= gameState.staff.laundryPorter.cost) {
+        gameState.cash -= gameState.staff.laundryPorter.cost;
+        gameState.staff.laundryPorter.hired = true;
+        sfx.fanfare();
+        updateUI();
+      }
+    }
+
+    function hireBarista() {
+      if (!gameState.staff.barista.hired && gameState.cash >= gameState.staff.barista.cost) {
+        gameState.cash -= gameState.staff.barista.cost;
+        gameState.staff.barista.hired = true;
+        sfx.fanfare();
+        updateUI();
+      }
+    }
+
+    function hireCashier() {
+      if (!gameState.staff.cashier.hired && gameState.cash >= gameState.staff.cashier.cost) {
+        gameState.cash -= gameState.staff.cashier.cost;
+        gameState.staff.cashier.hired = true;
+        sfx.fanfare();
+        updateUI();
+      }
+    }
+
+    function hireSecurity() {
+      if (!gameState.staff.security.hired && gameState.cash >= gameState.staff.security.cost) {
+        gameState.cash -= gameState.staff.security.cost;
+        gameState.staff.security.hired = true;
+        sfx.fanfare();
+        updateUI();
+      }
+    }
+
+    function updateStaffButton(btnId, isDone, labelId, cost) {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      if (isDone) {
+        btn.disabled = true;
+        btn.textContent = 'ACTIVE';
+        btn.className = 'px-3.5 py-2 bg-slate-700 text-slate-400 font-bold text-xs rounded-xl';
+      } else {
+        const lbl = document.getElementById(labelId);
+        if (lbl) lbl.textContent = cost;
+      }
+    }
+
+    function updateUI() {
+      document.getElementById('cashDisplay').textContent = `$${gameState.cash}`;
+      document.getElementById('starLevelDisplay').textContent = `★ ${gameState.prestigeStars}`;
+      const pct = Math.min(100, (gameState.prestigePoints / gameState.prestigeTarget) * 100);
+      document.getElementById('prestigeProgressBar').style.width = `${pct}%`;
+
+      const vBtn = document.getElementById('vehicleToggleBtn');
+      if (gameState.vehicles.scooter.unlocked) vBtn.classList.remove('hidden');
+
+      const capBar = document.getElementById('capacityBarContainer');
+      const effCapacity = (gameState.currentSkin === 'bellhop' ? gameState.player.maxCapacity + 4 : gameState.player.maxCapacity) + (gameState.player.pushingTrolley ? 8 : 0);
+      
+      if (gameState.player.stack.length > 0 || gameState.player.pushingTrolley) {
+        capBar.classList.remove('hidden');
+        document.getElementById('carriedCount').textContent = gameState.player.stack.length;
+        document.getElementById('maxCapacityCount').textContent = effCapacity;
+        const itemsList = document.getElementById('stackItemsList');
+        if (itemsList) {
+          const counts = {};
+          gameState.player.stack.forEach(item => { counts[item] = (counts[item] || 0) + 1; });
+          itemsList.innerHTML = Object.entries(counts).map(([type, qty]) => {
+            const icon = type === 'towel' ? '🧺' : type === 'dirty_laundry' ? '🫧' : type === 'coffee' ? '☕' : type === 'burger' ? '🍔' : type === 'tube' ? '🛟' : type === 'umbrella' ? '☂️' : type === 'cocktail' ? '🍸' : '🎁';
+            return `<span class="bg-slate-800 border border-slate-600 px-1.5 py-0.5 rounded text-[11px]">${icon} ${qty}</span>`;
+          }).join('');
+        }
+      } else {
+        capBar.classList.add('hidden');
+      }
+
+      const zoneLabel = document.getElementById('zoneNameLabel');
+      if (gameState.currentFloor === 3) {
+        zoneLabel.textContent = 'FLOOR 3: WATERPARK & CORAL AQUARIUM';
+        zoneLabel.className = 'font-bold text-cyan-400';
+      } else if (gameState.currentFloor === 2) {
+        zoneLabel.textContent = 'FLOOR 2: PENTHOUSE & ROOFTOP HELIPAD';
+        zoneLabel.className = 'font-bold text-amber-400';
+      } else if (gameState.currentFloor === -1) {
+        zoneLabel.textContent = 'SUB-LEVEL -1: CASINO & NIGHTCLUB';
+        zoneLabel.className = 'font-bold text-purple-400';
+      } else if (gameState.player.x < 380) {
+        zoneLabel.textContent = 'CURBSIDE DRIVEWAY & CAR WASH';
+        zoneLabel.className = 'font-bold text-emerald-400';
+      } else {
+        zoneLabel.textContent = 'LOBBY & SUITES WING';
+        zoneLabel.className = 'font-bold text-sky-400';
+      }
+
+      document.getElementById('speedLevelLabel').textContent = gameState.player.speedLevel;
+      document.getElementById('speedCostLabel').textContent = gameState.player.speedCost;
+      document.getElementById('capacityLevelLabel').textContent = `${gameState.player.maxCapacity} items`;
+      document.getElementById('capacityCostLabel').textContent = gameState.player.capacityCost;
+
+      updateStaffButton('btnHireReceptionist', gameState.staff.receptionist.hired, 'receptionistCostLabel', gameState.staff.receptionist.cost);
+      updateStaffButton('btnHireCleaner', gameState.staff.cleaner.hired, 'cleanerCostLabel', gameState.staff.cleaner.cost);
+      updateStaffButton('btnPromoteButler', gameState.staff.cleaner.isHeadButler, 'butlerCostLabel', gameState.staff.cleaner.butlerCost);
+      updateStaffButton('btnHirePorter', gameState.staff.laundryPorter.hired, 'porterCostLabel', gameState.staff.laundryPorter.cost);
+      updateStaffButton('btnHireBarista', gameState.staff.barista.hired, 'baristaCostLabel', gameState.staff.barista.cost);
+      updateStaffButton('btnHireValet', gameState.staff.valet.hired, 'valetCostLabel', gameState.staff.valet.cost);
+      updateStaffButton('btnHireCashier', gameState.staff.cashier.hired, 'cashierCostLabel', gameState.staff.cashier.cost);
+      updateStaffButton('btnBuyRoomba', gameState.staff.roomba.deployed, 'roombaCostLabel', gameState.staff.roomba.cost);
+      updateStaffButton('btnHireSecurity', gameState.staff.security.hired, 'securityCostLabel', gameState.staff.security.cost);
+    }
+
+    function updateWeatherCycle() {
+      gameState.weatherTimer++;
+      if (gameState.weatherTimer % 1800 === 0) {
+        const weathers = ['sunny', 'rain', 'night'];
+        gameState.weather = weathers[(weathers.indexOf(gameState.weather) + 1) % weathers.length];
+        
+        const icon = document.getElementById('weatherIcon');
+        const label = document.getElementById('weatherLabel');
+        if (gameState.weather === 'sunny') {
+          icon.innerHTML = '<i class="fa-solid fa-sun text-amber-400"></i>';
+          label.textContent = 'Sunny Heatwave';
+          spawnFloatingText(gameState.player.x, gameState.player.y - 30, '☀️ SUNNY HEATWAVE ACTIVATED!', '#fbbf24');
+        } else if (gameState.weather === 'rain') {
+          icon.innerHTML = '<i class="fa-solid fa-cloud-rain text-sky-400"></i>';
+          label.textContent = 'Rainstorm';
+          spawnFloatingText(gameState.player.x, gameState.player.y - 30, '🌧️ RAINSTORM: SELL UMBRELLAS!', '#38bdf8');
+        } else {
+          icon.innerHTML = '<i class="fa-solid fa-moon text-indigo-400"></i>';
+          label.textContent = 'Starry Night';
+        }
+      }
+
+      if (gameState.weather === 'rain' && Math.random() < 0.8) {
+        gameState.rainDrops.push({
+          x: Math.random() * WORLD_WIDTH,
+          y: Math.random() * WORLD_HEIGHT,
+          speed: 12 + Math.random() * 6,
+          len: 12 + Math.random() * 8
+        });
+        if (gameState.rainDrops.length > 120) gameState.rainDrops.shift();
+      }
+    }
+
+    function updateStaffAI() {
+      // 1. Receptionist Auto Check-in
+      if (gameState.staff.receptionist.hired && gameState.staff.receptionist.timer++ % 60 === 0) {
+        assignNextQueuedGuest();
+      }
+
+      // 2. Housekeeper Maid Auto Cleaning
+      if (gameState.staff.cleaner.hired) {
+        const cleaner = gameState.staff.cleaner;
+        const dirtyRooms = gameState.rooms.filter(r => r.floor === gameState.currentFloor && r.unlocked && r.status === 'dirty');
+
+        if (cleaner.stack.length === 0) {
+          const shelf = gameState.stations.towelShelf;
+          const dx = (shelf.x + 50) - cleaner.x;
+          const dy = (shelf.y + 35) - cleaner.y;
+          if (Math.hypot(dx, dy) > 8) {
+            cleaner.x += (dx / Math.hypot(dx, dy)) * cleaner.speed;
+            cleaner.y += (dy / Math.hypot(dx, dy)) * cleaner.speed;
+          } else {
+            cleaner.stack.push('towel');
+          }
+        } else if (dirtyRooms.length > 0) {
+          const target = dirtyRooms[0];
+          const dx = target.serviceSpot.x - cleaner.x;
+          const dy = target.serviceSpot.y - cleaner.y;
+          if (Math.hypot(dx, dy) > 8) {
+            cleaner.x += (dx / Math.hypot(dx, dy)) * cleaner.speed;
+            cleaner.y += (dy / Math.hypot(dx, dy)) * cleaner.speed;
+          } else {
+            cleaner.stack.pop();
+            target.status = 'clean';
+            sfx.pop();
+            spawnFloatingText(target.serviceSpot.x, target.serviceSpot.y - 30, 'MAID CLEANED ROOM! ✨', '#38bdf8');
+          }
+        }
+      }
+
+      // 3. Valet Attendant Auto Parking & Washing
+      if (gameState.staff.valet.hired && gameState.staff.valet.timer++ % 120 === 0) {
+        const dirtyCar = gameState.curbsideCars.find(c => c.dirty);
+        if (dirtyCar) {
+          dirtyCar.dirty = false;
+          gameState.cash += 85;
+          sfx.coin();
+          spawnFloatingText(dirtyCar.x, dirtyCar.y - 20, 'VALET WASHED CAR! +$85', '#10b981');
+          updateUI();
+        }
+      }
+
+      // 4. Laundry Porter Auto Washing
+      if (gameState.staff.laundryPorter.hired && gameState.staff.laundryPorter.timer++ % 150 === 0) {
+        if (gameState.stations.towelShelf.stock < gameState.stations.towelShelf.maxStock) {
+          gameState.stations.towelShelf.stock = Math.min(gameState.stations.towelShelf.maxStock, gameState.stations.towelShelf.stock + 3);
+          spawnFloatingText(gameState.stations.towelShelf.x + 50, gameState.stations.towelShelf.y - 20, 'PORTER RESTOCKED TOWELS 🧺', '#38bdf8');
+          sfx.pop();
+        }
+      }
+
+      // 5. Autonomous Patrol Roomba
+      if (gameState.staff.roomba.deployed && gameState.currentFloor === 1) {
+        const rb = gameState.staff.roomba;
+        rb.x += rb.vx;
+        rb.y += rb.vy;
+
+        if (rb.x < 450 || rb.x > 1550) rb.vx *= -1;
+        if (rb.y < 240 || rb.y > 960) rb.vy *= -1;
+
+        for (let i = gameState.puddles.length - 1; i >= 0; i--) {
+          const pud = gameState.puddles[i];
+          if (Math.hypot(pud.x - rb.x, pud.y - rb.y) < 32) {
+            gameState.puddles.splice(i, 1);
+            gameState.cash += 25;
+            sfx.pop();
+            spawnFloatingText(rb.x, rb.y - 20, 'ROOMBA CLEANED PUDDLE! +$25', '#38bdf8');
+            updateUI();
+          }
+        }
+      }
+
+      // 6. Laundromat Washing Machine Active Cycle
+      const washer = gameState.stations.laundryWasher;
+      if (washer.status === 'running') {
+        washer.timer++;
+        if (washer.timer >= washer.maxTimer) {
+          washer.status = 'idle';
+          washer.timer = 0;
+          gameState.stations.towelShelf.stock = Math.min(gameState.stations.towelShelf.maxStock, gameState.stations.towelShelf.stock + 4);
+          sfx.coin();
+          spawnFloatingText(washer.x + 55, washer.y - 25, 'WASH COMPLETE! TOWELS RESTOCKED 🧺', '#38bdf8');
+        }
+      }
+    }
+
+    function assignNextQueuedGuest() {
+      const queued = gameState.guests.filter(g => g.state === 'queued');
+      if (queued.length === 0) return;
+      const room = gameState.rooms.find(r => r.floor === 1 && r.unlocked && r.status === 'clean' && !r.guest);
+      if (room) {
+        const guest = queued[0];
+        guest.state = 'moving_to_room';
+        guest.assignedRoom = room;
+        room.guest = guest;
+        guest.targetX = room.bedX;
+        guest.targetY = room.bedY;
+        sfx.tick();
+      }
+    }
+
+    function updatePlayer() {
+      const p = gameState.player;
+      let vx = 0;
+      let vy = 0;
+
+      if (keys['w'] || keys['arrowup']) vy -= 1;
+      if (keys['s'] || keys['arrowdown']) vy += 1;
+      if (keys['a'] || keys['arrowleft']) vx -= 1;
+      if (keys['d'] || keys['arrowright']) vx += 1;
+
+      if (pointerMoving) {
+        const dx = pointerTarget.x - p.x;
+        const dy = pointerTarget.y - p.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 12) {
+          vx = dx / dist;
+          vy = dy / dist;
+        }
+      }
+
+      if (joystickActive && (joystickVector.x !== 0 || joystickVector.y !== 0)) {
+        vx = joystickVector.x;
+        vy = joystickVector.y;
+      }
+
+      let speed = p.speed;
+      if (p.mountedVehicle === 'scooter') speed *= 1.8;
+      if (gameState.currentSkin === 'island') speed *= 1.35;
+      if (p.pushingTrolley) speed *= 1.15;
+
+      const len = Math.hypot(vx, vy);
+      if (len > 0) {
+        vx = (vx / len) * speed;
+        vy = (vy / len) * speed;
+        p.x += vx;
+        p.y += vy;
+        p.facingAngle = Math.atan2(vy, vx);
+        p.walkTimer += 0.22;
+      }
+
+      p.x = Math.max(40, Math.min(p.x, WORLD_WIDTH - 40));
+      p.y = Math.max(60, Math.min(p.y, WORLD_HEIGHT - 60));
+
+      camera.x += (p.x - camera.x) * 0.1;
+      camera.y += (p.y - camera.y) * 0.1;
+    }
+
+    let lastInteractTime = 0;
+    function handleInteractions() {
+      const p = gameState.player;
+      const now = Date.now();
+
+      // 1. Collect Cash Drops on Ground
+      for (let i = gameState.cashDrops.length - 1; i >= 0; i--) {
+        const drop = gameState.cashDrops[i];
+        if (Math.hypot(drop.x - p.x, drop.y - p.y) < p.radius + 24) {
+          gameState.cash += drop.amount;
+          gameState.totalEarned += drop.amount;
+          sfx.coin();
+          spawnFloatingText(drop.x, drop.y - 15, `+$${drop.amount}`, drop.isGold ? '#facc15' : '#4ade80');
+          gameState.cashDrops.splice(i, 1);
+          updateUI();
+        }
+      }
+
+      // 2. Mop Up Water Puddles
+      for (let i = gameState.puddles.length - 1; i >= 0; i--) {
+        const pud = gameState.puddles[i];
+        if (Math.hypot(pud.x - p.x, pud.y - p.y) < p.radius + 20) {
+          gameState.puddles.splice(i, 1);
+          gameState.cash += 25;
+          sfx.pop();
+          spawnFloatingText(p.x, p.y - 25, 'MOPPED PUDDLE! +$25', '#38bdf8');
+          updateUI();
+        }
+      }
+
+      if (now - lastInteractTime < 180) return;
+      const effCap = (gameState.currentSkin === 'bellhop' ? p.maxCapacity + 4 : p.maxCapacity) + (p.pushingTrolley ? 8 : 0);
+
+      // 3. Hotel Vault Safe Cashout
+      const safe = gameState.stations.vaultSafe;
+      if (gameState.currentFloor === 1 && Math.hypot((safe.x + safe.w / 2) - p.x, (safe.y + safe.h / 2) - p.y) < 75) {
+        if (gameState.vaultSavings > 0) {
+          const collect = gameState.vaultSavings;
+          gameState.cash += collect;
+          gameState.vaultSavings = 0;
+          sfx.coin();
+          spawnBurst(safe.x + safe.w / 2, safe.y + safe.h / 2, 20, '#facc15');
+          spawnFloatingText(safe.x + safe.w / 2, safe.y - 25, `🏦 VAULT CASHOUT: +$${collect}!`, '#facc15');
+          lastInteractTime = now;
+          updateUI();
+        }
+      }
+
+      // 4. Floor 1 Reception Desk (Check in queued guests)
+      const rec = gameState.stations.receptionDesk;
+      if (gameState.currentFloor === 1 && Math.hypot((rec.x + rec.w / 2) - p.x, (rec.y + rec.h / 2) - p.y) < 75) {
+        assignNextQueuedGuest();
+        lastInteractTime = now;
+      }
+
+      // 5. Clean Towels Shelf Pickup
+      const ts = gameState.stations.towelShelf;
+      if (gameState.currentFloor === 1 && Math.hypot((ts.x + ts.w / 2) - p.x, (ts.y + ts.h / 2) - p.y) < 75) {
+        if (p.stack.length < effCap && ts.stock > 0) {
+          p.stack.push('towel');
+          ts.stock--;
+          sfx.pop();
+          spawnFloatingText(ts.x + 50, ts.y - 25, 'PICKED UP TOWEL 🧺', '#38bdf8');
+          lastInteractTime = now;
+          updateUI();
+        }
+      }
+
+      // 6. In-World Trash Dump Bin (Discards top carried item)
+      const tbBin = gameState.stations.trashBin;
+      if (gameState.currentFloor === 1 && Math.hypot((tbBin.x + tbBin.w / 2) - p.x, (tbBin.y + tbBin.h / 2) - p.y) < 65) {
+        if (p.stack.length > 0) {
+          const discarded = p.stack.pop();
+          sfx.trash();
+          spawnFloatingText(tbBin.x + 35, tbBin.y - 25, `DUMPED ${discarded.toUpperCase()} 🗑️`, '#f87171');
+          lastInteractTime = now;
+          updateUI();
+        }
+      }
+
+      // 7. Laundromat Station (Load dirty laundry & start cycle)
+      const washer = gameState.stations.laundryWasher;
+      if (gameState.currentFloor === 1 && Math.hypot((washer.x + washer.w / 2) - p.x, (washer.y + washer.h / 2) - p.y) < 75) {
+        const dirtyIdx = p.stack.lastIndexOf('dirty_laundry');
+        if (dirtyIdx !== -1) {
+          p.stack.splice(dirtyIdx, 1);
+          washer.inputStock++;
+          sfx.washer();
+          if (washer.status === 'idle') {
+            washer.status = 'running';
+            washer.timer = 0;
+          }
+          spawnFloatingText(washer.x + 55, washer.y - 25, 'LOADED WASHER 🫧', '#38bdf8');
+          lastInteractTime = now;
+          updateUI();
+        }
+      }
+
+      // 8. Laundry Chute (Send dirty laundry downstairs to washer)
+      const lc = gameState.stations.laundryChute;
+      if (gameState.currentFloor === 1 && Math.hypot((lc.x + lc.w / 2) - p.x, (lc.y + lc.h / 2) - p.y) < 65) {
+        const dirtyIdx = p.stack.lastIndexOf('dirty_laundry');
+        if (dirtyIdx !== -1) {
+          p.stack.splice(dirtyIdx, 1);
+          washer.inputStock++;
+          if (washer.status === 'idle') {
+            washer.status = 'running';
+            washer.timer = 0;
+          }
+          sfx.washer();
+          spawnFloatingText(lc.x + 35, lc.y - 25, 'CHUTE TO WASHER! 🌀', '#6366f1');
+          lastInteractTime = now;
+          updateUI();
+        }
+      }
+
+      // 9. Espresso Bar Station
+      const cb = gameState.stations.coffeeBar;
+      if (gameState.currentFloor === 1 && cb.unlocked && Math.hypot((cb.x + cb.w / 2) - p.x, (cb.y + cb.h / 2) - p.y) < 70) {
+        if (p.stack.length < effCap) {
+          p.stack.push('coffee');
+          sfx.pop();
+          spawnFloatingText(cb.x + 45, cb.y - 25, 'BREWED ESPRESSO ☕', '#f59e0b');
+          lastInteractTime = now;
+          updateUI();
+        }
+      }
+
+      // 10. Gourmet Kitchen Chef Station
+      const gk = gameState.stations.gourmetKitchen;
+      if (gameState.currentFloor === 1 && gk.unlocked && Math.hypot((gk.x + gk.w / 2) - p.x, (gk.y + gk.h / 2) - p.y) < 70) {
+        if (p.stack.length < effCap) {
+          p.stack.push('burger');
+          sfx.pop();
+          spawnFloatingText(gk.x + 50, gk.y - 25, 'PLATED GOURMET DISH 🍔', '#f59e0b');
+          lastInteractTime = now;
+          updateUI();
+        }
+      }
+
+      // 11. Wheeled Dining Trolley Bay
+      const trolleyBay = gameState.stations.wheeledTrolleyBay;
+      if (gameState.currentFloor === 1 && trolleyBay.unlocked && Math.hypot((trolleyBay.x + trolleyBay.w / 2) - p.x, (trolleyBay.y + trolleyBay.h / 2) - p.y) < 65) {
+        p.pushingTrolley = !p.pushingTrolley;
+        sfx.pop();
+        spawnFloatingText(p.x, p.y - 30, p.pushingTrolley ? 'TROLLEY ATTACHED (+8 SLOTS)!' : 'TROLLEY PARKED', '#f59e0b');
+        lastInteractTime = now;
+        updateUI();
+      }
+
+      // 12. Lobby Gift Shop & Umbrella Stand
+      const gs = gameState.stations.giftShop;
+      if (gameState.currentFloor === 1 && gs.unlocked && Math.hypot((gs.x + gs.w / 2) - p.x, (gs.y + gs.h / 2) - p.y) < 70) {
+        if (p.stack.length < effCap) {
+          const itemType = gameState.weather === 'rain' ? 'umbrella' : 'gift';
+          p.stack.push(itemType);
+          sfx.pop();
+          spawnFloatingText(gs.x + 60, gs.y - 25, itemType === 'umbrella' ? 'GRABBED UMBRELLA ☂️' : 'GRABBED GIFT 🎁', '#ec4899');
+          lastInteractTime = now;
+          updateUI();
+        }
+      }
+
+      // 13. Curbside Car Wash Bay
+      const cwb = gameState.stations.carWashBay;
+      if (gameState.currentFloor === 1 && Math.hypot((cwb.x + cwb.w / 2) - p.x, (cwb.y + cwb.h / 2) - p.y) < 75) {
+        const dirtyCar = gameState.curbsideCars.find(c => c.dirty);
+        if (dirtyCar) {
+          dirtyCar.dirty = false;
+          gameState.cash += 90;
+          sfx.coin();
+          spawnFloatingText(dirtyCar.x, dirtyCar.y - 25, 'CAR WASHED! +$90', '#10b981');
+          lastInteractTime = now;
+          updateUI();
+        }
+      }
+
+      // 14. In-Room Guest Service & Dirty Room Cleaning
+      gameState.rooms.forEach(room => {
+        if (room.floor !== gameState.currentFloor || !room.unlocked) return;
+        if (Math.hypot(room.serviceSpot.x - p.x, room.serviceSpot.y - p.y) < 65) {
+          // Serve coffee or burger if requested
+          if (room.guest) {
+            if (room.guest.wantsCoffee && p.stack.includes('coffee')) {
+              const cIdx = p.stack.lastIndexOf('coffee');
+              p.stack.splice(cIdx, 1);
+              room.guest.wantsCoffee = false;
+              const tip = room.guest.isVIP ? 90 : 50;
+              gameState.cash += tip;
+              sfx.coin();
+              spawnFloatingText(room.serviceSpot.x, room.serviceSpot.y - 30, `SERVED ESPRESSO! +$${tip}`, '#f59e0b');
+              lastInteractTime = now;
+              updateUI();
+              return;
+            }
+            if (room.guest.wantsFood && p.stack.includes('burger')) {
+              const bIdx = p.stack.lastIndexOf('burger');
+              p.stack.splice(bIdx, 1);
+              room.guest.wantsFood = false;
+              const tip = room.guest.isVIP ? 120 : 70;
+              gameState.cash += tip;
+              sfx.coin();
+              spawnFloatingText(room.serviceSpot.x, room.serviceSpot.y - 30, `SERVED GOURMET! +$${tip}`, '#f59e0b');
+              lastInteractTime = now;
+              updateUI();
+              return;
+            }
+          }
+          // Clean dirty room
+          if (room.status === 'dirty' && p.stack.includes('towel')) {
+            const tIdx = p.stack.lastIndexOf('towel');
+            p.stack.splice(tIdx, 1);
+            p.stack.push('dirty_laundry');
+            room.status = 'clean';
+            sfx.pop();
+            spawnFloatingText(room.serviceSpot.x, room.serviceSpot.y - 30, 'ROOM CLEANED! ✨', '#38bdf8');
+            lastInteractTime = now;
+            updateUI();
+          }
+        }
+      });
+
+      // 15. Floor 3 Tube Rental Shack
+      const tubeSt = gameState.stations.tubeRentalShack;
+      if (gameState.currentFloor === 3 && Math.hypot((tubeSt.x + tubeSt.w / 2) - p.x, (tubeSt.y + tubeSt.h / 2) - p.y) < 75) {
+        if (p.stack.length < effCap) {
+          p.stack.push('tube');
+          sfx.pop();
+          spawnFloatingText(tubeSt.x + 60, tubeSt.y - 25, 'RENTED TUBE 🛟', '#f43f5e');
+          lastInteractTime = now;
+          updateUI();
+        }
+      }
+
+      // 16. Floor 2 Helipad Refueling Station ($250 Turnaround Fee)
+      const jetFuel = gameState.stations.helipadFuelNozzle;
+      if (gameState.currentFloor === 2 && Math.hypot((jetFuel.x + jetFuel.w / 2) - p.x, (jetFuel.y + jetFuel.h / 2) - p.y) < 75) {
+        if (!gameState.helicopter.refueled) {
+          gameState.helicopter.refueled = true;
+          gameState.cash += 250;
+          sfx.coin();
+          spawnBurst(jetFuel.x + 40, jetFuel.y + 35, 20, '#facc15');
+          spawnFloatingText(jetFuel.x + 40, jetFuel.y - 25, '🚁 JET REFUEL COMPLETE! +$250', '#facc15');
+          lastInteractTime = now;
+          updateUI();
+        }
+      }
+
+      // 17. Paranormal Ghost Vacuum Suction
+      if (gameState.ghost.active && Math.hypot(gameState.ghost.x - p.x, gameState.ghost.y - p.y) < 85) {
+        gameState.ghost.hp -= 25;
+        sfx.pop();
+        spawnFloatingText(gameState.ghost.x, gameState.ghost.y - 30, '👻 SUCKING PHANTOM! -25 HP', '#a855f7');
+        if (gameState.ghost.hp <= 0) {
+          gameState.ghost.active = false;
+          gameState.cash += 450;
+          sfx.fanfare();
+          spawnBurst(gameState.ghost.x, gameState.ghost.y, 35, '#c084fc');
+          spawnFloatingText(gameState.ghost.x, gameState.ghost.y - 45, '👻 GHOST BUSTED! +$450 ECTOPLASM BOUNTY!', '#c084fc');
+        }
+        lastInteractTime = now;
+        updateUI();
+      }
+
+      // 18. Floor 1 Pet Daycare Bubble Grooming Tub
+      const tub = gameState.petDaycare.groomingStation;
+      if (gameState.currentFloor === 1 && Math.hypot((tub.x + tub.w / 2) - p.x, (tub.y + tub.h / 2) - p.y) < 70) {
+        gameState.prestigePoints += 15;
+        gameState.cash += 40;
+        sfx.pop();
+        spawnFloatingText(tub.x + 45, tub.y - 25, '🐾 PET GROOMED! +$40 & +15 PRESTIGE!', '#f472b6');
+        lastInteractTime = now;
+        updateUI();
+      }
+
+      // 19. Floor -1 Casino Roulette & Cocktail Bar
+      if (gameState.currentFloor === -1) {
+        const rt = gameState.stations.rouletteTable;
+        if (Math.hypot((rt.x + rt.w / 2) - p.x, (rt.y + rt.h / 2) - p.y) < 75) {
+          if (gameState.casino.rouletteChips > 0) {
+            const chips = gameState.casino.rouletteChips;
+            gameState.cash += chips;
+            gameState.casino.rouletteChips = 0;
+            sfx.coin();
+            spawnFloatingText(rt.x + 65, rt.y - 25, `🎰 CASINO WIN: +$${chips}!`, '#facc15');
+            lastInteractTime = now;
+            updateUI();
+          }
+        }
+
+        const bar = gameState.stations.cocktailBar;
+        if (Math.hypot((bar.x + bar.w / 2) - p.x, (bar.y + bar.h / 2) - p.y) < 75) {
+          if (p.stack.length < effCap) {
+            p.stack.push('cocktail');
+            sfx.pop();
+            spawnFloatingText(bar.x + 60, bar.y - 25, '🍸 SHAKEN NEON COCKTAIL!', '#ec4899');
+            lastInteractTime = now;
+            updateUI();
+          }
+        }
+      }
+
+      // 20. Progressive Circular Unlock Pads (Filtered for current floor)
+      gameState.unlockPads.forEach(pad => {
+        if (pad.floor !== gameState.currentFloor || pad.paid >= pad.price) return;
+        if (Math.hypot(pad.x - p.x, pad.y - p.y) < pad.radius) {
+          if (gameState.cash > 0) {
+            const spend = Math.min(10, gameState.cash, pad.price - pad.paid);
+            gameState.cash -= spend;
+            pad.paid += spend;
+            sfx.tick();
+            updateUI();
+            if (pad.paid >= pad.price) unlockPadTarget(pad);
+          }
+        }
+      });
+    }
+
+    function unlockPadTarget(pad) {
+      sfx.fanfare();
+      spawnBurst(pad.x, pad.y, 25, '#f59e0b');
+      spawnFloatingText(pad.x, pad.y - 40, 'UNLOCKED!', '#10b981');
+      if (pad.type === 'room') {
+        const room = gameState.rooms.find(r => r.id === pad.targetId);
+        if (room) room.unlocked = true;
+      } else if (pad.type === 'station') {
+        if (gameState.stations[pad.targetId]) gameState.stations[pad.targetId].unlocked = true;
+      } else if (pad.type === 'vehicle') {
+        gameState.vehicles[pad.targetId].unlocked = true;
+        gameState.player.mountedVehicle = pad.targetId;
+      }
+      updateUI();
+    }
+
+    function drawWorld() {
+      ctx.save();
+      ctx.translate((viewportWidth / 2) - camera.x, (viewportHeight / 2) - camera.y);
+
+      if (gameState.currentFloor === -1) {
+        // Floor -1: High-Roller Casino & Neon Nightclub
+        ctx.fillStyle = '#090514';
+        ctx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+
+        // Flashing Neon Dance Floor
+        const colors = ['#f43f5e', '#a855f7', '#06b6d4', '#eab308'];
+        const shift = Math.floor(Date.now() / 250) % colors.length;
+        ctx.fillStyle = colors[shift];
+        ctx.globalAlpha = 0.25;
+        ctx.fillRect(780, 360, 240, 240);
+        ctx.globalAlpha = 1.0;
+        ctx.strokeStyle = '#c084fc';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(780, 360, 240, 240);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🕺 NEON DANCE FLOOR 💃', 900, 485);
+
+        // Draw Casino Tables
+        drawStation(gameState.stations.rouletteTable, '#15803d', '🎰 ROULETTE TABLE');
+        drawStation(gameState.stations.blackjackTable, '#047857', '♠️ BLACKJACK');
+        drawStation(gameState.stations.djBooth, '#9333ea', '🎧 DJ BOOTH (+25% SPEED)');
+        drawStation(gameState.stations.cocktailBar, '#be185d', '🍸 MIXOLOGY BAR');
+
+      } else if (gameState.currentFloor === 1) {
+        // Floor 1: Curbside Driveway Outside Wall (x: 0 to 410)
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(0, 0, 410, WORLD_HEIGHT);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(40, 0, 260, WORLD_HEIGHT);
+
+        // Pet Daycare Pavilion Courtyard (x: 50, y: 350 to 550)
+        ctx.fillStyle = '#14532d';
+        ctx.beginPath();
+        ctx.roundRect(60, 350, 220, 220, 16);
+        ctx.fill();
+        ctx.strokeStyle = '#22c55e';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.fillStyle = '#86efac';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🐶 PET DAYCARE & GROOMING', 170, 370);
+
+        // Draw Bouncing Puppies
+        gameState.petDaycare.puppies.forEach(pup => {
+          pup.x += pup.vx;
+          pup.y += pup.vy;
+          if (pup.x < 75 || pup.x > 265) pup.vx *= -1;
+          if (pup.y < 380 || pup.y > 550) pup.vy *= -1;
+          ctx.font = 'bold 18px sans-serif';
+          ctx.fillText(pup.type, pup.x, pup.y);
+        });
+
+        drawStation(gameState.petDaycare.groomingStation, '#ec4899', '🫧 BUBBLE TUB');
+
+        // Yellow Road Markings
+        ctx.strokeStyle = '#eab308';
+        ctx.setLineDash([20, 20]);
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(170, 0);
+        ctx.lineTo(170, 340);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(170, 580);
+        ctx.lineTo(170, WORLD_HEIGHT);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Car Wash Station Outside
+        const cwb = gameState.stations.carWashBay;
+        ctx.fillStyle = '#0284c7';
+        ctx.beginPath();
+        ctx.roundRect(cwb.x, cwb.y, cwb.w, cwb.h, 12);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🚿 CAR WASH', cwb.x + cwb.w / 2, cwb.y + 42);
+
+        // Curbside Arriving Cars
+        gameState.curbsideCars.forEach(car => {
+          ctx.fillStyle = car.dirty ? '#ca8a04' : '#facc15';
+          ctx.beginPath();
+          ctx.roundRect(car.x - 28, car.y - 18, 56, 36, 8);
+          ctx.fill();
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(car.x - 12, car.y - 14, 24, 28);
+          if (car.dirty) {
+            ctx.fillStyle = '#78350f';
+            ctx.font = 'bold 9px sans-serif';
+            ctx.fillText('MUDDY TIRE', car.x, car.y + 32);
+          }
+        });
+
+        // Hotel Perimeter Wall
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(410, 0, 30, WORLD_HEIGHT);
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(410, 0, 30, WORLD_HEIGHT);
+
+        // Grand Double Entrance Doors
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(410, 480, 30, 90);
+
+        // Hotel Interior Lobby Floor
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(440, 0, 1200, WORLD_HEIGHT);
+
+        // Red Arrival Carpet
+        ctx.fillStyle = '#b91c1c';
+        ctx.fillRect(440, 485, 240, 80);
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(440, 485, 240, 4);
+        ctx.fillRect(440, 561, 240, 4);
+
+        // Draw Lobby Stations
+        drawStation(gameState.stations.receptionDesk, '#10b981', '🛎️ RECEPTION');
+        drawStation(gameState.stations.vaultSafe, '#ca8a04', `🏦 VAULT SAFE: $${gameState.vaultSavings}`);
+        drawStation(gameState.stations.towelShelf, '#0284c7', `🧺 TOWELS (${gameState.stations.towelShelf.stock})`);
+        drawStation(gameState.stations.laundryWasher, '#2563eb', gameState.stations.laundryWasher.status === 'running' ? 'WASHING... 🫧' : 'LAUNDROMAT');
+        drawStation(gameState.stations.laundryChute, '#6366f1', '🌀 WALL CHUTE');
+        drawStation(gameState.stations.trashBin, '#475569', '🗑️ DUMP BIN');
+
+        if (gameState.stations.coffeeBar.unlocked) drawStation(gameState.stations.coffeeBar, '#d97706', '☕ ESPRESSO BAR');
+        if (gameState.stations.gourmetKitchen.unlocked) drawStation(gameState.stations.gourmetKitchen, '#b45309', '🍳 CHEF KITCHEN');
+        if (gameState.stations.wheeledTrolleyBay.unlocked) drawStation(gameState.stations.wheeledTrolleyBay, '#f59e0b', '🛒 TROLLEY BAY');
+        if (gameState.stations.giftShop.unlocked) drawStation(gameState.stations.giftShop, '#db2777', '🎁 GIFT SHOP');
+
+      } else if (gameState.currentFloor === 2) {
+        // Floor 2: Penthouse Terrace & Active VIP Helipad
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(120, 140, 1400, 680);
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(120, 140, 1400, 680);
+
+        // Helipad Platform
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.arc(1350, 340, 95, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 6;
+        ctx.stroke();
+        ctx.fillStyle = '#facc15';
+        ctx.font = 'bold 64px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('H', 1350, 362);
+
+        // Draw Animated VIP Helicopter
+        const heli = gameState.helicopter;
+        heli.rotorAngle += 0.45;
+        ctx.save();
+        ctx.translate(heli.x, heli.y);
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.roundRect(-45, -22, 90, 44, 16);
+        ctx.fill();
+        ctx.strokeStyle = '#eab308';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Spinning Blades
+        ctx.save();
+        ctx.rotate(heli.rotorAngle);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(-75, 0);
+        ctx.lineTo(75, 0);
+        ctx.stroke();
+        ctx.restore();
+        ctx.restore();
+
+        // Secret Service Bodyguards
+        drawStaffMember(1350, 440, '#000000', 'BODYGUARD 🕶️');
+
+        // Draw Jet Refuel Station
+        drawStation(gameState.stations.helipadFuelNozzle, '#eab308', gameState.helicopter.refueled ? 'REFUELED ⛽' : 'JET FUEL ($250)');
+
+      } else if (gameState.currentFloor === 3) {
+        // Floor 3: Waterpark & Coral Aquarium
+        ctx.fillStyle = '#082f49';
+        ctx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+
+        // Coral Reef Wall
+        ctx.fillStyle = '#0c4a6e';
+        ctx.fillRect(120, 60, 1400, 110);
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(120, 60, 1400, 110);
+        ctx.fillStyle = '#f43f5e';
+        ctx.font = 'bold 22px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🐠 NEON CORAL REEF AQUARIUM 🪸 🐢 🐬', 820, 125);
+
+        // Lazy River Track
+        ctx.strokeStyle = '#0284c7';
+        ctx.lineWidth = 90;
+        ctx.beginPath();
+        ctx.ellipse(860, 560, 280, 160, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.ellipse(860, 560, 325, 205, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Swimmers
+        gameState.waterparkSwimmers.forEach(s => {
+          s.angle += 0.015;
+          const sx = s.centerX + Math.cos(s.angle) * s.radiusX;
+          const sy = s.centerY + Math.sin(s.angle) * s.radiusY;
+
+          ctx.fillStyle = s.tubeColor;
+          ctx.beginPath();
+          ctx.arc(sx, sy, 18, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#0284c7';
+          ctx.beginPath();
+          ctx.arc(sx, sy, 8, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        drawStation(gameState.stations.tubeRentalShack, '#f43f5e', '🛟 TUBE RENTALS');
+      }
+
+      // Draw Paranormal Ghost if active
+      if (gameState.ghost.active && (gameState.currentFloor === 1 || gameState.currentFloor === 2)) {
+        const gh = gameState.ghost;
+        ctx.font = 'bold 36px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('👻', gh.x, gh.y + Math.sin(Date.now() * 0.008) * 8);
+        ctx.fillStyle = '#a855f7';
+        ctx.fillRect(gh.x - 25, gh.y - 40, (gh.hp / 100) * 50, 6);
+      }
+
+      // Draw Puddles on Floor 1
+      if (gameState.currentFloor === 1) {
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.4)';
+        gameState.puddles.forEach(pud => {
+          ctx.beginPath();
+          ctx.ellipse(pud.x, pud.y, 22, 14, 0.2, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      // Draw Rooms for current floor
+      gameState.rooms.forEach(r => {
+        if (r.floor !== gameState.currentFloor || !r.unlocked) return;
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(r.x, r.y, r.w, r.h);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(r.x + 3, r.y + 3, r.w - 6, r.h - 6);
+
+        // Bed Furniture
+        let bedColor = r.status === 'clean' ? '#38bdf8' : '#ca8a04';
+        if (gameState.currentTheme === 'tiki') bedColor = '#10b981';
+        else if (gameState.currentTheme === 'velvet') bedColor = '#a855f7';
+        else if (gameState.currentTheme === 'cyberpunk') bedColor = '#06b6d4';
+
+        ctx.fillStyle = bedColor;
+        ctx.fillRect(r.bedX - 38, r.bedY - 28, 76, 56);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(r.status === 'clean' ? 'CLEAN' : 'DIRTY 🧺', r.bedX, r.bedY + 5);
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(r.name, r.x + 12, r.y + 24);
+
+        if (r.guest && r.guest.wantsCoffee) {
+          ctx.font = 'bold 22px sans-serif';
+          ctx.fillText('☕', r.serviceSpot.x - 10, r.serviceSpot.y - 10);
+        }
+        if (r.guest && r.guest.wantsFood) {
+          ctx.font = 'bold 22px sans-serif';
+          ctx.fillText('🍔', r.serviceSpot.x - 10, r.serviceSpot.y - 10);
+        }
+      });
+
+      // Draw Unlock Pads on current floor
+      gameState.unlockPads.forEach(pad => {
+        if (pad.floor !== gameState.currentFloor || pad.paid >= pad.price) return;
+        const progress = pad.paid / pad.price;
+        ctx.strokeStyle = 'rgba(251, 191, 36, 0.4)';
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.arc(pad.x, pad.y, pad.radius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(pad.x, pad.y, pad.radius, -Math.PI / 2, (-Math.PI / 2) + (Math.PI * 2 * progress));
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.beginPath();
+        ctx.arc(pad.x, pad.y, pad.radius - 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`$${pad.price - pad.paid}`, pad.x, pad.y - 2);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 8px sans-serif';
+        ctx.fillText(pad.title, pad.x, pad.y + 12);
+      });
+
+      // Draw Cash Drops
+      gameState.cashDrops.forEach(cd => {
+        ctx.fillStyle = cd.isGold ? '#facc15' : '#4ade80';
+        ctx.beginPath();
+        ctx.arc(cd.x, cd.y, 9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      });
+
+      // Draw Hired Staff Members
+      if (gameState.currentFloor === 1) {
+        if (gameState.staff.receptionist.hired) {
+          drawStaffMember(gameState.staff.receptionist.x, gameState.staff.receptionist.y, '#10b981', 'RECEPTION');
+        }
+        if (gameState.staff.cleaner.hired) {
+          drawStaffMember(gameState.staff.cleaner.x, gameState.staff.cleaner.y, '#8b5cf6', 'MAID');
+        }
+        if (gameState.staff.barista.hired) {
+          drawStaffMember(gameState.staff.barista.x, gameState.staff.barista.y, '#d97706', 'BARISTA');
+        }
+        if (gameState.staff.valet.hired) {
+          drawStaffMember(gameState.staff.valet.x, gameState.staff.valet.y, '#06b6d4', 'VALET');
+        }
+        if (gameState.staff.laundryPorter.hired) {
+          drawStaffMember(gameState.staff.laundryPorter.x, gameState.staff.laundryPorter.y, '#3b82f6', 'PORTER');
+        }
+      }
+
+      // Draw Autonomous Roomba
+      if (gameState.staff.roomba.deployed && gameState.currentFloor === 1) {
+        const rb = gameState.staff.roomba;
+        ctx.fillStyle = '#334155';
+        ctx.beginPath();
+        ctx.arc(rb.x, rb.y, rb.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath();
+        ctx.arc(rb.x, rb.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Draw Guests
+      gameState.guests.forEach(g => {
+        if (g.assignedRoom && g.assignedRoom.floor !== gameState.currentFloor) return;
+        ctx.save();
+        ctx.translate(g.x, g.y);
+        ctx.fillStyle = g.outfit.shirt;
+        ctx.beginPath();
+        ctx.roundRect(-12, -8, 24, 24, 6);
+        ctx.fill();
+        ctx.fillStyle = g.outfit.skin;
+        ctx.beginPath();
+        ctx.arc(0, -18, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // Draw Player Character with Equipped Skin
+      const p = gameState.player;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      let shirtColor = '#0f172a';
+      if (gameState.currentSkin === 'golden_tux') shirtColor = '#f59e0b';
+      else if (gameState.currentSkin === 'bellhop') shirtColor = '#e11d48';
+      else if (gameState.currentSkin === 'chef') shirtColor = '#f8fafc';
+      else if (gameState.currentSkin === 'island') shirtColor = '#10b981';
+
+      ctx.fillStyle = shirtColor;
+      ctx.beginPath();
+      ctx.roundRect(-14, -8, 28, 26, 7);
+      ctx.fill();
+      ctx.fillStyle = '#ffd1a4';
+      ctx.beginPath();
+      ctx.arc(0, -18, 13, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (p.pushingTrolley) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(16, -6, 26, 16);
+      }
+      ctx.restore();
+
+      // Draw Carried Stack Physics
+      drawItemStack(p.x, p.y, p.stack);
+
+      // Draw Particles
+      for (let i = gameState.particles.length - 1; i >= 0; i--) {
+        const pt = gameState.particles[i];
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.alpha -= 0.035;
+        if (pt.alpha <= 0) {
+          gameState.particles.splice(i, 1);
+        } else {
+          ctx.save();
+          ctx.globalAlpha = pt.alpha;
+          ctx.fillStyle = pt.color;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      // Draw Rain Particles
+      if (gameState.weather === 'rain') {
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+        ctx.lineWidth = 1.5;
+        gameState.rainDrops.forEach(r => {
+          ctx.beginPath();
+          ctx.moveTo(r.x, r.y);
+          ctx.lineTo(r.x + 3, r.y + r.len);
+          ctx.stroke();
+          r.y += r.speed;
+          if (r.y > WORLD_HEIGHT) r.y = 0;
+        });
+      }
+
+      ctx.restore();
+    }
+
+    function drawStaffMember(x, y, color, role) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(-11, -7, 22, 22, 5);
+      ctx.fill();
+      ctx.fillStyle = '#ffd1a4';
+      ctx.beginPath();
+      ctx.arc(0, -16, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 8px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(role, 0, 24);
+      ctx.restore();
+    }
+
+    function drawStation(st, color, label) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(st.x, st.y, st.w, st.h, 12);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, st.x + st.w / 2, st.y + 42);
+    }
+
+    function drawItemStack(baseX, baseY, stack) {
+      if (!stack || stack.length === 0) return;
+      stack.forEach((item, index) => {
+        const stackY = baseY - 24 - (index * 13);
+        const sway = Math.sin(Date.now() * 0.006 + index) * 2;
+        if (item === 'towel') {
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillRect(baseX - 12 + sway, stackY, 24, 9);
+        } else if (item === 'burger') {
+          ctx.fillStyle = '#f59e0b';
+          ctx.fillRect(baseX - 10 + sway, stackY, 20, 10);
+        } else if (item === 'coffee') {
+          ctx.fillStyle = '#d97706';
+          ctx.fillRect(baseX - 8 + sway, stackY, 16, 11);
+        } else if (item === 'tube') {
+          ctx.fillStyle = '#f43f5e';
+          ctx.fillRect(baseX - 12 + sway, stackY, 24, 8);
+        } else if (item === 'umbrella') {
+          ctx.fillStyle = '#0ea5e9';
+          ctx.fillRect(baseX - 8 + sway, stackY, 16, 9);
+        } else if (item === 'dirty_laundry') {
+          ctx.fillStyle = '#64748b';
+          ctx.fillRect(baseX - 12 + sway, stackY, 24, 9);
+        } else if (item === 'gift') {
+          ctx.fillStyle = '#ec4899';
+          ctx.fillRect(baseX - 10 + sway, stackY, 20, 10);
+        } else if (item === 'cocktail') {
+          ctx.fillStyle = '#a855f7';
+          ctx.fillRect(baseX - 8 + sway, stackY, 16, 10);
+        }
+      });
+    }
+
+    let guestSpawnTimer = 0;
+    let autoSaveTimer = 0;
+    let ghostSpawnTimer = 0;
+
+    function gameLoop() {
+      updatePlayer();
+      handleInteractions();
+      updateStaffAI();
+      updateWeatherCycle();
+
+      // Paranormal Ghost Spawning
+      ghostSpawnTimer++;
+      if (ghostSpawnTimer % 900 === 0 && !gameState.ghost.active) {
+        gameState.ghost.active = true;
+        gameState.ghost.hp = 100;
+        gameState.ghost.x = 1120;
+        gameState.ghost.y = 260;
+        sfx.whistle();
+        spawnFloatingText(gameState.player.x, gameState.player.y - 40, '👻 PARANORMAL ALERT: GHOST IN SUITE 101!', '#c084fc');
+      }
+
+      // Guest Spawning
+      guestSpawnTimer++;
+      if (guestSpawnTimer % 300 === 0 && gameState.guests.length < 6) {
+        const g = new HotelGuest(Math.random() < 0.25 ? 'vip' : 'standard');
+        g.targetX = 500 + (gameState.guests.length * 36);
+        g.targetY = 490;
+        gameState.guests.push(g);
+      }
+
+      gameState.guests.forEach(g => g.update());
+
+      // Auto-save every 30 seconds
+      autoSaveTimer++;
+      if (autoSaveTimer % 1800 === 0) {
+        saveGame();
+      }
+
+      ctx.clearRect(0, 0, viewportWidth, viewportHeight);
+      drawWorld();
+      requestAnimationFrame(gameLoop);
+    }
+
+    window.onload = function () {
+      loadGame();
+      updateUI();
+      gameLoop();
+    };
+  </script>
+</body>
+</html>
