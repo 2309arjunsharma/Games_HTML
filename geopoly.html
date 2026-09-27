@@ -4,1288 +4,2710 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Geopoly: World Edition</title>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <style>
-    :root {
-      --bg: #0b1120;
-      --panel-bg: rgba(17, 24, 39, 0.95);
-      --border-color: #374151;
-      --text: #f3f4f6;
-      --accent: #3b82f6;
-      --accent-glow: rgba(59, 130, 246, 0.4);
-      --americas: #ef4444;
-      --africa: #f59e0b;
-      --europe: #10b981;
-      --asia: #8b5cf6;
-      --corner: #6366f1;
-      --airport: #0ea5e9;
-      --tax: #ec4899;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-    }
-
-    body {
-      background: radial-gradient(circle at 50% 50%, #1e293b, var(--bg));
-      color: var(--text);
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 10px;
-      overflow-x: hidden;
-    }
-
-    header {
-      width: 100%;
-      max-width: 1300px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 20px;
-      background: var(--panel-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      margin-bottom: 12px;
-    }
-
-    .brand {
-      font-size: 24px;
-      font-weight: 800;
-      letter-spacing: 2px;
-      background: linear-gradient(45deg, #60a5fa, #c084fc);
-      background-clip: text;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .layout-container {
-      display: flex;
-      gap: 20px;
-      max-width: 1350px;
-      width: 100%;
-      justify-content: center;
-      align-items: flex-start;
-    }
-
-    /* 40-TILE CSS GRID BOARD */
-    #board {
-      width: 780px;
-      height: 780px;
-      background: #0f172a;
-      border: 3px solid #4b5563;
-      display: grid;
-      grid-template-columns: 1.35fr repeat(9, 1fr) 1.35fr;
-      grid-template-rows: 1.35fr repeat(9, 1fr) 1.35fr;
-      position: relative;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-      border-radius: 4px;
-    }
-
-    .tile {
-      border: 1px solid #1f2937;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      background: #111827;
-      overflow: hidden;
-      font-size: 10px;
-      cursor: pointer;
-      transition: border 0.15s ease, background 0.15s ease;
-    }
-
-    .tile:hover {
-      border-color: #60a5fa;
-      z-index: 5;
-    }
-
-    .tile-bar {
-      height: 12px;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .tile-body {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 2px;
-      gap: 2px;
-    }
-
-    .tile-title {
-      font-weight: 700;
-      line-height: 1.1;
-      color: #e5e7eb;
-    }
-
-    .tile-cost {
-      font-weight: 600;
-      color: #9ca3af;
-      font-size: 9px;
-    }
-
-    .tile-indicator {
-      display: flex;
-      gap: 2px;
-      margin-top: 2px;
-    }
-
-    .house-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #38bdf8;
-    }
-
-    .hotel-star {
-      color: #fbbf24;
-      font-size: 9px;
-    }
-
-    .player-tokens {
-      position: absolute;
-      bottom: 2px;
-      left: 2px;
-      right: 2px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 3px;
-      justify-content: center;
-      z-index: 10;
-    }
-
-    .token {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      border: 1px solid #fff;
-      box-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
-      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    /* CENTER CONSOLE */
-    .center-board {
-      grid-column: 2 / span 9;
-      grid-row: 2 / span 9;
-      background: radial-gradient(circle at 50% 50%, #1e293b, #0f172a);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px;
-      position: relative;
-    }
-
-    .center-title {
-      font-size: 28px;
-      font-weight: 900;
-      letter-spacing: 4px;
-      text-transform: uppercase;
-      color: #94a3b8;
-    }
-
-    .summit-pool-display {
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid #10b981;
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 13px;
-      color: #34d399;
-      font-weight: bold;
-    }
-
-    .dice-area {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 15px;
-    }
-
-    .dice-box {
-      display: flex;
-      gap: 15px;
-    }
-
-    .die {
-      width: 50px;
-      height: 50px;
-      background: #f8fafc;
-      color: #0f172a;
-      border-radius: 8px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 24px;
-      font-weight: bold;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    }
-
-    button {
-      background: #2563eb;
-      color: white;
-      border: none;
-      padding: 8px 18px;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.15s, transform 0.1s;
-    }
-
-    button:hover:not(:disabled) {
-      background: #1d4ed8;
-      transform: translateY(-1px);
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    /* RIGHT SIDEBAR */
-    .sidebar {
-      width: 450px;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-
-    .panel {
-      background: var(--panel-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 14px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-
-    .panel-title {
-      font-size: 14px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #9ca3af;
-      margin-bottom: 10px;
-      border-bottom: 1px solid #374151;
-      padding-bottom: 4px;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .player-card {
-      background: #1f2937;
-      border-left: 4px solid #fff;
-      padding: 8px 12px;
-      border-radius: 4px;
-      margin-bottom: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .player-card.active {
-      background: #2d3748;
-      box-shadow: 0 0 8px rgba(96, 165, 250, 0.4);
-    }
-
-    .player-info-meta {
-      font-size: 11px;
-      color: #9ca3af;
-      display: flex;
-      gap: 8px;
-      margin-top: 2px;
-    }
-
-    .badge {
-      display: inline-block;
-      font-size: 9px;
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-weight: bold;
-      text-transform: uppercase;
-    }
-
-    .badge-bloc {
-      background: #4f46e5;
-      color: #c7d2fe;
-    }
-
-    .badge-imf {
-      background: #dc2626;
-      color: #fee2e2;
-    }
-
-    #game-feed {
-      height: 180px;
-      overflow-y: auto;
-      font-size: 11px;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      color: #d1d5db;
-    }
-
-    .feed-entry {
-      border-bottom: 1px solid #283548;
-      padding-bottom: 4px;
-    }
-
-    /* MODAL WINDOWS */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(3px);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-
-    .modal-card {
-      background: #1e293b;
-      border: 1px solid #475569;
-      border-radius: 10px;
-      width: 480px;
-      max-width: 90vw;
-      padding: 20px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.8);
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-
-    .modal-header {
-      font-size: 18px;
-      font-weight: 800;
-      color: #f8fafc;
-      border-bottom: 1px solid #334155;
-      padding-bottom: 8px;
-    }
-
-    .modal-body {
-      font-size: 13px;
-      line-height: 1.4;
-      color: #cbd5e1;
-    }
-
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
-  </style>
-</head>
-<body>
-
-<header>
-  <div class="brand">GEOPOLY : WORLD EDITION</div>
-  <div style="font-size: 12px; color: #94a3b8;">
-    Hegemon Milestone: <strong>$6,000M</strong> | 40 Sovereign Tiles
-  </div>
-</header>
-
-<div class="layout-container">
-  <!-- THE 40-TILE BOARD -->
-  <div id="board">
-    <!-- Center Console -->
-    <div class="center-board">
-      <div class="center-title">GEOPOLY</div>
-      <div class="summit-pool-display" id="summitPoolLabel">UN Climate Pool: $0M</div>
-      
-      <div class="dice-area">
-        <div class="dice-box">
-          <div class="die" id="die1">1</div>
-          <div class="die" id="die2">1</div>
-        </div>
-        <div id="statusMessage" style="font-size: 12px; color: #cbd5e1; min-height: 18px;">Player 1 Turn</div>
-        <div style="display:flex; gap:10px;">
-          <button id="rollBtn" onclick="game.executeRoll()">Roll Dice</button>
-          <button id="endTurnBtn" onclick="game.endCurrentTurn()" disabled>Pass Turn</button>
-        </div>
-      </div>
-
-      <div style="font-size: 10px; color: #64748b; text-align:center;">
-        Trade Blocs: Pan-American (Red) • African Union (Amber) • EU (Green) • BRICS+ (Violet)
-      </div>
-    </div>
-  </div>
-
-  <!-- RIGHT CONTROL PANEL -->
-  <div class="sidebar">
-    <!-- Sovereign Delegations -->
-    <div class="panel">
-      <div class="panel-title">
-        <span>Sovereign Delegations</span>
-        <span id="roundCounter">Round 1</span>
-      </div>
-      <div id="playersList"></div>
-    </div>
-
-    <!-- Active Management Console -->
-    <div class="panel">
-      <div class="panel-title">Estate Upgrades (Active Player)</div>
-      <div id="propertyUpgradeList" style="max-height: 120px; overflow-y:auto; font-size:11px; display:flex; flex-direction:column; gap:4px;">
-        <span style="color:#64748b;">No upgrades available yet.</span>
-      </div>
-    </div>
-
-    <!-- Diplomatic Wire / Feed -->
-    <div class="panel" style="flex:1;">
-      <div class="panel-title">Diplomatic Wire</div>
-      <div id="game-feed"></div>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: DIPLOMATIC SANCTIONS (JAIL) -->
-<div class="modal-overlay" id="sanctionsModal">
-  <div class="modal-card">
-    <div class="modal-header">⚠️ Diplomatic Sanctions Protocol</div>
-    <div class="modal-body" id="sanctionsBody">
-      You are detained under international trade sanctions. Select an exit protocol:
-    </div>
-    <div class="modal-actions" style="flex-wrap: wrap;">
-      <button onclick="game.jailPayFine()">Pay Sovereign Fine ($50M)</button>
-      <button onclick="game.jailRollDoubles()">Attempt Talks (Roll Doubles)</button>
-      <button id="asylumBtn" onclick="game.jailRequestAsylum()">Seek Asylum ($30M)</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: UN GENERAL ASSEMBLY VOTING -->
-<div class="modal-overlay" id="unModal">
-  <div class="modal-card">
-    <div class="modal-header">🌐 UN General Assembly Session</div>
-    <div class="modal-body" id="unBody">
-      A resolution has been tabled at the Global Summit. Vote according to your sovereign country holdings.
-    </div>
-    <div class="modal-actions">
-      <button onclick="game.voteUN(true)" style="background:#10b981;">Vote YES (Pass)</button>
-      <button onclick="game.voteUN(false)" style="background:#ef4444;">Vote NO (Veto)</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: AIRPORT FAST TRAVEL -->
-<div class="modal-overlay" id="airportModal">
-  <div class="modal-card">
-    <div class="modal-header">✈️ Open Skies Charter Flight</div>
-    <div class="modal-body">
-      You landed at an international hub. Would you like to charter a non-stop transit flight to any other regional airport for $50M?
-      <div id="airportChoices" style="margin-top:10px; display:flex; flex-direction:column; gap:6px;"></div>
-    </div>
-    <div class="modal-actions">
-      <button onclick="game.closeAirportModal()">Decline Flight</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: VICTORY / GAME OVER -->
-<div class="modal-overlay" id="victoryModal">
-  <div class="modal-card" style="text-align: center;">
-    <div class="modal-header" id="victoryTitle" style="font-size:24px; color:#38bdf8;">🏆 Hegemonic Supremacy!</div>
-    <div class="modal-body" id="victoryDetails" style="margin: 15px 0;"></div>
-    <div class="modal-actions" style="justify-content:center;">
-      <button onclick="location.reload()" style="padding:10px 24px;">Start New Match</button>
-    </div>
-  </div>
-</div>
-
-<script>
-// --- BOARD DATA: 40 SQUARES ---
-const TILES_DATA = [
-  // Tile 0 - Bottom-Right Corner
-  { id: 0, name: "START", type: "go", cost: 0, rent: [0], color: "var(--corner)" },
-  // Side 1: Americas (Bottom edge, going right to left: col 10 down to 2, row 11)
-  { id: 1, name: "Colombia", type: "country", region: "Americas", cost: 60, rent: [4, 20, 60, 180, 450], upgradeCost: 50, color: "var(--americas)" },
-  { id: 2, name: "Summit Chest", type: "chest", cost: 0, rent: [0], color: "#475569" },
-  { id: 3, name: "Argentina", type: "country", region: "Americas", cost: 80, rent: [6, 30, 90, 270, 550], upgradeCost: 50, color: "var(--americas)" },
-  { id: 4, name: "Import Tariff", type: "tax", cost: 200, rent: [200], color: "var(--tax)" },
-  { id: 5, name: "Americas Hub", type: "airport", cost: 200, rent: [25, 50, 100, 200], color: "var(--airport)" },
-  { id: 6, name: "Mexico", type: "country", region: "Americas", cost: 100, rent: [8, 40, 120, 360, 600], upgradeCost: 50, color: "var(--americas)" },
-  { id: 7, name: "Global News", type: "news", cost: 0, rent: [0], color: "#475569" },
-  { id: 8, name: "Brazil", type: "country", region: "Americas", cost: 120, rent: [10, 50, 150, 450, 700], upgradeCost: 50, color: "var(--americas)" },
-  { id: 9, name: "Canada", type: "country", region: "Americas", cost: 140, rent: [12, 60, 180, 500, 800], upgradeCost: 50, color: "var(--americas)" },
-
-  // Tile 10 - Bottom-Left Corner
-  { id: 10, name: "Sanctions / Detention", type: "jail", cost: 0, rent: [0], color: "var(--corner)" },
-  // Side 2: Africa (Left edge, going bottom to top: col 1, row 10 down to 2)
-  { id: 11, name: "Ethiopia", type: "country", region: "Africa", cost: 140, rent: [12, 60, 180, 500, 800], upgradeCost: 100, color: "var(--africa)" },
-  { id: 12, name: "Summit Chest", type: "chest", cost: 0, rent: [0], color: "#475569" },
-  { id: 13, name: "Kenya", type: "country", region: "Africa", cost: 160, rent: [14, 70, 200, 550, 850], upgradeCost: 100, color: "var(--africa)" },
-  { id: 14, name: "Morocco", type: "country", region: "Africa", cost: 180, rent: [16, 80, 220, 600, 900], upgradeCost: 100, color: "var(--africa)" },
-  { id: 15, name: "African Skyport", type: "airport", cost: 200, rent: [25, 50, 100, 200], color: "var(--airport)" },
-  { id: 16, name: "Egypt", type: "country", region: "Africa", cost: 180, rent: [16, 80, 220, 600, 900], upgradeCost: 100, color: "var(--africa)" },
-  { id: 17, name: "Global News", type: "news", cost: 0, rent: [0], color: "#475569" },
-  { id: 18, name: "Nigeria", type: "country", region: "Africa", cost: 200, rent: [18, 90, 250, 700, 950], upgradeCost: 100, color: "var(--africa)" },
-  { id: 19, name: "South Africa", type: "country", region: "Africa", cost: 200, rent: [18, 90, 250, 700, 950], upgradeCost: 100, color: "var(--africa)" },
-
-  // Tile 20 - Top-Left Corner
-  { id: 20, name: "Global Summit", type: "summit", cost: 0, rent: [0], color: "var(--corner)" },
-  // Side 3: Europe (Top edge, going left to right: col 2 up to 10, row 1)
-  { id: 21, name: "Poland", type: "country", region: "Europe", cost: 220, rent: [20, 100, 300, 750, 1000], upgradeCost: 150, color: "var(--europe)" },
-  { id: 22, name: "Summit Chest", type: "chest", cost: 0, rent: [0], color: "#475569" },
-  { id: 23, name: "Netherlands", type: "country", region: "Europe", cost: 240, rent: [22, 110, 330, 800, 1050], upgradeCost: 150, color: "var(--europe)" },
-  { id: 24, name: "Spain", type: "country", region: "Europe", cost: 260, rent: [24, 120, 360, 850, 1100], upgradeCost: 150, color: "var(--europe)" },
-  { id: 25, name: "Euro Skyway", type: "airport", cost: 200, rent: [25, 50, 100, 200], color: "var(--airport)" },
-  { id: 26, name: "Italy", type: "country", region: "Europe", cost: 260, rent: [24, 120, 360, 850, 1100], upgradeCost: 150, color: "var(--europe)" },
-  { id: 27, name: "France", type: "country", region: "Europe", cost: 280, rent: [26, 130, 390, 900, 1150], upgradeCost: 150, color: "var(--europe)" },
-  { id: 28, name: "Carbon Tax", type: "tax", cost: 100, rent: [100], color: "var(--tax)" },
-  { id: 29, name: "Germany", type: "country", region: "Europe", cost: 280, rent: [26, 130, 390, 900, 1150], upgradeCost: 150, color: "var(--europe)" },
-
-  // Tile 30 - Top-Right Corner
-  { id: 30, name: "Diplomatic Crisis", type: "go_jail", cost: 0, rent: [0], color: "var(--corner)" },
-  // Side 4: Asia & Superpowers (Right edge, going top to bottom: col 11, row 2 down to 10)
-  { id: 31, name: "Saudi Arabia", type: "country", region: "Asia", cost: 300, rent: [30, 150, 450, 1000, 1200], upgradeCost: 200, color: "var(--asia)" },
-  { id: 32, name: "Indonesia", type: "country", region: "Asia", cost: 300, rent: [30, 150, 450, 1000, 1200], upgradeCost: 200, color: "var(--asia)" },
-  { id: 33, name: "Global News", type: "news", cost: 0, rent: [0], color: "#475569" },
-  { id: 34, name: "South Korea", type: "country", region: "Asia", cost: 320, rent: [32, 160, 480, 1050, 1250], upgradeCost: 200, color: "var(--asia)" },
-  { id: 35, name: "Asian Megahub", type: "airport", cost: 200, rent: [25, 50, 100, 200], color: "var(--airport)" },
-  { id: 36, name: "Japan", type: "country", region: "Asia", cost: 320, rent: [32, 160, 480, 1050, 1250], upgradeCost: 200, color: "var(--asia)" },
-  { id: 37, name: "Summit Chest", type: "chest", cost: 0, rent: [0], color: "#475569" },
-  { id: 38, name: "India", type: "country", region: "Asia", cost: 350, rent: [35, 175, 500, 1100, 1300], upgradeCost: 200, color: "var(--asia)" },
-  { id: 39, name: "USA / China", type: "country", region: "Asia", cost: 400, rent: [50, 200, 600, 1400, 2000], upgradeCost: 200, color: "var(--asia)" }
-];
-
-// GRID PLACEMENT LOOKUP (CSS Grid 1-based coordinates: row, col)
-function getGridPosition(tileId) {
-  if (tileId === 0) return { r: 11, c: 11 };
-  if (tileId >= 1 && tileId <= 9) return { r: 11, c: 11 - tileId };
-  if (tileId === 10) return { r: 11, c: 1 };
-  if (tileId >= 11 && tileId <= 19) return { r: 11 - (tileId - 10), c: 1 };
-  if (tileId === 20) return { r: 1, c: 1 };
-  if (tileId >= 21 && tileId <= 29) return { r: 1, c: 1 + (tileId - 20) };
-  if (tileId === 30) return { r: 1, c: 11 };
-  if (tileId >= 31 && tileId <= 39) return { r: 1 + (tileId - 30), c: 11 };
-  return { r: 1, c: 1 };
-}
-
-// AUDIO SYNTHESIZER (Web Audio API)
-class SoundFX {
-  constructor() {
-    this.ctx = null;
-  }
-  init() {
-    if (!this.ctx) {
-      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-  }
-  playRoll() {
-    this.init();
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(220, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(110, this.ctx.currentTime + 0.15);
-    gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start();
-    osc.stop(this.ctx.currentTime + 0.15);
-  }
-  playCash() {
-    this.init();
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.frequency.setValueAtTime(523.25, now);
-    osc.frequency.setValueAtTime(659.25, now + 0.08);
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start();
-    osc.stop(now + 0.25);
-  }
-}
-const sfx = new SoundFX();
-
-// CORE GAME STATE & LOGIC ENGINE
-class GeopolyEngine {
-  constructor() {
-    this.players = [
-      { id: 0, name: "Player 1 (You)", isAI: false, money: 1500, position: 0, inJail: false, jailTurns: 0, color: "#3b82f6", imfDebt: 0, eliminated: false },
-      { id: 1, name: "Atlas Union (AI)", isAI: true, money: 1500, position: 0, inJail: false, jailTurns: 0, color: "#ef4444", imfDebt: 0, eliminated: false },
-      { id: 2, name: "Meridian Corp (AI)", isAI: true, money: 1500, position: 0, inJail: false, jailTurns: 0, color: "#10b981", imfDebt: 0, eliminated: false }
-    ];
-    this.ownership = {}; // tileId: { ownerId, upgrades: 0-4 }
-    this.activePlayerIdx = 0;
-    this.round = 1;
-    this.summitPool = 0;
-    this.rolledThisTurn = false;
-    this.gameOver = false;
-    this.pendingUNResolution = null;
-
-    this.renderBoard();
-    this.updateUI();
-  }
-
-  log(msg) {
-    const feed = document.getElementById("game-feed");
-    const item = document.createElement("div");
-    item.className = "feed-entry";
-    item.innerHTML = msg;
-    feed.prepend(item);
-  }
-
-  renderBoard() {
-    const boardEl = document.getElementById("board");
-    TILES_DATA.forEach(t => {
-      const pos = getGridPosition(t.id);
-      const tileEl = document.createElement("div");
-      tileEl.className = "tile";
-      tileEl.id = `tile-${t.id}`;
-      tileEl.style.gridRow = pos.r;
-      tileEl.style.gridColumn = pos.c;
-
-      // Color banner
-      const bar = document.createElement("div");
-      bar.className = "tile-bar";
-      bar.style.backgroundColor = t.color;
-      tileEl.appendChild(bar);
-
-      // Body text
-      const body = document.createElement("div");
-      body.className = "tile-body";
-      
-      const title = document.createElement("div");
-      title.className = "tile-title";
-      title.innerText = t.name;
-      body.appendChild(title);
-
-      if (t.cost > 0) {
-        const cost = document.createElement("div");
-        cost.className = "tile-cost";
-        cost.innerText = `$${t.cost}M`;
-        body.appendChild(cost);
-      }
-
-      const ind = document.createElement("div");
-      ind.className = "tile-indicator";
-      ind.id = `ind-${t.id}`;
-      body.appendChild(ind);
-
-      tileEl.appendChild(body);
-
-      // Token container
-      const tokenBox = document.createElement("div");
-      tokenBox.className = "player-tokens";
-      tokenBox.id = `tokens-${t.id}`;
-      tileEl.appendChild(tokenBox);
-
-      tileEl.onclick = () => this.inspectTile(t.id);
-      boardEl.appendChild(tileEl);
-    });
-  }
-
-  updateUI() {
-    // Summit pool
-    document.getElementById("summitPoolLabel").innerText = `UN Climate Pool: $${this.summitPool}M`;
-    document.getElementById("roundCounter").innerText = `Round ${this.round}`;
-
-    // Render Tokens
-    document.querySelectorAll(".player-tokens").forEach(el => el.innerHTML = "");
-    this.players.forEach(p => {
-      if (p.eliminated) return;
-      const box = document.getElementById(`tokens-${p.position}`);
-      if (box) {
-        const dot = document.createElement("div");
-        dot.className = "token";
-        dot.style.backgroundColor = p.color;
-        dot.title = p.name;
-        box.appendChild(dot);
-      }
-    });
-
-    // Players List
-    const plBox = document.getElementById("playersList");
-    plBox.innerHTML = "";
-    this.players.forEach((p, idx) => {
-      const card = document.createElement("div");
-      card.className = `player-card ${idx === this.activePlayerIdx ? 'active' : ''}`;
-      card.style.borderLeftColor = p.color;
-
-      const blocs = this.getOwnedBlocs(p.id);
-      let badgesHtml = "";
-      blocs.forEach(b => badgesHtml += `<span class="badge badge-bloc">${b}</span> `);
-      if (p.imfDebt > 0) {
-        badgesHtml += `<span class="badge badge-imf">IMF Austerity (-50%)</span>`;
-      }
-
-      card.innerHTML = `
-        <div>
-          <div style="font-weight:700;">${p.name} ${p.eliminated ? '(BANKRUPT)' : ''}</div>
-          <div class="player-info-meta">
-            <span>Treasury: $${p.money}M</span>
-            <span>Net Worth: $${this.getNetWorth(p.id)}M</span>
-          </div>
-          <div style="margin-top:3px;">${badgesHtml}</div>
-        </div>
-      `;
-      plBox.appendChild(card);
-    });
-
-    // Upgrades List
-    const curP = this.players[this.activePlayerIdx];
-    const upBox = document.getElementById("propertyUpgradeList");
-    upBox.innerHTML = "";
-    if (!curP.isAI && !curP.eliminated) {
-      const owned = Object.keys(this.ownership)
-        .map(Number)
-        .filter(id => this.ownership[id].ownerId === curP.id && TILES_DATA[id].type === 'country');
-
-      if (owned.length === 0) {
-        upBox.innerHTML = `<span style="color:#64748b;">No sovereign estates owned.</span>`;
-      } else {
-        owned.forEach(id => {
-          const t = TILES_DATA[id];
-          const currLevel = this.ownership[id].upgrades;
-          const cost = curP.imfDebt > 0 ? null : t.upgradeCost;
-
-          const row = document.createElement("div");
-          row.style.display = "flex";
-          row.style.justifyContent = "space-between";
-          row.style.alignItems = "center";
-
-          const levelLabel = currLevel === 4 ? "Embassy" : `Consulates: ${currLevel}`;
-          row.innerHTML = `
-            <span><strong>${t.name}</strong> (${levelLabel})</span>
-          `;
-          if (currLevel < 4) {
-            const btn = document.createElement("button");
-            btn.style.fontSize = "10px";
-            btn.style.padding = "2px 8px";
-            btn.innerText = curP.imfDebt > 0 ? "IMF Locked" : `+ Upgrade ($${cost}M)`;
-            btn.disabled = curP.imfDebt > 0 || curP.money < cost;
-            btn.onclick = () => this.buyUpgrade(id);
-            row.appendChild(btn);
-          } else {
-            const maxed = document.createElement("span");
-            maxed.style.color = "#fbbf24";
-            maxed.innerText = "MAX";
-            row.appendChild(maxed);
-          }
-          upBox.appendChild(row);
-        });
-      }
-    }
-
-    // Controls
-    document.getElementById("rollBtn").disabled = this.rolledThisTurn || curP.isAI || this.gameOver;
-    document.getElementById("endTurnBtn").disabled = !this.rolledThisTurn || curP.isAI || this.gameOver;
-  }
-
-  getNetWorth(playerId) {
-    const p = this.players[playerId];
-    let val = p.money;
-    Object.keys(this.ownership).forEach(tid => {
-      if (this.ownership[tid].ownerId === playerId) {
-        val += TILES_DATA[tid].cost;
-        val += (this.ownership[tid].upgrades * (TILES_DATA[tid].upgradeCost || 0));
-      }
-    });
-    return val;
-  }
-
-  getOwnedBlocs(playerId) {
-    const regions = ["Americas", "Africa", "Europe", "Asia"];
-    const blocs = [];
-    regions.forEach(reg => {
-      const regCountries = TILES_DATA.filter(t => t.type === 'country' && t.region === reg);
-      const ownsAll = regCountries.every(t => this.ownership[t.id] && this.ownership[t.id].ownerId === playerId);
-      if (ownsAll) blocs.push(reg);
-    });
-    return blocs;
-  }
-
-  // TURN FLOW
-  executeRoll() {
-    if (this.rolledThisTurn || this.gameOver) return;
-    const p = this.players[this.activePlayerIdx];
-
-    // Sanctions Intercept
-    if (p.inJail) {
-      if (!p.isAI) {
-        document.getElementById("sanctionsModal").style.display = "flex";
-      } else {
-        this.handleAIJailTurn(p);
-      }
-      return;
-    }
-
-    sfx.playRoll();
-    const d1 = Math.floor(Math.random() * 6) + 1;
-    const d2 = Math.floor(Math.random() * 6) + 1;
-    document.getElementById("die1").innerText = d1;
-    document.getElementById("die2").innerText = d2;
-    this.rolledThisTurn = true;
-
-    this.advancePlayer(p, d1 + d2);
-  }
-
-  advancePlayer(p, steps) {
-    const oldPos = p.position;
-    const newPos = (p.position + steps) % 40;
-
-    // Check pass GO
-    if (newPos < oldPos && oldPos !== 0) {
-      p.money += 200;
-      sfx.playCash();
-      this.log(`🚩 <strong>${p.name}</strong> passed START/GO and collected a $200M sovereign grant.`);
-    }
-
-    p.position = newPos;
-    this.updateUI();
-    this.handleTileLanding(p, TILES_DATA[newPos]);
-  }
-
-  handleTileLanding(p, tile) {
-    this.log(`📍 <strong>${p.name}</strong> arrived at <strong>${tile.name}</strong>.`);
-
-    if (tile.type === "go_jail") {
-      this.sendToSanctions(p);
-      return;
-    }
-
-    if (tile.type === "tax") {
-      // Europe Carbon Shield check
-      const blocs = this.getOwnedBlocs(p.id);
-      if (tile.name === "Carbon Tax" && blocs.includes("Europe")) {
-        this.log(`🛡️ <strong>${p.name}</strong> invoked the EU Carbon Shield and avoided the carbon tax!`);
-      } else if (tile.name === "Import Tariff" && blocs.includes("Americas")) {
-        this.log(`🛡️ <strong>${p.name}</strong> invoked the Pan-American Pact and crossed without tariff fees!`);
-      } else {
-        this.deductFunds(p, tile.cost, null);
-        this.summitPool += tile.cost;
-        this.log(`💸 <strong>${p.name}</strong> remitted $${tile.cost}M to the UN Climate Pool.`);
-      }
-      this.updateUI();
-      return;
-    }
-
-    if (tile.type === "summit") {
-      if (this.summitPool > 0) {
-        p.money += this.summitPool;
-        sfx.playCash();
-        this.log(`💰 <strong>${p.name}</strong> hosted the Global Summit and claimed the $${this.summitPool}M climate pool!`);
-        this.summitPool = 0;
-      }
-      this.triggerUNSession(p);
-      return;
-    }
-
-    if (tile.type === "country" || tile.type === "airport") {
-      if (!this.ownership[tile.id]) {
-        // Unowned: Offer purchase
-        if (p.isAI) {
-          if (p.money >= tile.cost * 1.3) {
-            this.buyProperty(p, tile.id);
-          }
-        } else {
-          if (p.money >= tile.cost) {
-            if (confirm(`Acquire sovereign title to ${tile.name} for $${tile.cost}M?`)) {
-              this.buyProperty(p, tile.id);
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Google Fonts: Space Grotesk & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- Canvas Confetti for Victory Screen -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'sans-serif'],
+            mono: ['Space Grotesk', 'monospace'],
+          },
+          colors: {
+            board: {
+              bg: '#050914',
+              surface: '#0b1329',
+              card: '#0f1b38',
+              border: '#1e2e54',
+              gold: '#f59e0b',
+              americas: '#10b981',
+              africa: '#f97316',
+              europe: '#3b82f6',
+              asia: '#ef4444',
             }
           }
         }
-      } else if (this.ownership[tile.id].ownerId !== p.id) {
-        // Owned by opponent: Calculate Rent
-        this.chargeRent(p, tile);
       }
+    }
+  </script>
 
-      // Airport Flight Option
-      if (tile.type === "airport") {
-        if (!p.isAI && p.money >= 50) {
-          this.offerAirportFlight(p);
+  <style>
+    /* Custom scrollbars */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #050914; }
+    ::-webkit-scrollbar-thumb { background: #1e2e54; border-radius: 9999px; }
+
+    /* 11x11 Grid Layout for 40-tile Perimeter Board */
+    .geopoly-grid {
+      display: grid;
+      grid-template-columns: 1.4fr repeat(9, 1fr) 1.4fr;
+      grid-template-rows: 1.4fr repeat(9, 1fr) 1.4fr;
+      width: 100%;
+      max-width: 960px;
+      aspect-ratio: 1 / 1;
+      background: #080f22;
+      border: 2px solid #1e2e54;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.95), 0 0 50px rgba(59, 130, 246, 0.12);
+      border-radius: 1.25rem;
+      position: relative;
+    }
+
+    /* Player Token Chip */
+    .token-chip {
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.9);
+      user-select: none;
+    }
+
+    /* 3D Dice Cubes */
+    .dice-cube {
+      width: 42px;
+      height: 42px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.9s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+    .dice-face {
+      position: absolute;
+      width: 42px;
+      height: 42px;
+      background: #f8fafc;
+      border: 2px solid #cbd5e1;
+      border-radius: 8px;
+      display: grid;
+      grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+      padding: 4px;
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.25);
+    }
+    .pip {
+      background-color: #0f172a;
+      border-radius: 50%;
+      width: 7px;
+      height: 7px;
+      justify-self: center;
+      align-self: center;
+    }
+    .dice-face-1 { transform: rotateY(0deg) translateZ(21px); }
+    .dice-face-6 { transform: rotateY(180deg) translateZ(21px); }
+    .dice-face-2 { transform: rotateY(90deg) translateZ(21px); }
+    .dice-face-5 { transform: rotateY(-90deg) translateZ(21px); }
+    .dice-face-3 { transform: rotateX(90deg) translateZ(21px); }
+    .dice-face-4 { transform: rotateX(-90deg) translateZ(21px); }
+
+    .pulse-subtle {
+      animation: pulseSubtle 2.5s infinite ease-in-out;
+    }
+    @keyframes pulseSubtle {
+      0%, 100% { opacity: 0.85; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.02); }
+    }
+  </style>
+</head>
+<body class="bg-[#030610] text-slate-100 min-h-screen flex flex-col font-sans selection:bg-blue-500 selection:text-white">
+
+  <header class="w-full border-b border-slate-800 bg-[#070c1b]/95 backdrop-blur z-30 sticky top-0 px-3 sm:px-6 py-2.5 flex items-center justify-between shadow-xl">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-amber-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+        <i class="fa-solid fa-earth-americas text-white text-xl animate-spin-slow"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-lg font-black tracking-wider bg-gradient-to-r from-white via-slate-100 to-amber-400 bg-clip-text text-transparent">
+            GEOPOLY
+          </h1>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-950 text-blue-300 border border-blue-800 font-bold uppercase tracking-wider">
+            World Edition
+          </span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">Global Economics • Sovereign Land Titles • Continental Fast-Travel</p>
+      </div>
+    </div>
+
+    <!-- Center Economic Indicator & Climate Pot -->
+    <div class="hidden md:flex items-center gap-4 px-4 py-1.5 rounded-xl bg-[#0c152d] border border-slate-800 text-xs shadow-inner">
+      <div class="flex items-center gap-1.5">
+        <span class="text-slate-400">UN Climate & Tax Pool:</span>
+        <span id="taxPoolBadge" class="font-mono font-bold text-amber-400">$0M</span>
+      </div>
+      <span class="text-slate-600">|</span>
+      <div class="flex items-center gap-1.5">
+        <span class="text-slate-400">Round:</span>
+        <span id="gameRoundBadge" class="font-mono font-bold text-cyan-400">1</span>
+      </div>
+      <span class="text-slate-600">|</span>
+      <div class="flex items-center gap-1.5">
+        <span class="text-slate-400">Global Ceasefire:</span>
+        <span id="ceasefireBadge" class="font-mono font-bold text-emerald-400">Inactive</span>
+      </div>
+    </div>
+
+    <!-- Quick Action Controls -->
+    <div class="flex items-center gap-2">
+      <button onclick="openTradeModal()" class="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-handshake text-emerald-400"></i>
+        <span class="hidden sm:inline">Diplomacy & Trade</span>
+      </button>
+
+      <button id="soundToggleBtn" onclick="toggleAudio()" class="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800/90 hover:bg-slate-700 text-slate-300 text-xs flex items-center gap-1.5 transition">
+        <i id="soundIcon" class="fa-solid fa-volume-high text-cyan-400"></i>
+        <span class="hidden lg:inline" id="soundStatus">SFX On</span>
+      </button>
+
+      <button onclick="openRulesModal()" class="p-2 sm:px-2.5 sm:py-1.5 rounded-lg border border-slate-700 bg-slate-800/90 hover:bg-slate-700 text-slate-300 text-xs flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-book text-blue-400"></i>
+        <span class="hidden sm:inline">Rules</span>
+      </button>
+
+      <button onclick="openNewGameModal()" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-blue-500/25 flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-rotate-right"></i>
+        <span>New Game</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 w-full max-w-[1880px] mx-auto p-2 sm:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+    
+    <!-- LEFT SIDEBAR: Players Roster, Asset Summary & Game Feed -->
+    <aside class="lg:col-span-3 flex flex-col gap-3 order-2 lg:order-1">
+      
+      <!-- Player Roster -->
+      <div class="rounded-2xl p-3.5 bg-[#0b1328] border border-slate-800 shadow-xl">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-users text-blue-400"></i> Sovereign Delegations
+          </span>
+          <span class="text-xs text-slate-400 font-mono" id="turnStatusBadge">Player 1's Turn</span>
+        </div>
+        <div id="playerListContainer" class="flex flex-col gap-2">
+          <!-- Injected via JavaScript -->
+        </div>
+      </div>
+
+      <!-- Continental Regional Control Breakdown & Active Trade Blocs -->
+      <div class="rounded-2xl p-3.5 bg-[#0b1328] border border-slate-800 shadow-xl text-xs">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 font-bold text-slate-300 uppercase tracking-wider">
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-globe text-amber-400"></i> Continental Trade Blocs</span>
+          <span class="text-[10px] text-slate-400 font-mono">Customs Unions</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-[11px]" id="continentDominanceGrid">
+          <div id="blocCardAmericas" class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex flex-col justify-between transition-all">
+            <div class="flex items-center justify-between font-bold text-emerald-400">
+              <span>Pan-American Pact</span>
+              <span id="americasLeaderTag" class="text-[9px] text-slate-400 font-mono">Split</span>
+            </div>
+            <div class="text-[9px] text-slate-400 mt-1">Tariff Exemption & +20% Rents</div>
+          </div>
+          <div id="blocCardAfrica" class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex flex-col justify-between transition-all">
+            <div class="flex items-center justify-between font-bold text-amber-400">
+              <span>African Union</span>
+              <span id="africaLeaderTag" class="text-[9px] text-slate-400 font-mono">Split</span>
+            </div>
+            <div class="text-[9px] text-slate-400 mt-1">Upgrades Cost -25%</div>
+          </div>
+          <div id="blocCardEurope" class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex flex-col justify-between transition-all">
+            <div class="flex items-center justify-between font-bold text-blue-400">
+              <span>European Union</span>
+              <span id="europeLeaderTag" class="text-[9px] text-slate-400 font-mono">Split</span>
+            </div>
+            <div class="text-[9px] text-slate-400 mt-1">Carbon Shield & Tax Dividend</div>
+          </div>
+          <div id="blocCardAsia" class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex flex-col justify-between transition-all">
+            <div class="flex items-center justify-between font-bold text-rose-400">
+              <span>BRICS+ Alliance</span>
+              <span id="asiaLeaderTag" class="text-[9px] text-slate-400 font-mono">Split</span>
+            </div>
+            <div class="text-[9px] text-slate-400 mt-1">India/China Hegemon +25%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Diplomatic Action Wire Feed -->
+      <div class="rounded-2xl p-3.5 bg-[#0b1328] border border-slate-800 shadow-xl flex flex-col h-[260px]">
+        <div class="flex items-center justify-between pb-2 mb-1 border-b border-slate-800">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-satellite-dish text-blue-400"></i> Diplomatic Wire
+          </span>
+          <button onclick="clearEventLog()" class="text-[10px] text-slate-500 hover:text-slate-300">Clear</button>
+        </div>
+        <div id="gameLog" class="flex-1 overflow-y-auto font-mono text-xs space-y-1.5 pr-1">
+          <div class="text-slate-400">Welcome to Geopoly: World Edition. Sovereign territories ready for trade.</div>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- CENTER COLUMN: Interactive 40-Tile Board -->
+    <div class="lg:col-span-9 flex flex-col items-center justify-center order-1 lg:order-2">
+      <div class="w-full flex justify-center items-center relative">
+        
+        <!-- THE 11x11 BOARD GRID CONTAINER -->
+        <div id="boardContainer" class="geopoly-grid select-none">
+          
+          <!-- Tiles 0-39 are dynamically injected by JavaScript -->
+
+          <!-- BOARD CENTER STAGE (Spans 9x9 inner area) -->
+          <div style="grid-column: 2 / span 9; grid-row: 2 / span 9;" class="bg-gradient-to-br from-[#0c152f] via-[#080e22] to-[#0a1128] relative flex flex-col items-center justify-between p-4 sm:p-6 overflow-hidden rounded-xl border border-slate-800/90 shadow-inner">
+            
+            <!-- Global Map Silhouette Watermark -->
+            <div class="absolute inset-0 opacity-10 pointer-events-none flex items-center justify-center">
+              <svg viewBox="0 0 1000 500" class="w-full h-full object-contain">
+                <path fill="#60a5fa" d="M150,150 Q180,100 240,120 T350,160 T420,240 T280,320 T180,260 Z M600,100 Q650,80 720,110 T800,140 T880,220 T800,320 T700,280 T610,210 Z M450,220 Q480,200 520,210 T560,280 T500,360 T440,300 Z M750,340 Q790,320 830,350 T820,400 T760,400 Z"/>
+              </svg>
+            </div>
+
+            <!-- Top Banner inside Board -->
+            <div class="text-center z-10 w-full flex flex-col items-center">
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-950/70 border border-blue-700/60 text-blue-300 text-xs font-mono mb-1 shadow">
+                <i class="fa-solid fa-scale-balanced text-amber-400"></i>
+                <span id="centerStatusBanner">UN MONETARY & FINANCIAL CONFERENCE</span>
+              </div>
+              <h2 class="text-2xl sm:text-4xl font-black tracking-tight text-white font-mono drop-shadow-md">
+                G E O P O L Y
+              </h2>
+              <p class="text-xs text-slate-400 mt-0.5">Sovereignty • Fast-Travel Flight Hubs • Trade Blocs • UN Resolutions</p>
+            </div>
+
+            <!-- Interactive Turn Console & 3D Dice Area -->
+            <div class="z-10 flex flex-col items-center gap-3 my-auto w-full max-w-md">
+              
+              <!-- Turn notification card -->
+              <div id="turnBanner" class="w-full p-2.5 rounded-xl border border-blue-500/30 bg-[#091126]/80 text-center shadow-lg backdrop-blur flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5">
+                  <div id="currentTurnAvatar" class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center font-bold text-white text-sm shadow-md">
+                    <i class="fa-solid fa-plane"></i>
+                  </div>
+                  <div class="text-left">
+                    <div class="text-xs font-bold text-white flex items-center gap-1.5" id="currentTurnName">
+                      Player 1's Turn
+                    </div>
+                    <div class="text-[11px] text-slate-400 truncate max-w-[210px] sm:max-w-xs" id="currentTurnSubtext">
+                      Roll movement dice to navigate sovereign territories
+                    </div>
+                  </div>
+                </div>
+
+                <button onclick="openManageAllModal()" class="px-2.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-amber-400 text-xs font-semibold border border-slate-700 transition flex items-center gap-1">
+                  <i class="fa-solid fa-building-columns"></i>
+                  <span>Upgrades</span>
+                </button>
+              </div>
+
+              <!-- 3D Dice Display -->
+              <div class="flex items-center gap-4 py-1">
+                <div class="dice-cube" id="die1">
+                  <div class="dice-face dice-face-1"><div class="pip col-start-2 row-start-2"></div></div>
+                  <div class="dice-face dice-face-2"><div class="pip col-start-1 row-start-1"></div><div class="pip col-start-3 row-start-3"></div></div>
+                  <div class="dice-face dice-face-3"><div class="pip col-start-1 row-start-1"></div><div class="pip col-start-2 row-start-2"></div><div class="pip col-start-3 row-start-3"></div></div>
+                  <div class="dice-face dice-face-4"><div class="pip col-start-1 row-start-1"></div><div class="pip col-start-3 row-start-1"></div><div class="pip col-start-1 row-start-3"></div><div class="pip col-start-3 row-start-3"></div></div>
+                  <div class="dice-face dice-face-5"><div class="pip col-start-1 row-start-1"></div><div class="pip col-start-3 row-start-1"></div><div class="pip col-start-2 row-start-2"></div><div class="pip col-start-1 row-start-3"></div><div class="pip col-start-3 row-start-3"></div></div>
+                  <div class="dice-face dice-face-6"><div class="pip col-start-1 row-start-1"></div><div class="pip col-start-1 row-start-2"></div><div class="pip col-start-1 row-start-3"></div><div class="pip col-start-3 row-start-1"></div><div class="pip col-start-3 row-start-2"></div><div class="pip col-start-3 row-start-3"></div></div>
+                </div>
+                <div class="dice-cube" id="die2">
+                  <div class="dice-face dice-face-1"><div class="pip col-start-2 row-start-2"></div></div>
+                  <div class="dice-face dice-face-2"><div class="pip col-start-1 row-start-1"></div><div class="pip col-start-3 row-start-3"></div></div>
+                  <div class="dice-face dice-face-3"><div class="pip col-start-1 row-start-1"></div><div class="pip col-start-2 row-start-2"></div><div class="pip col-start-3 row-start-3"></div></div>
+                  <div class="dice-face dice-face-4"><div class="pip col-start-1 row-start-1"></div><div class="pip col-start-3 row-start-1"></div><div class="pip col-start-1 row-start-3"></div><div class="pip col-start-3 row-start-3"></div></div>
+                  <div class="dice-face dice-face-5"><div class="pip col-start-1 row-start-1"></div><div class="pip col-start-3 row-start-1"></div><div class="pip col-start-2 row-start-2"></div><div class="pip col-start-1 row-start-3"></div><div class="pip col-start-3 row-start-3"></div></div>
+                  <div class="dice-face dice-face-6"><div class="pip col-start-1 row-start-1"></div><div class="pip col-start-1 row-start-2"></div><div class="pip col-start-1 row-start-3"></div><div class="pip col-start-3 row-start-1"></div><div class="pip col-start-3 row-start-2"></div><div class="pip col-start-3 row-start-3"></div></div>
+                </div>
+              </div>
+
+              <!-- Main Roll & End Turn Controls -->
+              <div class="flex items-center gap-3 w-full justify-center">
+                <button id="rollDiceBtn" onclick="handleRollDice()" class="px-6 py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-blue-600 via-indigo-600 to-amber-500 hover:from-blue-500 hover:to-amber-400 text-white shadow-lg shadow-blue-500/25 active:scale-95 transition flex items-center gap-2">
+                  <i class="fa-solid fa-dice text-base animate-bounce"></i>
+                  <span>Roll Movement</span>
+                </button>
+
+                <button id="endTurnBtn" onclick="handleEndTurn()" disabled class="px-5 py-2.5 rounded-xl font-semibold text-sm bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-arrow-right"></i>
+                  <span>End Turn</span>
+                </button>
+              </div>
+
+              <!-- Doubles Alert Tag -->
+              <div id="doubleNotice" class="text-amber-400 font-mono text-[11px] h-4 font-semibold opacity-0 transition">
+                🎉 Doubles! Consecutive roll granted!
+              </div>
+            </div>
+
+            <!-- Regional Continents Color Footer -->
+            <div class="z-10 w-full flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-800/80 pt-2 px-2">
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Americas (Side 1)</div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span> Africa (Side 2)</div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Europe (Side 3)</div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Asia (Side 4)</div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+
+  <!-- MODAL 1: Diplomatic Detention / Sanctions Exit Console -->
+  <div id="sanctionsModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0b1328] border-2 border-amber-500/60 rounded-3xl max-w-lg w-full p-6 shadow-2xl text-center relative overflow-hidden">
+      <div class="w-16 h-16 rounded-2xl bg-amber-950/80 border border-amber-500/50 flex items-center justify-center mx-auto text-3xl text-amber-400 mb-3 shadow-lg">
+        <i class="fa-solid fa-handcuffs"></i>
+      </div>
+      <span class="text-xs font-mono uppercase tracking-widest text-amber-400 px-3 py-0.5 rounded-full bg-amber-950 border border-amber-800 font-bold">
+        Diplomatic Detention Corridor
+      </span>
+      <h3 id="sanctionsPlayerName" class="text-xl font-bold text-white mt-2">Delegation Sanctioned</h3>
+      <p id="sanctionsTurnInfo" class="text-xs text-slate-300 mt-1 mb-4">
+        Your trade credentials are frozen under multilateral sanctions. Select your diplomatic exit strategy:
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+        <!-- Option A: Sovereign Settlement -->
+        <button onclick="sanctionsPayFine()" class="p-3.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-emerald-500 hover:bg-slate-800/90 transition flex flex-col justify-between">
+          <div class="flex items-center gap-2 text-emerald-400 font-bold text-xs mb-1">
+            <i class="fa-solid fa-money-bill-wave"></i>
+            <span>Sovereign Settlement</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Pay <strong>$50M fine</strong> to exit immediately and roll freely.</p>
+          <span class="mt-2 text-xs font-mono font-bold text-white">$50M Fee</span>
+        </button>
+
+        <!-- Option B: Diplomatic Dialogue (Doubles) -->
+        <button onclick="sanctionsRollDoubles()" class="p-3.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-blue-500 hover:bg-slate-800/90 transition flex flex-col justify-between">
+          <div class="flex items-center gap-2 text-blue-400 font-bold text-xs mb-1">
+            <i class="fa-solid fa-dice"></i>
+            <span>Diplomatic Dialogue</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Roll for doubles (Attempt <span id="sanctionsAttemptNum">1</span>/3). If successful, leave free!</p>
+          <span class="mt-2 text-xs font-mono font-bold text-cyan-400">Roll Doubles</span>
+        </button>
+
+        <!-- Option C: UN Veto / Diplomatic Immunity -->
+        <button id="sanctionsImmunityBtn" onclick="sanctionsUseImmunity()" class="p-3.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-purple-500 hover:bg-slate-800/90 transition flex flex-col justify-between">
+          <div class="flex items-center gap-2 text-purple-400 font-bold text-xs mb-1">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>UN Veto Privilege</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Redeem a Diplomatic Immunity card to void sanctions instantly.</p>
+          <span id="sanctionsImmunityCount" class="mt-2 text-xs font-mono font-bold text-purple-300">0 Cards Available</span>
+        </button>
+
+        <!-- Option D: Bilateral Asylum Request -->
+        <button id="sanctionsAsylumBtn" onclick="sanctionsRequestAsylum()" class="p-3.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-amber-500 hover:bg-slate-800/90 transition flex flex-col justify-between">
+          <div class="flex items-center gap-2 text-amber-400 font-bold text-xs mb-1">
+            <i class="fa-solid fa-handshake-angle"></i>
+            <span>Bilateral Asylum</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Seek asylum from a superpower hegemon (India/USA/China) for $30M.</p>
+          <span id="sanctionsAsylumStatus" class="mt-2 text-xs font-mono font-bold text-amber-300">Check Sponsors</span>
+        </button>
+      </div>
+
+      <div class="mt-5 text-[11px] text-slate-500 font-mono">
+        Article IV Sanctions Treaty • Mandatory $50M fine levied automatically on 3rd failed attempt.
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: UN General Assembly Resolutions (Global Summit Tile #20) -->
+  <div id="unAssemblyModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-gradient-to-b from-[#0f1d40] via-[#091126] to-[#040814] border-2 border-blue-500/70 rounded-3xl max-w-xl w-full p-6 shadow-2xl relative overflow-hidden">
+      <!-- Glow ambient background -->
+      <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-80 h-80 bg-blue-600/15 blur-3xl pointer-events-none rounded-full"></div>
+
+      <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
+        <div class="w-12 h-12 rounded-xl bg-blue-900/60 border border-blue-500/50 flex items-center justify-center text-2xl text-blue-400 shadow">
+          <i class="fa-solid fa-gavel"></i>
+        </div>
+        <div>
+          <span class="text-[10px] font-mono uppercase tracking-widest text-blue-400 px-2 py-0.5 rounded bg-blue-950 border border-blue-800">
+            Emergency Plenary Session
+          </span>
+          <h3 class="text-lg font-black text-white mt-0.5 font-mono">UN GENERAL ASSEMBLY SUMMIT</h3>
+        </div>
+      </div>
+
+      <div class="my-4 p-3.5 bg-blue-950/40 rounded-2xl border border-blue-800/40 text-xs">
+        <div class="flex items-center justify-between text-slate-300 mb-1">
+          <span>Sovereign Voting Delegations Registered:</span>
+          <span id="unTotalVotesBadge" class="font-mono font-bold text-amber-400">4 Votes</span>
+        </div>
+        <div class="text-[11px] text-slate-400">
+          Voting weight: 1 vote per sovereign land title controlled (minimum 1 vote per nation).
+        </div>
+      </div>
+
+      <div id="unResolutionList" class="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+        <!-- Injected via JS -->
+      </div>
+
+      <div class="mt-5 flex items-center justify-between pt-3 border-t border-slate-800">
+        <span class="text-[11px] text-slate-400" id="unVotingStatusText">Select resolution to cast sovereign vote</span>
+        <button onclick="closeUNAssemblyModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl transition">
+          Adjourn Session
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: IMF Sovereign Bailout Package Notification -->
+  <div id="imfBailoutModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0b1328] border-2 border-red-500/70 rounded-3xl max-w-md w-full p-6 text-center shadow-2xl relative overflow-hidden">
+      <div class="w-16 h-16 rounded-2xl bg-red-950/80 border border-red-500/50 flex items-center justify-center mx-auto text-3xl text-red-400 mb-3 shadow-lg">
+        <i class="fa-solid fa-building-columns"></i>
+      </div>
+      <span class="text-xs font-mono uppercase tracking-widest text-red-400 px-3 py-0.5 rounded-full bg-red-950 border border-red-800 font-bold">
+        IMF EMERGENCY RESCUE CREDIT LINE
+      </span>
+      <h3 id="imfPlayerName" class="text-xl font-bold text-white mt-2">Sovereign Debt Crisis</h3>
+      <p class="text-xs text-slate-300 mt-2">
+        Your sovereign treasury has suffered liquidity exhaustion. The World Bank & IMF have extended an emergency <strong class="text-emerald-400 font-mono">$300M credit line</strong> to avoid immediate state collapse!
+      </p>
+
+      <div class="my-4 p-3 rounded-2xl bg-slate-900 border border-slate-800 text-left text-xs space-y-2 font-mono">
+        <div class="flex justify-between text-slate-300">
+          <span>Liquidity Injection:</span>
+          <span class="font-bold text-emerald-400">+$300M</span>
+        </div>
+        <div class="flex justify-between text-slate-300">
+          <span>Repayment Obligation:</span>
+          <span class="font-bold text-amber-400">$350M ($300M + $50M Int)</span>
+        </div>
+        <div class="flex justify-between text-slate-400 text-[11px]">
+          <span>Austerity Garnishment:</span>
+          <span class="text-red-400">50% of incoming rents</span>
+        </div>
+        <div class="flex justify-between text-slate-400 text-[11px]">
+          <span>Infrastructure Freeze:</span>
+          <span class="text-red-400">No Consulates/Embassies</span>
+        </div>
+      </div>
+
+      <p class="text-[11px] text-amber-400 mb-4 font-semibold">
+        ⚠️ Warning: Dipping negative while already under an active IMF loan triggers immediate Sovereign Default (Bankruptcy).
+      </p>
+
+      <button onclick="closeIMFBailoutModal()" class="w-full py-2.5 bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-bold text-xs rounded-xl shadow transition">
+        Ratify IMF Austerity Agreement
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: Property Purchase & Action -->
+  <div id="propertyModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0b1328] border border-slate-700 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl">
+      <div id="modalHeaderColor" class="h-3.5 bg-blue-500 w-full"></div>
+      
+      <div class="p-5">
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="modalTileCategory" class="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                Country
+              </span>
+              <span id="modalTileRegionTag" class="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800">
+                Region
+              </span>
+            </div>
+            <h3 id="modalTileName" class="text-xl font-bold text-white mt-1">Country Name</h3>
+            <p id="modalTileGdp" class="text-xs text-amber-400 font-mono mt-0.5">GDP Tier</p>
+          </div>
+          <div class="text-right">
+            <span class="text-[10px] text-slate-400 block uppercase">Title Price</span>
+            <span id="modalTilePrice" class="text-xl font-bold text-cyan-400 font-mono">$0M</span>
+          </div>
+        </div>
+
+        <div class="mt-3 relative h-36 rounded-xl overflow-hidden border border-slate-700">
+          <img id="modalTileImage" src="" alt="Landmark" class="w-full h-full object-cover">
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
+          <div id="modalTileFact" class="absolute bottom-2 left-2 right-2 text-[11px] text-slate-200 bg-black/75 backdrop-blur px-2.5 py-1 rounded-md">
+            Trivia / Fact
+          </div>
+        </div>
+
+        <!-- 4-Tier Upgrade Rent Table -->
+        <div class="mt-3.5 p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs space-y-1.5">
+          <div class="flex justify-between text-slate-300">
+            <span>Base Sovereign Toll:</span>
+            <span id="modalRentBase" class="font-mono font-semibold text-white">$0M</span>
+          </div>
+          <div class="flex justify-between text-slate-400 text-[11px]">
+            <span>1 Consulate:</span>
+            <span id="modalRent1" class="font-mono">$0M</span>
+          </div>
+          <div class="flex justify-between text-slate-400 text-[11px]">
+            <span>2 Consulates:</span>
+            <span id="modalRent2" class="font-mono">$0M</span>
+          </div>
+          <div class="flex justify-between text-slate-400 text-[11px]">
+            <span>3 Consulates:</span>
+            <span id="modalRent3" class="font-mono">$0M</span>
+          </div>
+          <div class="flex justify-between text-slate-300 text-[11px] font-bold">
+            <span class="text-amber-400">Embassy (Max Tier):</span>
+            <span id="modalRent4" class="font-mono text-amber-400">$0M</span>
+          </div>
+        </div>
+
+        <div class="mt-4 flex gap-2.5">
+          <button id="modalBuyBtn" onclick="confirmTilePurchase()" class="flex-1 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-sm rounded-xl transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/20">
+            <i class="fa-solid fa-signature"></i>
+            <span>Acquire Title</span>
+          </button>
+          <button onclick="closePropertyModal()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm rounded-xl border border-slate-700 transition">
+            Pass
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Airport Flight Network -->
+  <div id="flightModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0b1328] border border-cyan-500/50 rounded-2xl max-w-md w-full p-5 shadow-2xl text-center">
+      <div class="w-14 h-14 rounded-2xl bg-cyan-950 border border-cyan-700 flex items-center justify-center mx-auto text-2xl text-cyan-400 mb-3 shadow-lg">
+        <i class="fa-solid fa-plane-departure"></i>
+      </div>
+      <span class="text-xs font-mono uppercase tracking-widest text-cyan-400 px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800">
+        Continental Fast-Travel Hub
+      </span>
+      <h3 class="text-xl font-bold text-white mt-2">Flight Network Access</h3>
+      <p class="text-xs text-slate-300 mt-1">Book an express charter flight for <strong class="text-amber-400 font-mono">$50M</strong> directly to any other Airport on the globe.</p>
+
+      <div class="mt-4 grid grid-cols-1 gap-2 text-left" id="flightDestinationsList">
+        <!-- Injected via JS -->
+      </div>
+
+      <div class="mt-4 flex gap-2">
+        <button onclick="closeFlightModal()" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl transition">
+          Stay at Current Hub
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Global Headlines & UN Resolutions Deck -->
+  <div id="cardModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0e1834] border border-blue-500/40 rounded-2xl max-w-md w-full p-6 shadow-2xl text-center relative overflow-hidden">
+      <div class="w-14 h-14 rounded-2xl bg-blue-950 border border-blue-700 flex items-center justify-center mx-auto text-2xl text-amber-400 mb-3 shadow-lg">
+        <i id="cardIcon" class="fa-solid fa-newspaper"></i>
+      </div>
+      <span id="cardTypeTag" class="text-xs font-mono uppercase tracking-widest text-blue-300 px-2.5 py-0.5 rounded bg-blue-950 border border-blue-800">
+        Global Event
+      </span>
+      <h3 id="cardTitle" class="text-xl font-bold text-white mt-2">Card Headline</h3>
+      <p id="cardDescription" class="text-sm text-slate-300 mt-2 px-2">Card description details will be displayed here.</p>
+
+      <button onclick="closeCardModal()" class="mt-5 w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition shadow-lg shadow-blue-600/30">
+        Acknowledge & Apply Directive
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: Infrastructure Upgrades Console (Consulates & Embassies) -->
+  <div id="manageModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0b1328] border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-white text-base flex items-center gap-2">
+            <i class="fa-solid fa-building-columns text-amber-400"></i> Sovereign Diplomatic Infrastructure
+          </h3>
+          <p class="text-xs text-slate-400">Construct Consulates (Tiers 1-3) and Embassies (Tier 4 / Max)</p>
+        </div>
+        <button onclick="closeManageModal()" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-4 flex-1 overflow-y-auto space-y-3" id="manageModalList">
+        <!-- Injected via JavaScript -->
+      </div>
+
+      <div class="p-3 border-t border-slate-800 bg-slate-900/70 flex justify-end">
+        <button onclick="closeManageModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Bilateral Trade & Diplomacy -->
+  <div id="tradeModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0b1328] border border-slate-700 rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-white text-base flex items-center gap-2">
+            <i class="fa-solid fa-handshake text-emerald-400"></i> Bilateral Diplomacy & Asset Exchange
+          </h3>
+          <p class="text-xs text-slate-400">Negotiate land titles and treasury transfers with other delegations</p>
+        </div>
+        <button onclick="closeTradeModal()" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-4 overflow-y-auto flex-1 space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Your Delegation:</label>
+            <select id="tradeSenderSelect" onchange="renderTradeInventory()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Target Delegation:</label>
+            <select id="tradeReceiverSelect" onchange="renderTradeInventory()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"></select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <!-- Sender offers -->
+          <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 flex flex-col gap-2">
+            <span class="font-bold text-cyan-400">Your Offer:</span>
+            <div>
+              <label class="text-[11px] text-slate-400">Cash Transfer ($M):</label>
+              <input id="tradeSenderCash" type="number" min="0" value="0" class="w-full bg-slate-950 border border-slate-700 rounded p-1.5 text-xs text-white font-mono">
+            </div>
+            <div>
+              <label class="text-[11px] text-slate-400">Select Land Titles to Offer:</label>
+              <div id="tradeSenderProperties" class="max-h-32 overflow-y-auto space-y-1 mt-1 pr-1"></div>
+            </div>
+          </div>
+
+          <!-- Receiver gives -->
+          <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 flex flex-col gap-2">
+            <span class="font-bold text-amber-400">Requested from Target:</span>
+            <div>
+              <label class="text-[11px] text-slate-400">Cash Requested ($M):</label>
+              <input id="tradeReceiverCash" type="number" min="0" value="0" class="w-full bg-slate-950 border border-slate-700 rounded p-1.5 text-xs text-white font-mono">
+            </div>
+            <div>
+              <label class="text-[11px] text-slate-400">Select Land Titles to Request:</label>
+              <div id="tradeReceiverProperties" class="max-h-32 overflow-y-auto space-y-1 mt-1 pr-1"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-3 border-t border-slate-800 bg-slate-900/70 flex justify-end gap-2">
+        <button onclick="closeTradeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg">Cancel</button>
+        <button onclick="executeBilateralTrade()" class="px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 text-white font-bold text-xs rounded-lg shadow">Propose Treaty</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Rules Guide -->
+  <div id="rulesModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0b1328] border border-slate-700 rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+        <h3 class="font-bold text-white text-base flex items-center gap-2">
+          <i class="fa-solid fa-book-open text-blue-400"></i> Geopoly Rules of Engagement
+        </h3>
+        <button onclick="closeRulesModal()" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <div class="p-5 overflow-y-auto text-xs text-slate-300 space-y-3 leading-relaxed">
+        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+          <h4 class="font-bold text-amber-400 mb-1">🏁 4 Corners & Special Zones:</h4>
+          <ul class="list-disc pl-4 space-y-1 text-slate-300">
+            <li><strong>WORLD BANK (Tile 0 - START):</strong> Pass or land to collect a $200M liquidity grant.</li>
+            <li><strong>Diplomatic Detention (Tile 10):</strong> Trade Sanctions area with 4 exit options: $50M Sovereign Settlement, Roll Doubles (3 tries), UN Veto Card, or Bilateral Asylum ($30M to superpower).</li>
+            <li><strong>Global Summit (Tile 20):</strong> Collects climate tax pool AND triggers an emergency UN General Assembly Resolution vote!</li>
+            <li><strong>Diplomatic Crisis (Tile 30):</strong> Immediately sent to Trade Sanctions on Tile 10.</li>
+          </ul>
+        </div>
+        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+          <h4 class="font-bold text-emerald-400 mb-1">🌐 Continental Trade Blocs:</h4>
+          <p>Unify an entire continent (all 6 countries) to unlock its Customs Union perk:</p>
+          <ul class="list-disc pl-4 space-y-0.5 mt-1 text-slate-400">
+            <li><strong>Americas (Pan-American Pact):</strong> Tariff Exemption & +20% base rent.</li>
+            <li><strong>Africa (African Union):</strong> Consulates & Embassies cost 25% less.</li>
+            <li><strong>Europe (European Union):</strong> Carbon Tax immunity & collect carbon levies.</li>
+            <li><strong>Asia (BRICS+):</strong> India (#37) and USA/China (#39) receive +25% extra rent surcharge.</li>
+          </ul>
+        </div>
+        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+          <h4 class="font-bold text-red-400 mb-1">🏛️ IMF Bailouts & Austerity:</h4>
+          <p>If cash dips negative, the IMF provides an emergency <strong>$300M credit line</strong> with a 50% garnishment on future rents. A second default under active loan results in total bankruptcy.</p>
+        </div>
+        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+          <h4 class="font-bold text-cyan-400 mb-1">✈️ Continental Airports & Flight Network:</h4>
+          <p>Owning airports scales toll revenue ($25M / $50M / $100M / $200M). Landing on any airport allows taking a charter flight for $50M to any other airport!</p>
+        </div>
+      </div>
+      <div class="p-3 border-t border-slate-800 bg-slate-900/60 flex justify-end">
+        <button onclick="closeRulesModal()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-lg">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: VICTORY & GAME OVER -->
+  <div id="victoryModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-gradient-to-b from-[#111c38] via-[#0b1328] to-[#060a17] border-2 border-amber-500/70 rounded-3xl max-w-lg w-full p-6 text-center shadow-2xl relative overflow-hidden">
+      <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-64 h-64 bg-amber-500/20 blur-3xl pointer-events-none rounded-full"></div>
+
+      <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-amber-600 to-yellow-400 flex items-center justify-center mx-auto text-4xl text-black shadow-xl shadow-amber-500/30 mb-4 animate-bounce">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+
+      <span class="text-xs font-mono uppercase tracking-widest text-amber-400 px-3 py-1 rounded-full bg-amber-950/80 border border-amber-600 font-bold">
+        GLOBAL SUPREMACY RATIFIED
+      </span>
+
+      <h2 id="victoryWinnerTitle" class="text-2xl sm:text-3xl font-black text-white mt-3 font-mono">
+        DELEGATION 1 WINS!
+      </h2>
+      <p id="victorySubtitle" class="text-sm text-slate-300 mt-1">
+        All rival delegations have been diplomatically and economically neutralized.
+      </p>
+
+      <div class="mt-5 p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-left grid grid-cols-2 gap-3 text-xs">
+        <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+          <span class="text-[10px] text-slate-400 block uppercase">Final Net Worth</span>
+          <span id="victoryNetWorth" class="text-base font-bold text-emerald-400 font-mono">$0M</span>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+          <span class="text-[10px] text-slate-400 block uppercase">Titles Controlled</span>
+          <span id="victoryTitlesCount" class="text-base font-bold text-amber-400 font-mono">0</span>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+          <span class="text-[10px] text-slate-400 block uppercase">Total Rounds</span>
+          <span id="victoryRoundsCount" class="text-base font-bold text-cyan-400 font-mono">0</span>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+          <span class="text-[10px] text-slate-400 block uppercase">Victory Type</span>
+          <span id="victoryTypeTag" class="text-xs font-bold text-white font-mono truncate">Sole Survivor</span>
+        </div>
+      </div>
+
+      <div class="mt-6 flex flex-col sm:flex-row gap-3">
+        <button onclick="closeVictoryModal()" class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl transition border border-slate-700">
+          Review Board Map
+        </button>
+        <button onclick="openNewGameModal(); closeVictoryModal();" class="flex-1 py-3 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-400 hover:to-yellow-400 text-black font-extrabold text-xs rounded-xl shadow-lg shadow-amber-500/30 transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-rotate-right"></i>
+          <span>Start New Match</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: New Game Configuration -->
+  <div id="newGameModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0b1328] border border-slate-700 rounded-3xl max-w-md w-full p-6 shadow-2xl">
+      <h3 class="text-lg font-bold text-white flex items-center gap-2 mb-1">
+        <i class="fa-solid fa-sliders text-blue-400"></i> Configure World Match
+      </h3>
+      <p class="text-xs text-slate-400 mb-4">Set up sovereign delegations, AI automation, and opening liquidity reserves.</p>
+
+      <div class="space-y-4 text-xs">
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Number of Delegations:</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button onclick="selectPlayerCount(2)" class="count-btn py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 font-bold" data-count="2">2 Nations</button>
+            <button onclick="selectPlayerCount(3)" class="count-btn py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 font-bold" data-count="3">3 Nations</button>
+            <button onclick="selectPlayerCount(4)" class="count-btn py-2 rounded-xl border-blue-500 bg-blue-950 text-blue-300 font-bold" data-count="4">4 Nations</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">AI Automation Policy:</label>
+          <select id="botSetupSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white">
+            <option value="all_ai">Solo vs. AI Bot Delegations</option>
+            <option value="pass_and_play">Local Pass & Play (All Humans)</option>
+            <option value="one_bot">1 AI Opponent, Rest Humans</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Opening Treasury Liquidity:</label>
+          <select id="startingTreasurySelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono">
+            <option value="1500">$1,500M (Standard Tournament)</option>
+            <option value="2000">$2,000M (High Capital Expansion)</option>
+            <option value="1000">$1,000M (Austerity Blitz)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-6 flex gap-2.5">
+        <button onclick="closeNewGameModal()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl">Cancel</button>
+        <button onclick="initNewGame()" class="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-500/25">Launch Summit</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================================
+       AUDIO SYNTHESIZER (WEB AUDIO API - NO EXTERNAL ASSETS)
+       ========================================================================= */
+    let audioCtx = null;
+    let sfxEnabled = true;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function toggleAudio() {
+      sfxEnabled = !sfxEnabled;
+      const status = document.getElementById('soundStatus');
+      const icon = document.getElementById('soundIcon');
+      if (sfxEnabled) {
+        status.innerText = 'SFX On';
+        icon.className = 'fa-solid fa-volume-high text-cyan-400';
+      } else {
+        status.innerText = 'SFX Off';
+        icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+      }
+    }
+
+    function playSound(type) {
+      if (!sfxEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+
+        if (type === 'dice') {
+          for (let i = 0; i < 4; i++) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(140 + Math.random() * 120, now + i * 0.08);
+            gain.gain.setValueAtTime(0.12, now + i * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.07);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + i * 0.08);
+            osc.stop(now + i * 0.08 + 0.08);
+          }
+        } else if (type === 'step') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(320, now);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.07);
+        } else if (type === 'buy') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.12);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.36);
+        } else if (type === 'rent') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(260, now);
+          osc.frequency.exponentialRampToValueAtTime(140, now + 0.25);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.29);
+        } else if (type === 'jail') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(450, now);
+          osc.frequency.linearRampToValueAtTime(220, now + 0.4);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.46);
+        } else if (type === 'gavel') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(180, now);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.23);
+        } else if (type === 'flight') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.exponentialRampToValueAtTime(660, now + 0.5);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.56);
+        } else if (type === 'go') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.setValueAtTime(554.37, now + 0.1);
+          osc.frequency.setValueAtTime(659.25, now + 0.2);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.42);
         }
+      } catch (e) {
+        console.warn('Audio playback error', e);
       }
     }
 
-    this.checkWinConditions();
-    this.updateUI();
-  }
+    /* =========================================================================
+       COMPLETE 40-TILE WORLD BOARD DEFINITION (AMERICAS, AFRICA, EUROPE, ASIA)
+       ========================================================================= */
+    const TILES = [
+      // SIDE 1: AMERICAS (Bottom: 0 to 10)
+      { id: 0, name: "WORLD BANK (GO)", type: "go", region: "corner", icon: "fa-solid fa-arrow-left", desc: "Pass or land to collect $200M sovereign grant." },
+      { id: 1, name: "Colombia", type: "country", region: "americas", gdp: "GDP $360B", color: "#10b981", price: 60, rent: [2, 10, 30, 90, 160], upgradeCost: 50, photo: "https://images.unsplash.com/photo-1596401057633-54a8fe8ef647?auto=format&fit=crop&w=400&q=80", fact: "World powerhouse in specialty coffee and rich biodiversity." },
+      { id: 2, name: "UN Resolutions", type: "chest", region: "special", icon: "fa-solid fa-envelope-open-text", desc: "Confidential multilateral diplomatic directive." },
+      { id: 3, name: "Argentina", type: "country", region: "americas", gdp: "GDP $640B", color: "#10b981", price: 80, rent: [4, 20, 60, 180, 320], upgradeCost: 50, photo: "https://images.unsplash.com/photo-1589553416260-f586c8f1514f?auto=format&fit=crop&w=400&q=80", fact: "Vast agricultural exporter and strategic lithium salt flats." },
+      { id: 4, name: "Import Tariff Levy", type: "tax", region: "special", price: 200, icon: "fa-solid fa-receipt", desc: "Pay $200M customs tariff into the UN Climate & Tax Pool." },
+      { id: 5, name: "Americas Hub Airport", type: "airport", region: "airport", price: 200, rent: [25, 50, 100, 200], icon: "fa-solid fa-plane-departure", photo: "https://images.unsplash.com/photo-1530521954074-e64f6810b32d?auto=format&fit=crop&w=400&q=80", fact: "Panama and New York aviation gateway connecting the continents." },
+      { id: 6, name: "Mexico", type: "country", region: "americas", gdp: "GDP $1.4T", color: "#10b981", price: 100, rent: [6, 30, 90, 270, 400], upgradeCost: 50, photo: "https://images.unsplash.com/photo-1512813195386-6cf811ad3542?auto=format&fit=crop&w=400&q=80", fact: "Key manufacturing exporter and deep historical heritage center." },
+      { id: 7, name: "Global Headlines", type: "chance", region: "special", icon: "fa-solid fa-newspaper", desc: "Macroeconomic market shift announcement." },
+      { id: 8, name: "Brazil", type: "country", region: "americas", gdp: "GDP $2.1T", color: "#059669", price: 120, rent: [8, 40, 100, 300, 450], upgradeCost: 60, photo: "https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&w=400&q=80", fact: "South America's largest economy, agricultural titan, and Amazon custodian." },
+      { id: 9, name: "Canada", type: "country", region: "americas", gdp: "GDP $2.2T", color: "#059669", price: 140, rent: [10, 50, 150, 450, 620], upgradeCost: 80, photo: "https://images.unsplash.com/photo-1503614472-8c93d56e92ce?auto=format&fit=crop&w=400&q=80", fact: "Vast energy reserves, mining capabilities, and high-tech sectors." },
 
-  buyProperty(p, tileId) {
-    const tile = TILES_DATA[tileId];
-    p.money -= tile.cost;
-    this.ownership[tileId] = { ownerId: p.id, upgrades: 0 };
-    sfx.playCash();
-    this.log(`🏛️ <strong>${p.name}</strong> purchased sovereign rights to <strong>${tile.name}</strong> for $${tile.cost}M.`);
-    this.updateUI();
-  }
+      // SIDE 2: AFRICA (Left: 10 to 20)
+      { id: 10, name: "Diplomatic Detention", type: "jail", region: "corner", icon: "fa-solid fa-handcuffs", desc: "Trade Sanctions / Just Visiting corridor." },
+      { id: 11, name: "Ethiopia", type: "country", region: "africa", gdp: "GDP $160B", color: "#f97316", price: 140, rent: [10, 50, 150, 450, 625], upgradeCost: 100, photo: "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=400&q=80", fact: "Aviation hub and diplomatic headquarters of the African Union." },
+      { id: 12, name: "Diplomatic Cables", type: "chest", region: "special", icon: "fa-solid fa-envelope-open-text", desc: "Confidential multilateral diplomatic directive." },
+      { id: 13, name: "Kenya", type: "country", region: "africa", gdp: "GDP $120B", color: "#f97316", price: 150, rent: [12, 60, 180, 500, 700], upgradeCost: 100, photo: "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=400&q=80", fact: "East African tech pioneer, mobile finance leader, and green energy hub." },
+      { id: 14, name: "Morocco", type: "country", region: "africa", gdp: "GDP $150B", color: "#f97316", price: 160, rent: [12, 60, 180, 500, 700], upgradeCost: 100, photo: "https://images.unsplash.com/photo-1539020140153-e479b8c22e70?auto=format&fit=crop&w=400&q=80", fact: "Strategic strait corridor and home to the world's largest phosphate reserves." },
+      { id: 15, name: "African Skyport", type: "airport", region: "airport", price: 200, rent: [25, 50, 100, 200], icon: "fa-solid fa-plane-departure", photo: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=400&q=80", fact: "Connecting Cairo, Addis Ababa, Nairobi, and Johannesburg corridors." },
+      { id: 16, name: "Egypt", type: "country", region: "africa", gdp: "GDP $400B", color: "#ea580c", price: 180, rent: [14, 70, 200, 550, 750], upgradeCost: 100, photo: "https://images.unsplash.com/photo-1503177119275-0aa32b3a9368?auto=format&fit=crop&w=400&q=80", fact: "Guardian of the Suez Canal, controlling 12% of global maritime commerce." },
+      { id: 17, name: "Global Headlines", type: "chance", region: "special", icon: "fa-solid fa-newspaper", desc: "Macroeconomic market shift announcement." },
+      { id: 18, name: "Nigeria", type: "country", region: "africa", gdp: "GDP $470B", color: "#ea580c", price: 180, rent: [14, 70, 200, 550, 750], upgradeCost: 100, photo: "https://images.unsplash.com/photo-1618828665011-0abd973f7bb8?auto=format&fit=crop&w=400&q=80", fact: "Africa's most populous nation, major energy exporter, and creative powerhouse." },
+      { id: 19, name: "South Africa", type: "country", region: "africa", gdp: "GDP $410B", color: "#ea580c", price: 200, rent: [16, 80, 220, 600, 800], upgradeCost: 100, photo: "https://images.unsplash.com/photo-1507034589631-9433cc6bc453?auto=format&fit=crop&w=400&q=80", fact: "Sophisticated capital markets, platinum group metals, and vibrant industry." },
 
-  chargeRent(visitor, tile) {
-    const rec = this.ownership[tile.id];
-    const owner = this.players[rec.ownerId];
-    if (owner.inJail) {
-      this.log(`⚖️ <strong>${owner.name}</strong> is under sanctions; rent collection is suspended.`);
-      return;
-    }
+      // SIDE 3: EUROPE (Top: 20 to 30)
+      { id: 20, name: "Global Summit", type: "parking", region: "corner", icon: "fa-solid fa-landmark-dome", desc: "Climate Neutral Zone. Collects all accumulated taxes & calls UN Resolution vote!" },
+      { id: 21, name: "Poland", type: "country", region: "europe", gdp: "GDP $840B", color: "#3b82f6", price: 220, rent: [18, 90, 250, 700, 875], upgradeCost: 150, photo: "https://images.unsplash.com/photo-1519197924294-4ba991a11128?auto=format&fit=crop&w=400&q=80", fact: "Central Europe's industrial engine and rising technological center." },
+      { id: 22, name: "Global Headlines", type: "chance", region: "special", icon: "fa-solid fa-newspaper", desc: "Macroeconomic market shift announcement." },
+      { id: 23, name: "Netherlands", type: "country", region: "europe", gdp: "GDP $1.1T", color: "#3b82f6", price: 220, rent: [18, 90, 250, 700, 875], upgradeCost: 150, photo: "https://images.unsplash.com/photo-1512470876302-972faa2aa9a4?auto=format&fit=crop&w=400&q=80", fact: "Rotterdam super-port and world leader in semiconductor fabrication machinery." },
+      { id: 24, name: "Spain", type: "country", region: "europe", gdp: "GDP $1.6T", color: "#3b82f6", price: 240, rent: [20, 100, 300, 750, 925], upgradeCost: 150, photo: "https://images.unsplash.com/photo-1543783207-ec64e4d95325?auto=format&fit=crop&w=400&q=80", fact: "Global tourism leader and pioneer in commercial solar & wind generation." },
+      { id: 25, name: "European Skyport", type: "airport", region: "airport", price: 200, rent: [25, 50, 100, 200], icon: "fa-solid fa-plane-departure", photo: "https://images.unsplash.com/photo-1520437358207-323b43b50729?auto=format&fit=crop&w=400&q=80", fact: "Mega aviation crossroads uniting London Heathrow, Frankfurt, and Paris CDG." },
+      { id: 26, name: "Italy", type: "country", region: "europe", gdp: "GDP $2.2T", color: "#2563eb", price: 260, rent: [22, 110, 330, 800, 975], upgradeCost: 150, photo: "https://images.unsplash.com/photo-1529260830199-42c24126f198?auto=format&fit=crop&w=400&q=80", fact: "Precision manufacturing hub, luxury industrial design, and culinary exports." },
+      { id: 27, name: "France", type: "country", region: "europe", gdp: "GDP $3.0T", color: "#2563eb", price: 260, rent: [22, 110, 330, 800, 975], upgradeCost: 150, photo: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=400&q=80", fact: "Nuclear energy pioneer, high-speed rail pioneer, and aerospace manufacturer." },
+      { id: 28, name: "Carbon Tax Levy", type: "tax", region: "special", price: 100, icon: "fa-solid fa-smog", desc: "Pay $100M environmental regulatory offset to the Global Summit pool." },
+      { id: 29, name: "Germany", type: "country", region: "europe", gdp: "GDP $4.4T", color: "#1d4ed8", price: 280, rent: [24, 120, 360, 850, 1025], upgradeCost: 150, photo: "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?auto=format&fit=crop&w=400&q=80", fact: "Europe's economic heavyweight, world leader in automotive and precision machinery." },
 
-    let baseRent = 0;
-    if (tile.type === "country") {
-      baseRent = tile.rent[rec.upgrades];
-      // Trade Bloc checks
-      const blocs = this.getOwnedBlocs(owner.id);
-      if (blocs.includes(tile.region)) {
-        baseRent = Math.floor(baseRent * 1.25); // +25% Customs Union bonus
-      }
-    } else if (tile.type === "airport") {
-      const airportCount = Object.keys(this.ownership)
-        .map(Number)
-        .filter(id => TILES_DATA[id].type === "airport" && this.ownership[id].ownerId === owner.id).length;
-      baseRent = tile.rent[Math.min(airportCount - 1, 3)];
-    }
-
-    this.log(`💳 <strong>${visitor.name}</strong> owes $${baseRent}M rent on <strong>${tile.name}</strong> to <strong>${owner.name}</strong>.`);
-    this.deductFunds(visitor, baseRent, owner);
-  }
-
-  deductFunds(payer, amount, payee) {
-    payer.money -= amount;
-
-    // IMF Austerity Garnishment on payee
-    if (payee) {
-      if (payee.imfDebt > 0) {
-        const garnishment = Math.floor(amount * 0.5);
-        const actualReceived = amount - garnishment;
-        payee.money += actualReceived;
-        payee.imfDebt = Math.max(0, payee.imfDebt - garnishment);
-        this.log(`🏦 IMF Austerity intercepted $${garnishment}M from <strong>${payee.name}</strong>'s collection to pay down debt.`);
-      } else {
-        payee.money += amount;
-      }
-    }
-
-    // Check for negative funds -> IMF Sovereign Bailout Trigger
-    if (payer.money < 0 && !payer.eliminated) {
-      this.triggerIMFBailout(payer);
-    }
-  }
-
-  triggerIMFBailout(p) {
-    if (p.imfDebt > 0) {
-      // Default & Bankruptcy
-      this.log(`💥 <strong>${p.name}</strong> defaulted on sovereign debt obligations and entered total bankruptcy!`);
-      p.eliminated = true;
-      p.money = 0;
-      // Liquidate holdings
-      Object.keys(this.ownership).forEach(id => {
-        if (this.ownership[id].ownerId === p.id) {
-          delete this.ownership[id];
-        }
-      });
-      this.checkWinConditions();
-      return;
-    }
-
-    // Extended IMF bailout
-    p.imfDebt = 350; // $300M principal + $50M interest
-    p.money += 300;
-    this.log(`🚨 <strong>IMF EMERGENCY BAILOUT:</strong> Extended $300M sovereign credit line to <strong>${p.name}</strong> under Structural Adjustment.`);
-  }
-
-  sendToSanctions(p) {
-    p.position = 10;
-    p.inJail = true;
-    p.jailTurns = 0;
-    this.log(`⛔ <strong>${p.name}</strong> was slapped with international trade sanctions and sent to Diplomatic Detention.`);
-    this.updateUI();
-  }
-
-  // JAIL RESOLUTIONS
-  jailPayFine() {
-    const p = this.players[this.activePlayerIdx];
-    p.money -= 50;
-    p.inJail = false;
-    document.getElementById("sanctionsModal").style.display = "none";
-    this.log(`🕊️ <strong>${p.name}</strong> remitted a $50M fine to clear international sanctions.`);
-    this.updateUI();
-  }
-
-  jailRollDoubles() {
-    const p = this.players[this.activePlayerIdx];
-    sfx.playRoll();
-    const d1 = Math.floor(Math.random() * 6) + 1;
-    const d2 = Math.floor(Math.random() * 6) + 1;
-    document.getElementById("die1").innerText = d1;
-    document.getElementById("die2").innerText = d2;
-    document.getElementById("sanctionsModal").style.display = "none";
-
-    if (d1 === d2) {
-      p.inJail = false;
-      this.log(`✅ Diplomatic talks succeeded! Doubles rolled (${d1}, ${d2}). Sanctions lifted!`);
-      this.advancePlayer(p, d1 + d2);
-    } else {
-      p.jailTurns++;
-      this.log(`❌ Diplomatic talks broke down (${d1}, ${d2}). Sanctions remain active.`);
-      if (p.jailTurns >= 3) {
-        this.log(`⏳ Maximum detention duration reached. Forced to pay $50M sovereign fine.`);
-        p.money -= 50;
-        p.inJail = false;
-        this.advancePlayer(p, d1 + d2);
-      } else {
-        this.rolledThisTurn = true;
-        this.updateUI();
-      }
-    }
-  }
-
-  jailRequestAsylum() {
-    const p = this.players[this.activePlayerIdx];
-    // Find player owning USA/China or India
-    const superpowers = [38, 39];
-    let host = null;
-    superpowers.forEach(tid => {
-      if (this.ownership[tid] && this.ownership[tid].ownerId !== p.id) {
-        host = this.players[this.ownership[tid].ownerId];
-      }
-    });
-
-    if (host && p.money >= 30) {
-      p.money -= 30;
-      host.money += 30;
-      p.inJail = false;
-      document.getElementById("sanctionsModal").style.display = "none";
-      this.log(`🤝 <strong>${p.name}</strong> was granted political asylum by <strong>${host.name}</strong> for a $30M transit fee.`);
-      this.updateUI();
-    } else {
-      alert("No foreign superpower is available or willing to grant diplomatic asylum right now.");
-    }
-  }
-
-  handleAIJailTurn(p) {
-    if (p.money >= 300) {
-      p.money -= 50;
-      p.inJail = false;
-      this.log(`🕊️ <strong>${p.name}</strong> paid the $50M fine to exit sanctions.`);
-      this.executeRoll();
-    } else {
-      const d1 = Math.floor(Math.random() * 6) + 1;
-      const d2 = Math.floor(Math.random() * 6) + 1;
-      if (d1 === d2) {
-        p.inJail = false;
-        this.log(`✅ <strong>${p.name}</strong> rolled doubles and escaped sanctions!`);
-        this.advancePlayer(p, d1 + d2);
-      } else {
-        p.jailTurns++;
-        this.rolledThisTurn = true;
-        this.updateUI();
-      }
-    }
-  }
-
-  // UN RESOLUTIONS
-  triggerUNSession(lander) {
-    const resolutions = [
-      { id: 1, title: "Global Stimulus Accord", desc: "Every active sovereign nation receives a $100M development stimulus grant.", action: () => {
-        this.players.forEach(pl => { if (!pl.eliminated) pl.money += 100; });
-      }},
-      { id: 2, title: "Green Climate Levy", desc: "Every nation with structural upgrades pays $40M per consulate/embassy into the UN pool.", action: () => {
-        this.players.forEach(pl => {
-          let upgrades = 0;
-          Object.keys(this.ownership).forEach(tid => {
-            if (this.ownership[tid].ownerId === pl.id) upgrades += this.ownership[tid].upgrades;
-          });
-          const levy = upgrades * 40;
-          this.deductFunds(pl, levy, null);
-          this.summitPool += levy;
-        });
-      }},
-      { id: 3, title: "Global Ceasefire", desc: "Rent collection worldwide is frozen for one round.", action: () => {
-        this.log("🕊️ <strong>UN RESOLUTION PASSED:</strong> Global Ceasefire declared! Trade rents paused.");
-      }}
+      // SIDE 4: ASIA & WORLD ECONOMIC GIANTS (Right: 30 to 39)
+      { id: 30, name: "Diplomatic Crisis!", type: "gotojail", region: "corner", icon: "fa-solid fa-triangle-exclamation", desc: "Severe trade embargo. Move straight to Diplomatic Detention (Tile 10)." },
+      { id: 31, name: "Vietnam", type: "country", region: "asia", gdp: "GDP $430B", color: "#ef4444", price: 300, rent: [26, 130, 390, 900, 1100], upgradeCost: 200, photo: "https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=400&q=80", fact: "Rapidly booming electronics exporter and dynamic global supply chain nexus." },
+      { id: 32, name: "Indonesia", type: "country", region: "asia", gdp: "GDP $1.4T", color: "#ef4444", price: 300, rent: [26, 130, 390, 900, 1100], upgradeCost: 200, photo: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=400&q=80", fact: "World's nickel capital, crucial archipelago connecting Pacific and Indian Oceans." },
+      { id: 33, name: "UN Resolutions", type: "chest", region: "special", icon: "fa-solid fa-envelope-open-text", desc: "Confidential multilateral diplomatic directive." },
+      { id: 34, name: "Saudi Arabia", type: "country", region: "asia", gdp: "GDP $1.1T", color: "#ef4444", price: 300, rent: [26, 130, 390, 900, 1100], upgradeCost: 200, photo: "https://images.unsplash.com/photo-1586724237569-f3d0c1dee8c6?auto=format&fit=crop&w=400&q=80", fact: "World energy powerhouse, massive sovereign wealth fund investments." },
+      { id: 35, name: "South Korea", type: "country", region: "asia", gdp: "GDP $1.7T", color: "#dc2626", price: 320, rent: [28, 150, 450, 1000, 1200], upgradeCost: 200, photo: "https://images.unsplash.com/photo-1538485399081-7191377e8241?auto=format&fit=crop&w=400&q=80", fact: "Global titan in memory microchips, electric batteries, and consumer electronics." },
+      { id: 36, name: "Asian Megahub", type: "airport", region: "airport", price: 200, rent: [25, 50, 100, 200], icon: "fa-solid fa-plane-departure", photo: "https://images.unsplash.com/photo-1508873696983-2df5293cb325?auto=format&fit=crop&w=400&q=80", fact: "Uniting Tokyo Haneda, Singapore Changi, Seoul Incheon, and Hong Kong." },
+      { id: 37, name: "India", type: "country", region: "asia", gdp: "GDP $3.9T", color: "#b91c1c", price: 350, rent: [35, 175, 500, 1100, 1300], upgradeCost: 200, photo: "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=400&q=80", fact: "Fastest-growing major economy, pharmacy of the world, software & space powerhouse." },
+      { id: 38, name: "Global Headlines", type: "chance", region: "special", icon: "fa-solid fa-newspaper", desc: "Macroeconomic market shift announcement." },
+      { id: 39, name: "USA & China", type: "country", region: "asia", gdp: "Superpowers ($45T+)", color: "#7f1d1d", price: 400, rent: [50, 200, 600, 1400, 2000], upgradeCost: 200, photo: "https://images.unsplash.com/photo-1508804185872-d7badad00f7d?auto=format&fit=crop&w=400&q=80", fact: "Global Hegemons: Combined largest GDPs, technological frontiers, and primary reserve currencies." }
     ];
 
-    const res = resolutions[Math.floor(Math.random() * resolutions.length)];
-    this.pendingUNResolution = res;
+    const HEADLINE_CARDS = [
+      { id: 'h1', title: "Canal Chokepoint Reroute", desc: "Maritime routes face congestion! All Continental Airport owners receive a $100M cargo windfall.", action: 'airport_windfall', icon: 'fa-solid fa-ship' },
+      { id: 'h2', title: "Green Energy Transition Accord", desc: "Clean technologies rewarded! World Bank disburses $150M energy transition grants to all delegations.", action: 'grant_all', amount: 150, icon: 'fa-solid fa-solar-panel' },
+      { id: 'h3', title: "Global Semiconductor Surge", desc: "High-tech demand peaks! Advance straight to South Korea (Tile 35). If unowned, you may purchase it.", action: 'advance_tile', tileId: 35, icon: 'fa-solid fa-microchip' },
+      { id: 'h4', title: "Commodity Supply Chain Squeeze", desc: "Raw material prices surge! Pay $100M import surcharge into the Global Summit tax pool.", action: 'tax_pool', amount: 100, icon: 'fa-solid fa-truck-ramp-box' },
+      { id: 'h5', title: "International Airspace Clearance", desc: "Fly directly to Americas Hub Airport (Tile 5). Collect $200M if passing START.", action: 'fly_airport', tileId: 5, icon: 'fa-solid fa-plane-up' }
+    ];
 
-    if (!lander.isAI) {
-      document.getElementById("unBody").innerHTML = `
-        <strong>Proposed Resolution:</strong> ${res.title}<br>
-        <em>${res.desc}</em><br><br>
-        Cast your vote based on sovereign territory counts.
-      `;
-      document.getElementById("unModal").style.display = "flex";
-    } else {
-      // AI auto-vote passes or fails
-      this.log(`🌐 UN Resolution tabled by AI: <strong>${res.title}</strong>. Motion carried.`);
-      res.action();
-      this.updateUI();
+    const UN_RESOLUTIONS_DECK = [
+      { id: 'u1', title: "World Bank Structural Grant", desc: "Multilateral development funds approved! Collect $150M directly from the World Bank.", action: 'collect', amount: 150, icon: 'fa-solid fa-hand-holding-dollar' },
+      { id: 'u2', title: "Diplomatic Immunity Exemption", desc: "Special diplomatic corridor granted. Keep this card to exit Diplomatic Detention for free.", action: 'jail_free', icon: 'fa-solid fa-shield-halved' },
+      { id: 'u3', title: "G20 Bilateral Aid Contribution", desc: "International cooperation pact. Pay $50M diplomatic contribution to each fellow delegation.", action: 'pay_all', amount: 50, icon: 'fa-solid fa-earth-americas' },
+      { id: 'u4', title: "Security Council Trade Sanctions", desc: "Trade sanctions violation reported! Advance directly to Diplomatic Detention (Tile 10) without passing GO.", action: 'jail', icon: 'fa-solid fa-triangle-exclamation' },
+      { id: 'u5', title: "Infrastructure Development Rebate", desc: "Receive an economic stimulus refund of $100M from the World Bank.", action: 'collect', amount: 100, icon: 'fa-solid fa-building-circle-check' }
+    ];
+
+    const UN_SUMMIT_RESOLUTIONS = [
+      { id: 'res1', title: "Resolution 2891: Global Stimulus Package", desc: "World Bank disburses an emergency sovereign liquidity stimulus of $100M to every active nation.", type: 'stimulus' },
+      { id: 'res2', title: "Resolution 2892: Climate Energy Accord", desc: "Every nation with 2 or more structural upgrades pays a mandatory $40M green levy per upgraded property into the tax pool.", type: 'climate' },
+      { id: 'res3', title: "Resolution 2893: Global Ceasefire & Rent Freeze", desc: "Multilateral peace accord ratifies complete suspension of sovereign rent collection across all nations for 1 full round.", type: 'ceasefire' },
+      { id: 'res4', title: "Resolution 2894: Targeted Economic Sanctions", desc: "The wealthiest nation's top sovereign property is diplomatically frozen (generates zero rent) for 2 rounds.", type: 'sanction_richest' }
+    ];
+
+    const PLAYER_TOKENS = [
+      { name: "Global Air Fleet", icon: "fa-solid fa-plane", color: "bg-blue-600", border: "border-blue-400" },
+      { name: "Sovereign Maritime", icon: "fa-solid fa-ship", color: "bg-emerald-600", border: "border-emerald-400" },
+      { name: "Diplomatic Briefcase", icon: "fa-solid fa-briefcase", color: "bg-amber-600", border: "border-amber-400" },
+      { name: "International Rail", icon: "fa-solid fa-train", color: "bg-purple-600", border: "border-purple-400" }
+    ];
+
+    let gameState = {
+      players: [],
+      activePlayerIndex: 0,
+      roundNumber: 1,
+      isRolling: false,
+      rolledThisTurn: false,
+      consecutiveDoubles: 0,
+      ownership: {}, // tileId: { ownerId, level: 0..4, frozenRounds: 0 }
+      taxPool: 0,
+      ceasefireRounds: 0,
+      pendingActionTile: null,
+      gameOver: false,
+      winner: null
+    };
+
+    /* =========================================================================
+       BOARD GRID MAPPING & RENDERING
+       ========================================================================= */
+    function getTileGridStyle(id) {
+      if (id === 0) return { col: 11, row: 11 };
+      if (id >= 1 && id <= 9) return { col: 11 - id, row: 11 };
+      if (id === 10) return { col: 1, row: 11 };
+      if (id >= 11 && id <= 19) return { col: 1, row: 11 - (id - 10) };
+      if (id === 20) return { col: 1, row: 1 };
+      if (id >= 21 && id <= 29) return { col: 1 + (id - 20), row: 1 };
+      if (id === 30) return { col: 11, row: 1 };
+      if (id >= 31 && id <= 39) return { col: 11, row: 1 + (id - 30) };
+      return { col: 1, row: 1 };
     }
-  }
 
-  voteUN(inFavor) {
-    document.getElementById("unModal").style.display = "none";
-    if (inFavor && this.pendingUNResolution) {
-      this.log(`🗳️ UN Resolution <strong>${this.pendingUNResolution.title}</strong> was adopted by member states.`);
-      this.pendingUNResolution.action();
-    } else {
-      this.log(`🗳️ UN Resolution was vetoed during general assembly voting.`);
-    }
-    this.pendingUNResolution = null;
-    this.updateUI();
-  }
+    function renderBoardTiles() {
+      const container = document.getElementById('boardContainer');
+      const existing = container.querySelectorAll('.board-cell');
+      existing.forEach(el => el.remove());
 
-  // AIRPORT FAST TRAVEL
-  offerAirportFlight(p) {
-    const airports = TILES_DATA.filter(t => t.type === "airport" && t.id !== p.position);
-    const box = document.getElementById("airportChoices");
-    box.innerHTML = "";
-    airports.forEach(a => {
-      const btn = document.createElement("button");
-      btn.innerText = `Fly to ${a.name} ($50M)`;
-      btn.onclick = () => {
-        p.money -= 50;
-        p.position = a.id;
-        document.getElementById("airportModal").style.display = "none";
-        this.log(`🛫 <strong>${p.name}</strong> chartered a direct flight to <strong>${a.name}</strong>.`);
-        this.updateUI();
-      };
-      box.appendChild(btn);
-    });
-    document.getElementById("airportModal").style.display = "flex";
-  }
+      TILES.forEach(tile => {
+        const { col, row } = getTileGridStyle(tile.id);
+        const cell = document.createElement('div');
+        cell.id = `tile-cell-${tile.id}`;
+        cell.className = `board-cell relative flex flex-col justify-between overflow-hidden border border-slate-800 cursor-pointer select-none transition-all hover:border-blue-400/70 ${tile.region === 'corner' ? 'bg-[#091124]' : 'bg-[#0a1226]/85 hover:bg-[#0e1935]'}`;
+        cell.style.gridColumn = col;
+        cell.style.gridRow = row;
+        cell.onclick = () => inspectTile(tile.id);
 
-  closeAirportModal() {
-    document.getElementById("airportModal").style.display = "none";
-  }
+        let content = '';
 
-  buyUpgrade(tileId) {
-    const curP = this.players[this.activePlayerIdx];
-    const t = TILES_DATA[tileId];
-    if (curP.money >= t.upgradeCost && this.ownership[tileId].upgrades < 4) {
-      curP.money -= t.upgradeCost;
-      this.ownership[tileId].upgrades++;
-      sfx.playCash();
-      const level = this.ownership[tileId].upgrades;
-      this.log(`🏗️ <strong>${curP.name}</strong> constructed an upgrade on <strong>${t.name}</strong> (Tier ${level}).`);
-      this.renderUpgradeIndicators();
-      this.updateUI();
-    }
-  }
-
-  renderUpgradeIndicators() {
-    Object.keys(this.ownership).forEach(tid => {
-      const el = document.getElementById(`ind-${tid}`);
-      if (!el) return;
-      el.innerHTML = "";
-      const count = this.ownership[tid].upgrades;
-      if (count === 4) {
-        el.innerHTML = `<span class="hotel-star">★ Embassy</span>`;
-      } else {
-        for (let i = 0; i < count; i++) {
-          const dot = document.createElement("div");
-          dot.className = "house-dot";
-          el.appendChild(dot);
+        if (tile.type === 'country') {
+          content = `
+            <div class="h-1.5 sm:h-2 w-full" style="background-color: ${tile.color};"></div>
+            <div class="p-1 flex-1 flex flex-col justify-between">
+              <div class="flex items-center justify-between gap-0.5">
+                <span class="text-[9px] sm:text-[10px] font-bold text-slate-100 truncate">${tile.name}</span>
+                <span id="badge-upgrade-${tile.id}" class="hidden text-[7.5px] px-1 rounded bg-amber-500 text-black font-extrabold">C1</span>
+              </div>
+              <div class="hidden sm:block h-6 my-auto rounded overflow-hidden opacity-40">
+                <img src="${tile.photo}" alt="" class="w-full h-full object-cover">
+              </div>
+              <div class="flex items-center justify-between text-[8px] sm:text-[9px] font-mono text-cyan-400">
+                <span>$${tile.price}M</span>
+                <span id="owner-tag-${tile.id}" class="w-2.5 h-2.5 rounded-full border border-slate-700 bg-transparent"></span>
+              </div>
+            </div>
+          `;
+        } else if (tile.type === 'airport') {
+          content = `
+            <div class="h-1.5 w-full bg-slate-500"></div>
+            <div class="p-1 flex-1 flex flex-col items-center justify-between text-center">
+              <i class="fa-solid fa-plane-departure text-slate-400 text-xs sm:text-sm mt-0.5"></i>
+              <span class="text-[8px] sm:text-[9px] font-bold text-slate-200 line-clamp-2 leading-tight">${tile.name.replace(' Airport', '')}</span>
+              <div class="flex items-center justify-between w-full text-[8px] sm:text-[9px] font-mono text-cyan-400">
+                <span>$${tile.price}M</span>
+                <span id="owner-tag-${tile.id}" class="w-2.5 h-2.5 rounded-full border border-slate-700 bg-transparent"></span>
+              </div>
+            </div>
+          `;
+        } else if (tile.region === 'corner') {
+          content = `
+            <div class="w-full h-full p-1.5 flex flex-col items-center justify-center text-center bg-[#091126]">
+              <i class="${tile.icon} text-amber-400 text-sm sm:text-lg mb-1"></i>
+              <span class="text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-tight text-white leading-tight">${tile.name}</span>
+            </div>
+          `;
+        } else if (tile.type === 'tax') {
+          content = `
+            <div class="w-full h-full p-1 flex flex-col items-center justify-between text-center bg-red-950/20">
+              <span class="text-[7.5px] font-bold text-red-400 uppercase">Tariff</span>
+              <i class="${tile.icon} text-red-400 text-xs sm:text-base my-auto"></i>
+              <span class="text-[8px] sm:text-[9px] font-bold text-slate-200">${tile.name}</span>
+              <span class="text-[8px] sm:text-[9px] font-mono text-red-300 font-bold">$${tile.price}M</span>
+            </div>
+          `;
+        } else {
+          const isHeadline = tile.type === 'chance';
+          content = `
+            <div class="w-full h-full p-1 flex flex-col items-center justify-between text-center ${isHeadline ? 'bg-cyan-950/20' : 'bg-amber-950/20'}">
+              <span class="text-[7.5px] font-bold ${isHeadline ? 'text-cyan-400' : 'text-amber-400'} uppercase">${isHeadline ? 'Headline' : 'UN Doc'}</span>
+              <i class="${tile.icon} ${isHeadline ? 'text-cyan-400' : 'text-amber-400'} text-xs sm:text-sm my-auto"></i>
+              <span class="text-[8px] sm:text-[8.5px] font-medium text-slate-300 line-clamp-2 leading-tight">${tile.name}</span>
+            </div>
+          `;
         }
-      }
-    });
-  }
 
-  // TURN PASSING & AI CYCLE
-  endCurrentTurn() {
-    if (!this.rolledThisTurn || this.gameOver) return;
-    this.rolledThisTurn = false;
+        content += `<div id="tokens-tile-${tile.id}" class="absolute inset-0 pointer-events-none p-1 flex flex-wrap items-center justify-center gap-1 z-20"></div>`;
 
-    // Advance to next active player
-    do {
-      this.activePlayerIdx = (this.activePlayerIdx + 1) % this.players.length;
-      if (this.activePlayerIdx === 0) this.round++;
-    } while (this.players[this.activePlayerIdx].eliminated);
-
-    const activeP = this.players[this.activePlayerIdx];
-    document.getElementById("statusMessage").innerText = `${activeP.name}'s Turn`;
-    this.updateUI();
-
-    if (activeP.isAI) {
-      setTimeout(() => this.runAITurn(activeP), 800);
+        cell.innerHTML = content;
+        container.appendChild(cell);
+      });
     }
-  }
 
-  runAITurn(ai) {
-    if (this.gameOver || ai.eliminated) return;
+    /* =========================================================================
+       GAME INITIALIZATION & TOKENS
+       ========================================================================= */
+    function initializeMatch(count, mode, startingCash) {
+      gameState.players = [];
+      const aiNames = ["Apex Capital (AI)", "Meridian Reserve (AI)", "Nordic Sovereign (AI)"];
 
-    // Upgrade decisions for AI
-    if (ai.imfDebt === 0) {
-      const owned = Object.keys(this.ownership)
-        .map(Number)
-        .filter(id => this.ownership[id].ownerId === ai.id && TILES_DATA[id].type === 'country');
-      owned.forEach(id => {
-        if (ai.money >= 800 && this.ownership[id].upgrades < 4) {
-          ai.money -= TILES_DATA[id].upgradeCost;
-          this.ownership[id].upgrades++;
-          this.log(`🏗️ <strong>${ai.name}</strong> upgraded infrastructure in <strong>${TILES_DATA[id].name}</strong>.`);
+      for (let i = 0; i < count; i++) {
+        let isAi = false;
+        let pName = `Delegation ${i + 1}`;
+
+        if (mode === 'all_ai' && i > 0) {
+          isAi = true;
+          pName = aiNames[i - 1];
+        } else if (mode === 'one_bot' && i === count - 1) {
+          isAi = true;
+          pName = aiNames[0];
+        }
+
+        gameState.players.push({
+          id: i,
+          name: pName,
+          isAi: isAi,
+          token: PLAYER_TOKENS[i],
+          money: startingCash,
+          position: 0,
+          inJail: false,
+          jailTurns: 0,
+          jailFreeCards: 0,
+          imfLoanActive: false,
+          imfDebtRemaining: 0,
+          properties: [],
+          bankrupt: false
+        });
+      }
+
+      gameState.activePlayerIndex = 0;
+      gameState.roundNumber = 1;
+      gameState.ownership = {};
+      gameState.taxPool = 0;
+      gameState.ceasefireRounds = 0;
+      gameState.isRolling = false;
+      gameState.rolledThisTurn = false;
+      gameState.consecutiveDoubles = 0;
+      gameState.gameOver = false;
+      gameState.winner = null;
+
+      updateEconomicIndicators();
+      updatePlayerListUI();
+      renderTokens();
+      updateTurnBanner();
+      updateDominanceTracker();
+      logEvent(`🌐 Geopoly match launched with ${count} delegations. Treasury liquidity: $${startingCash}M.`);
+    }
+
+    function renderTokens() {
+      for (let i = 0; i < 40; i++) {
+        const anchor = document.getElementById(`tokens-tile-${i}`);
+        if (anchor) anchor.innerHTML = '';
+      }
+
+      gameState.players.forEach(p => {
+        if (p.bankrupt) return;
+        const anchor = document.getElementById(`tokens-tile-${p.position}`);
+        if (anchor) {
+          const chip = document.createElement('div');
+          chip.className = `w-4 h-4 sm:w-5 sm:h-5 rounded-full ${p.token.color} border-2 border-white token-chip flex items-center justify-center text-[9px] text-white shadow-md`;
+          chip.title = `${p.name} ($${p.money}M)`;
+          chip.innerHTML = `<i class="${p.token.icon} text-[8px] sm:text-[9px]"></i>`;
+          anchor.appendChild(chip);
         }
       });
-      this.renderUpgradeIndicators();
     }
 
-    this.executeRoll();
-    setTimeout(() => {
-      this.endCurrentTurn();
-    }, 1200);
-  }
-
-  checkWinConditions() {
-    // 1. Sole Survivor
-    const active = this.players.filter(p => !p.eliminated);
-    if (active.length === 1) {
-      this.triggerGameOver(active[0], "Eliminated all geopolitical rivals!");
-      return;
-    }
-
-    // 2. Hegemon Net Worth Milestone ($6,000M)
-    for (let p of active) {
-      if (this.getNetWorth(p.id) >= 6000) {
-        this.triggerGameOver(p, `Surpassed the $6,000M Hegemonic Milestone ($${this.getNetWorth(p.id)}M)!`);
-        return;
+    function updateEconomicIndicators() {
+      document.getElementById('taxPoolBadge').innerText = `$${gameState.taxPool}M`;
+      document.getElementById('gameRoundBadge').innerText = gameState.roundNumber;
+      
+      const cfBadge = document.getElementById('ceasefireBadge');
+      if (gameState.ceasefireRounds > 0) {
+        cfBadge.innerText = `Active (${gameState.ceasefireRounds} Rd)`;
+        cfBadge.className = 'font-mono font-bold text-amber-400 animate-pulse';
+      } else {
+        cfBadge.innerText = 'Inactive';
+        cfBadge.className = 'font-mono font-bold text-emerald-400';
       }
     }
-  }
 
-  triggerGameOver(winner, reason) {
-    this.gameOver = true;
-    confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
-    document.getElementById("victoryTitle").innerText = `🏆 ${winner.name} Wins!`;
-    document.getElementById("victoryDetails").innerHTML = `
-      <strong>Decisive Victory:</strong> ${reason}<br><br>
-      Total Net Worth: <strong>$${this.getNetWorth(winner.id)}M</strong><br>
-      Match Duration: <strong>Round ${this.round}</strong>
-    `;
-    document.getElementById("victoryModal").style.display = "flex";
-  }
-
-  inspectTile(id) {
-    const t = TILES_DATA[id];
-    let desc = `${t.name} (${t.type.toUpperCase()})\n`;
-    if (t.cost) desc += `Cost: $${t.cost}M\n`;
-    if (t.rent) desc += `Base Rent: $${t.rent[0]}M\n`;
-    if (this.ownership[id]) {
-      const owner = this.players[this.ownership[id].ownerId];
-      desc += `Owner: ${owner.name}\nUpgrades: ${this.ownership[id].upgrades}`;
+    /* =========================================================================
+       TRADE BLOCS & DOMINANCE TRACKING
+       ========================================================================= */
+    function checkPlayerTradeBloc(playerId, continent) {
+      const contCountries = TILES.filter(t => t.region === continent && t.type === 'country');
+      const owned = contCountries.filter(t => gameState.ownership[t.id]?.ownerId === playerId);
+      return owned.length === contCountries.length;
     }
-    alert(desc);
-  }
-}
 
-// Start Game on Page Load
-let game;
-window.addEventListener("DOMContentLoaded", () => {
-  game = new GeopolyEngine();
-});
-</script>
+    function getTradeBlocOwner(continent) {
+      const contCountries = TILES.filter(t => t.region === continent && t.type === 'country');
+      if (contCountries.length === 0) return null;
+      const firstOwner = gameState.ownership[contCountries[0].id]?.ownerId;
+      if (firstOwner === undefined) return null;
+      const allSame = contCountries.every(t => gameState.ownership[t.id]?.ownerId === firstOwner);
+      return allSame ? firstOwner : null;
+    }
 
+    function updateDominanceTracker() {
+      const continents = ['americas', 'africa', 'europe', 'asia'];
+      continents.forEach(cont => {
+        const contCountries = TILES.filter(t => t.region === cont && t.type === 'country');
+        const counts = {};
+        contCountries.forEach(t => {
+          const ownerId = gameState.ownership[t.id]?.ownerId;
+          if (ownerId !== undefined) {
+            counts[ownerId] = (counts[ownerId] || 0) + 1;
+          }
+        });
+
+        let leaderText = 'Split';
+        let blocOwner = null;
+
+        for (const [pid, c] of Object.entries(counts)) {
+          if (c === contCountries.length) {
+            leaderText = `${gameState.players[pid].name.slice(0, 8)} (BLOC)`;
+            blocOwner = pid;
+            break;
+          } else if (c >= 3) {
+            leaderText = `${gameState.players[pid].name.slice(0, 8)} (${c}/6)`;
+          }
+        }
+
+        const tag = document.getElementById(`${cont}LeaderTag`);
+        if (tag) tag.innerText = leaderText;
+
+        const capitalCont = cont.charAt(0).toUpperCase() + cont.slice(1);
+        const card = document.getElementById(`blocCard${capitalCont}`);
+        if (card) {
+          if (blocOwner !== null) {
+            card.classList.add('border-amber-400', 'bg-blue-950/80', 'shadow-md');
+            card.classList.remove('border-slate-800', 'bg-slate-900');
+          } else {
+            card.classList.remove('border-amber-400', 'bg-blue-950/80', 'shadow-md');
+            card.classList.add('border-slate-800', 'bg-slate-900');
+          }
+        }
+      });
+    }
+
+    function updatePlayerListUI() {
+      const container = document.getElementById('playerListContainer');
+      container.innerHTML = '';
+
+      gameState.players.forEach(p => {
+        const isActive = p.id === gameState.activePlayerIndex;
+        const card = document.createElement('div');
+        card.className = `p-2.5 rounded-xl border transition-all ${
+          p.bankrupt ? 'opacity-40 bg-slate-900 border-slate-800' :
+          isActive ? 'bg-[#101b38] border-blue-500 shadow-md shadow-blue-500/10' : 'bg-[#091126] border-slate-800'
+        }`;
+
+        let totalValue = p.money;
+        p.properties.forEach(tid => {
+          totalValue += TILES[tid].price;
+          const up = gameState.ownership[tid];
+          if (up && up.level > 0) totalValue += up.level * (TILES[tid].upgradeCost || 50);
+        });
+
+        // Trade bloc tags
+        let blocBadges = '';
+        if (checkPlayerTradeBloc(p.id, 'americas')) blocBadges += '<span class="text-[8.5px] px-1 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 mr-1">PACT</span>';
+        if (checkPlayerTradeBloc(p.id, 'africa')) blocBadges += '<span class="text-[8.5px] px-1 rounded bg-orange-950 text-orange-300 border border-orange-800 mr-1">AU</span>';
+        if (checkPlayerTradeBloc(p.id, 'europe')) blocBadges += '<span class="text-[8.5px] px-1 rounded bg-blue-950 text-blue-300 border border-blue-800 mr-1">EU</span>';
+        if (checkPlayerTradeBloc(p.id, 'asia')) blocBadges += '<span class="text-[8.5px] px-1 rounded bg-rose-950 text-rose-300 border border-rose-800 mr-1">BRICS</span>';
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg ${p.token.color} flex items-center justify-center text-xs text-white shadow">
+                <i class="${p.token.icon}"></i>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-white flex items-center gap-1.5">
+                  ${p.name} ${p.isAi ? '<span class="text-[9px] px-1 rounded bg-slate-700 text-slate-300 font-normal">BOT</span>' : ''}
+                </div>
+                <div class="text-[10px] text-slate-400">
+                  ${p.bankrupt ? '<span class="text-red-400 font-bold">INSOLVENT</span>' : 
+                    (p.inJail ? '<span class="text-amber-400 font-bold"><i class="fa-solid fa-handcuffs"></i> Sanctioned</span>' : `On: ${TILES[p.position].name}`)}
+                </div>
+              </div>
+            </div>
+            <div class="text-right font-mono">
+              <div class="text-xs font-bold text-cyan-400">$${p.money}M</div>
+              <div class="text-[10px] text-slate-500 font-sans">Net: $${totalValue}M</div>
+            </div>
+          </div>
+          ${p.imfLoanActive ? `
+            <div class="mt-1.5 p-1 rounded bg-red-950/60 border border-red-800 text-[10px] flex items-center justify-between text-red-300 font-mono">
+              <span>IMF Debt: $${p.imfDebtRemaining}M</span>
+              <span class="text-amber-400">Austerity 50%</span>
+            </div>
+          ` : ''}
+          <div class="mt-2 flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-800/80 pt-1.5">
+            <div class="flex items-center truncate max-w-[170px]">
+              ${blocBadges ? blocBadges : `<span>Titles: <strong class="text-slate-200 font-mono">${p.properties.length}</strong></span>`}
+            </div>
+            <button onclick="inspectDelegation(${p.id})" class="text-blue-400 hover:text-blue-300 font-semibold">Holdings</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function updateTurnBanner() {
+      const activeP = gameState.players[gameState.activePlayerIndex];
+      if (!activeP) return;
+
+      document.getElementById('turnStatusBadge').innerText = `${activeP.name}'s Turn`;
+      document.getElementById('currentTurnAvatar').className = `w-9 h-9 rounded-xl ${activeP.token.color} flex items-center justify-center font-bold text-white text-sm shadow-md`;
+      document.getElementById('currentTurnAvatar').innerHTML = `<i class="${activeP.token.icon}"></i>`;
+      document.getElementById('currentTurnName').innerHTML = `${activeP.name} ${activeP.isAi ? '<span class="text-[9px] px-1 rounded bg-slate-700 text-slate-300 font-normal">BOT</span>' : ''}`;
+
+      const subtext = document.getElementById('currentTurnSubtext');
+      const rollBtn = document.getElementById('rollDiceBtn');
+      const endBtn = document.getElementById('endTurnBtn');
+
+      if (activeP.inJail) {
+        subtext.innerHTML = `<span class="text-amber-400 font-semibold"><i class="fa-solid fa-lock"></i> Under Trade Sanctions! Clear via Diplomatic Console.</span>`;
+        rollBtn.disabled = true;
+        rollBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        
+        // Show sanctions console if human
+        if (!activeP.isAi && !gameState.rolledThisTurn) {
+          openSanctionsModal(activeP);
+        }
+      } else if (!gameState.rolledThisTurn) {
+        subtext.innerText = `Roll dice to advance sovereign delegation across world markets.`;
+        rollBtn.disabled = false;
+        rollBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      } else {
+        subtext.innerText = `Movement resolved. Build Consulates/Embassies or conclude turn.`;
+        rollBtn.disabled = true;
+        rollBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+
+      if (gameState.rolledThisTurn) {
+        endBtn.disabled = false;
+        endBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-800', 'text-slate-500');
+        endBtn.classList.add('bg-blue-600', 'hover:bg-blue-500', 'text-white');
+      } else {
+        endBtn.disabled = true;
+        endBtn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-slate-800', 'text-slate-500');
+        endBtn.classList.remove('bg-blue-600', 'hover:bg-blue-500', 'text-white');
+      }
+
+      if (activeP.isAi && !activeP.bankrupt) {
+        setTimeout(handleAITurn, 800);
+      }
+    }
+
+    /* =========================================================================
+       DIPLOMATIC SANCTIONS JAIL EXIT PROTOCOL (SYSTEM 1)
+       ========================================================================= */
+    function openSanctionsModal(player) {
+      const modal = document.getElementById('sanctionsModal');
+      document.getElementById('sanctionsPlayerName').innerText = `${player.name} Detained`;
+      document.getElementById('sanctionsTurnInfo').innerHTML = `Sanctions detention turn: <strong class="text-white">${player.jailTurns + 1} of 3</strong>. Treasury balance: <strong class="text-cyan-400">$${player.money}M</strong>.`;
+      document.getElementById('sanctionsAttemptNum').innerText = player.jailTurns + 1;
+      document.getElementById('sanctionsImmunityCount').innerText = `${player.jailFreeCards} Card(s) Available`;
+
+      // Check asylum availability
+      const asylumBtn = document.getElementById('sanctionsAsylumBtn');
+      const superpowerOwners = [
+        gameState.ownership[37]?.ownerId, // India
+        gameState.ownership[39]?.ownerId  // USA/China
+      ].filter(id => id !== undefined && id !== player.id);
+
+      if (superpowerOwners.length > 0) {
+        const sponsor = gameState.players[superpowerOwners[0]];
+        document.getElementById('sanctionsAsylumStatus').innerText = `Sponsor: ${sponsor.name} ($30M)`;
+        asylumBtn.classList.remove('opacity-50', 'pointer-events-none');
+      } else {
+        document.getElementById('sanctionsAsylumStatus').innerText = 'No Superpower Sponsor';
+        asylumBtn.classList.add('opacity-50', 'pointer-events-none');
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeSanctionsModal() {
+      document.getElementById('sanctionsModal').classList.add('hidden');
+    }
+
+    function sanctionsPayFine() {
+      const p = gameState.players[gameState.activePlayerIndex];
+      closeSanctionsModal();
+      if (p.money < 50) {
+        logEvent(`❌ ${p.name} cannot afford the $50M fine. Must roll doubles or request asylum.`);
+        return;
+      }
+      p.money -= 50;
+      p.inJail = false;
+      p.jailTurns = 0;
+      playSound('buy');
+      logEvent(`🏛️ ${p.name} remitted $50M Sovereign Settlement. Sanctions lifted!`);
+      updatePlayerListUI();
+      updateTurnBanner();
+      handleRollDice();
+    }
+
+    function sanctionsRollDoubles() {
+      const p = gameState.players[gameState.activePlayerIndex];
+      closeSanctionsModal();
+      logEvent(`🎲 ${p.name} entering Diplomatic Dialogue (attempt ${p.jailTurns + 1}/3)...`);
+      handleRollDice();
+    }
+
+    function sanctionsUseImmunity() {
+      const p = gameState.players[gameState.activePlayerIndex];
+      if (p.jailFreeCards > 0) {
+        p.jailFreeCards--;
+        p.inJail = false;
+        p.jailTurns = 0;
+        closeSanctionsModal();
+        playSound('buy');
+        logEvent(`🛡️ ${p.name} redeemed a UN Diplomatic Immunity Veto Card! Sanctions cleared.`);
+        updatePlayerListUI();
+        updateTurnBanner();
+        handleRollDice();
+      } else {
+        logEvent(`❌ ${p.name} possesses zero Diplomatic Immunity cards.`);
+      }
+    }
+
+    function sanctionsRequestAsylum() {
+      const p = gameState.players[gameState.activePlayerIndex];
+      const superpowerOwners = [
+        gameState.ownership[37]?.ownerId,
+        gameState.ownership[39]?.ownerId
+      ].filter(id => id !== undefined && id !== player.id);
+
+      if (superpowerOwners.length === 0) return;
+      const sponsor = gameState.players[superpowerOwners[0]];
+
+      if (p.money < 30) {
+        logEvent(`❌ ${p.name} lacks $30M to fund bilateral asylum treaty.`);
+        return;
+      }
+
+      p.money -= 30;
+      sponsor.money += 30;
+      p.inJail = false;
+      p.jailTurns = 0;
+      closeSanctionsModal();
+      playSound('buy');
+      logEvent(`🤝 BILATERAL ASYLUM GRANTED: ${p.name} paid $30M asylum fee to superpower ${sponsor.name}! Sanctions lifted.`);
+      updatePlayerListUI();
+      updateTurnBanner();
+      handleRollDice();
+    }
+
+    /* =========================================================================
+       DICE ROLLING & STEP-BY-STEP MOVEMENT
+       ========================================================================= */
+    function animateDice(d1, d2) {
+      const die1 = document.getElementById('die1');
+      const die2 = document.getElementById('die2');
+      
+      const faceRotations = {
+        1: { x: 0, y: 0 },
+        2: { x: 0, y: -90 },
+        3: { x: -90, y: 0 },
+        4: { x: 90, y: 0 },
+        5: { x: 0, y: 90 },
+        6: { x: 0, y: 180 }
+      };
+
+      const rot1 = faceRotations[d1];
+      const rot2 = faceRotations[d2];
+
+      const extraRotX1 = (Math.floor(Math.random() * 3) + 2) * 360;
+      const extraRotY1 = (Math.floor(Math.random() * 3) + 2) * 360;
+      const extraRotX2 = (Math.floor(Math.random() * 3) + 2) * 360;
+      const extraRotY2 = (Math.floor(Math.random() * 3) + 2) * 360;
+
+      die1.style.transform = `rotateX(${rot1.x + extraRotX1}deg) rotateY(${rot1.y + extraRotY1}deg)`;
+      die2.style.transform = `rotateX(${rot2.x + extraRotX2}deg) rotateY(${rot2.y + extraRotY2}deg)`;
+    }
+
+    function handleRollDice() {
+      if (gameState.gameOver || gameState.isRolling || gameState.rolledThisTurn) return;
+      const p = gameState.players[gameState.activePlayerIndex];
+      if (p.bankrupt) return;
+
+      gameState.isRolling = true;
+      playSound('dice');
+
+      const d1 = Math.floor(Math.random() * 6) + 1;
+      const d2 = Math.floor(Math.random() * 6) + 1;
+      const total = d1 + d2;
+      const isDoubles = d1 === d2;
+
+      animateDice(d1, d2);
+
+      const doubleNotice = document.getElementById('doubleNotice');
+      if (isDoubles) {
+        doubleNotice.style.opacity = '1';
+        gameState.consecutiveDoubles++;
+      } else {
+        doubleNotice.style.opacity = '0';
+        gameState.consecutiveDoubles = 0;
+      }
+
+      setTimeout(() => {
+        gameState.isRolling = false;
+
+        // 3 consecutive doubles rule
+        if (gameState.consecutiveDoubles >= 3) {
+          logEvent(`🚨 ${p.name} rolled 3 consecutive doubles! Sanctioned for market speculation.`);
+          sendToJail(p);
+          gameState.rolledThisTurn = true;
+          updateTurnBanner();
+          return;
+        }
+
+        // Jail doubles check
+        if (p.inJail) {
+          if (isDoubles) {
+            logEvent(`🔓 ${p.name} rolled doubles (${d1} & ${d2}) and exits Trade Sanctions freely!`);
+            p.inJail = false;
+            p.jailTurns = 0;
+            executeStepMovement(p, total);
+          } else {
+            p.jailTurns++;
+            if (p.jailTurns >= 3) {
+              logEvent(`⚖️ ${p.name} served full sanctions detention. Remitting $50M exit fine.`);
+              p.money -= 50;
+              p.inJail = false;
+              p.jailTurns = 0;
+              if (p.money < 0) processLiquidityCrisis(p);
+              executeStepMovement(p, total);
+            } else {
+              logEvent(`${p.name} rolled ${d1}+${d2}. Remains detained under Trade Sanctions.`);
+              gameState.rolledThisTurn = true;
+              updateTurnBanner();
+            }
+          }
+          return;
+        }
+
+        executeStepMovement(p, total);
+
+        if (isDoubles) {
+          gameState.rolledThisTurn = false;
+          logEvent(`🎲 ${p.name} rolled ${d1}+${d2}=${total} (Doubles! Roll again).`);
+        } else {
+          gameState.rolledThisTurn = true;
+          logEvent(`🎲 ${p.name} rolled ${d1}+${d2}=${total}.`);
+        }
+        updateTurnBanner();
+      }, 920);
+    }
+
+    function executeStepMovement(player, totalSteps) {
+      let stepsTaken = 0;
+
+      function step() {
+        if (stepsTaken < totalSteps) {
+          player.position = (player.position + 1) % 40;
+          stepsTaken++;
+          playSound('step');
+          renderTokens();
+
+          if (player.position === 0) {
+            player.money += 200;
+            playSound('go');
+            logEvent(`🌐 ${player.name} passed START and collected $200M World Bank Grant!`);
+            updatePlayerListUI();
+          }
+
+          setTimeout(step, 130);
+        } else {
+          handleTileLanded(player, TILES[player.position]);
+        }
+      }
+      step();
+    }
+
+    /* =========================================================================
+       TILE ACTION RESOLUTION (RENTS, TAXES, AIRPORTS & BLOCS)
+       ========================================================================= */
+    function handleTileLanded(player, tile) {
+      logEvent(`📍 ${player.name} landed on ${tile.name} (Tile #${tile.id}).`);
+      updatePlayerListUI();
+
+      if (tile.type === 'country') {
+        const ownership = gameState.ownership[tile.id];
+
+        if (!ownership) {
+          if (player.isAi) {
+            handleAIBuyDecision(player, tile);
+          } else {
+            promptBuyModal(tile);
+          }
+        } else if (ownership.ownerId !== player.id) {
+          const owner = gameState.players[ownership.ownerId];
+          handleRentPayment(player, owner, tile, ownership);
+        } else {
+          logEvent(`🏰 ${player.name} inspected their sovereign holding in ${tile.name}.`);
+        }
+      } else if (tile.type === 'airport') {
+        const ownership = gameState.ownership[tile.id];
+
+        if (!ownership) {
+          if (player.isAi) {
+            handleAIBuyDecision(player, tile);
+          } else {
+            promptBuyModal(tile);
+          }
+        } else if (ownership.ownerId !== player.id) {
+          const owner = gameState.players[ownership.ownerId];
+          handleAirportRent(player, owner, tile);
+        }
+
+        setTimeout(() => promptFlightModal(player, tile), 400);
+      } else if (tile.type === 'tax') {
+        handleTaxTile(player, tile);
+      } else if (tile.type === 'gotojail') {
+        sendToJail(player);
+      } else if (tile.type === 'parking') {
+        handleGlobalSummitLanded(player);
+      } else if (tile.type === 'chance') {
+        drawHeadlineCard(player);
+      } else if (tile.type === 'chest') {
+        drawUNResolution(player);
+      }
+    }
+
+    function handleTaxTile(player, tile) {
+      // Check European Union trade bloc carbon shield
+      if (tile.id === 28) { // Carbon Tax
+        const euOwnerId = getTradeBlocOwner('europe');
+        if (euOwnerId !== null && player.id === euOwnerId) {
+          logEvent(`🛡️ EU CARBON SHIELD: ${player.name} is immune to the Carbon Tax due to full EU bloc membership!`);
+          return;
+        } else if (euOwnerId !== null) {
+          const euLeader = gameState.players[euOwnerId];
+          player.money -= tile.price;
+          euLeader.money += tile.price;
+          playSound('buy');
+          logEvent(`🌿 EU GREEN DIVIDEND: ${player.name} paid $${tile.price}M carbon tax directly to EU bloc leader ${euLeader.name}!`);
+          if (player.money < 0) processLiquidityCrisis(player, euLeader);
+          updatePlayerListUI();
+          return;
+        }
+      }
+
+      // Check Pan-American Pact tariff exemption
+      if (tile.id === 4) { // Import Tariff
+        const usmcaOwnerId = getTradeBlocOwner('americas');
+        if (usmcaOwnerId !== null && player.id === usmcaOwnerId) {
+          logEvent(`🛡️ PAN-AMERICAN PACT: ${player.name} is exempt from Import Tariffs!`);
+          return;
+        }
+      }
+
+      playSound('rent');
+      logEvent(`🏛️ ${player.name} paid $${tile.price}M for ${tile.name} into the Global Summit pool.`);
+      player.money -= tile.price;
+      gameState.taxPool += tile.price;
+      updateEconomicIndicators();
+      if (player.money < 0) processLiquidityCrisis(player);
+      updatePlayerListUI();
+    }
+
+    function handleRentPayment(visitor, owner, tile, ownership) {
+      if (owner.inJail) {
+        logEvent(`🛡️ ${owner.name} is in Trade Sanctions; sovereign toll waived.`);
+        return;
+      }
+
+      // Check Global Ceasefire
+      if (gameState.ceasefireRounds > 0) {
+        logEvent(`🕊️ UN GLOBAL CEASEFIRE ACTIVE: Toll on ${tile.name} waived!`);
+        return;
+      }
+
+      // Check Targeted Sanction freeze
+      if (ownership.frozenRounds > 0) {
+        logEvent(`❄️ SANCTIONS FREEZE: ${tile.name} is diplomatically frozen! Zero rent collected.`);
+        return;
+      }
+
+      const level = ownership.level || 0;
+      let rentDue = tile.rent[level] || tile.rent[0];
+
+      // Trade Bloc Perks
+      if (checkPlayerTradeBloc(owner.id, 'americas') && tile.region === 'americas') {
+        rentDue = Math.round(rentDue * 1.2); // +20%
+        logEvent(`📈 Pan-American Pact applied: +20% rent tariff on ${tile.name}.`);
+      } else if (checkPlayerTradeBloc(owner.id, 'asia') && (tile.id === 37 || tile.id === 39)) {
+        rentDue = Math.round(rentDue * 1.25); // +25% on India & USA/China
+        logEvent(`🚀 BRICS+ Alliance applied: +25% superpower hegemony surcharge on ${tile.name}.`);
+      }
+
+      playSound('rent');
+      visitor.money -= rentDue;
+
+      // IMF Austerity 50% garnishment check on owner
+      if (owner.imfLoanActive) {
+        const garnishment = Math.min(Math.floor(rentDue * 0.5), owner.imfDebtRemaining);
+        const netToOwner = rentDue - garnishment;
+        owner.money += netToOwner;
+        owner.imfDebtRemaining -= garnishment;
+
+        logEvent(`💸 ${visitor.name} paid $${rentDue}M to ${owner.name} (IMF seized $${garnishment}M for debt service; $${owner.imfDebtRemaining}M remaining).`);
+
+        if (owner.imfDebtRemaining <= 0) {
+          owner.imfLoanActive = false;
+          owner.imfDebtRemaining = 0;
+          logEvent(`🎉 IMF DEBT DISCHARGED: ${owner.name} has fully settled their structural adjustment loan!`);
+        }
+      } else {
+        owner.money += rentDue;
+        logEvent(`💸 ${visitor.name} paid $${rentDue}M sovereign toll to ${owner.name} for landing in ${tile.name}.`);
+      }
+
+      if (visitor.money < 0) processLiquidityCrisis(visitor, owner);
+      updatePlayerListUI();
+      checkVictoryConditions();
+    }
+
+    function handleAirportRent(visitor, owner, tile) {
+      if (owner.inJail) return;
+      if (gameState.ceasefireRounds > 0) {
+        logEvent(`🕊️ UN GLOBAL CEASEFIRE: Airport fee waived.`);
+        return;
+      }
+
+      const ownerAirports = TILES.filter(t => t.type === 'airport' && gameState.ownership[t.id]?.ownerId === owner.id).length;
+      const airportTolls = [25, 50, 100, 200];
+      const toll = airportTolls[Math.min(ownerAirports - 1, 3)] || 25;
+
+      playSound('rent');
+      visitor.money -= toll;
+
+      if (owner.imfLoanActive) {
+        const garnishment = Math.min(Math.floor(toll * 0.5), owner.imfDebtRemaining);
+        owner.money += (toll - garnishment);
+        owner.imfDebtRemaining -= garnishment;
+        logEvent(`✈️ ${visitor.name} paid $${toll}M airport fee to ${owner.name} (IMF seized $${garnishment}M; debt remaining: $${owner.imfDebtRemaining}M).`);
+        if (owner.imfDebtRemaining <= 0) {
+          owner.imfLoanActive = false;
+          owner.imfDebtRemaining = 0;
+          logEvent(`🎉 IMF DEBT DISCHARGED: ${owner.name} has fully settled their structural adjustment loan!`);
+        }
+      } else {
+        owner.money += toll;
+        logEvent(`✈️ ${visitor.name} paid $${toll}M airport landing fee to ${owner.name} (${ownerAirports} Hub(s) owned).`);
+      }
+
+      if (visitor.money < 0) processLiquidityCrisis(visitor, owner);
+      updatePlayerListUI();
+      checkVictoryConditions();
+    }
+
+    /* =========================================================================
+       AIRPORT FLIGHT FAST-TRAVEL MECHANIC
+       ========================================================================= */
+    function promptFlightModal(player, currentAirportTile) {
+      const modal = document.getElementById('flightModal');
+      const list = document.getElementById('flightDestinationsList');
+      list.innerHTML = '';
+
+      const otherAirports = TILES.filter(t => t.type === 'airport' && t.id !== currentAirportTile.id);
+
+      otherAirports.forEach(ap => {
+        const ownerInfo = gameState.ownership[ap.id];
+        let ownerLabel = '<span class="text-emerald-400">Unowned</span>';
+        if (ownerInfo) {
+          const owner = gameState.players[ownerInfo.ownerId];
+          ownerLabel = `<span class="text-blue-400">Owner: ${owner.name}</span>`;
+        }
+
+        const btn = document.createElement('button');
+        btn.className = 'w-full p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 flex items-center justify-between transition';
+        btn.onclick = () => executeAirportFlight(player, ap);
+        btn.innerHTML = `
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-plane text-cyan-400"></i>
+            <div class="text-left">
+              <div class="font-bold text-white text-xs">${ap.name}</div>
+              <div class="text-[10px] text-slate-400">${ownerLabel}</div>
+            </div>
+          </div>
+          <span class="text-xs font-mono font-bold text-amber-400">$50M Charter</span>
+        `;
+        list.appendChild(btn);
+      });
+
+      if (player.isAi) {
+        if (player.money > 350 && Math.random() > 0.5) {
+          const target = otherAirports[Math.floor(Math.random() * otherAirports.length)];
+          executeAirportFlight(player, target);
+        }
+      } else {
+        modal.classList.remove('hidden');
+      }
+    }
+
+    function executeAirportFlight(player, destinationAirport) {
+      closeFlightModal();
+      if (player.money < 50) {
+        logEvent(`❌ ${player.name} cannot afford the $50M express flight fee.`);
+        return;
+      }
+
+      player.money -= 50;
+      const ownerInfo = gameState.ownership[destinationAirport.id];
+      if (ownerInfo && ownerInfo.ownerId !== player.id) {
+        const hubOwner = gameState.players[ownerInfo.ownerId];
+        hubOwner.money += 50;
+        logEvent(`✈️ ${player.name} flew express to ${destinationAirport.name}! $50M landing fee paid to ${hubOwner.name}.`);
+      } else {
+        logEvent(`✈️ ${player.name} flew express to ${destinationAirport.name} for $50M.`);
+      }
+
+      playSound('flight');
+      player.position = destinationAirport.id;
+      renderTokens();
+      updatePlayerListUI();
+    }
+
+    function closeFlightModal() {
+      document.getElementById('flightModal').classList.add('hidden');
+    }
+
+    /* =========================================================================
+       GLOBAL SUMMIT & UN GENERAL ASSEMBLY RESOLUTIONS (SYSTEM 4)
+       ========================================================================= */
+    function handleGlobalSummitLanded(player) {
+      if (gameState.taxPool > 0) {
+        player.money += gameState.taxPool;
+        playSound('buy');
+        logEvent(`🌍 GLOBAL SUMMIT: ${player.name} collected all accumulated climate taxes ($${gameState.taxPool}M)!`);
+        gameState.taxPool = 0;
+        updateEconomicIndicators();
+        updatePlayerListUI();
+      }
+
+      // Call UN General Assembly Session
+      setTimeout(() => {
+        openUNAssemblyModal();
+      }, 500);
+    }
+
+    function openUNAssemblyModal() {
+      playSound('gavel');
+      const modal = document.getElementById('unAssemblyModal');
+      const list = document.getElementById('unResolutionList');
+      list.innerHTML = '';
+
+      const totalVotes = gameState.players
+        .filter(p => !p.bankrupt)
+        .reduce((sum, p) => sum + Math.max(1, p.properties.length), 0);
+
+      document.getElementById('unTotalVotesBadge').innerText = `${totalVotes} Sovereign Votes`;
+
+      UN_SUMMIT_RESOLUTIONS.forEach(res => {
+        const card = document.createElement('div');
+        card.className = 'p-3 bg-slate-900 border border-slate-800 rounded-xl hover:border-blue-500 transition cursor-pointer flex flex-col justify-between gap-1';
+        card.onclick = () => castUNResolutionVote(res);
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-white text-xs flex items-center gap-1.5">
+              <i class="fa-solid fa-file-signature text-blue-400"></i> ${res.title}
+            </h4>
+            <span class="text-[10px] font-mono text-cyan-400 font-bold uppercase">Vote</span>
+          </div>
+          <p class="text-[11px] text-slate-300">${res.desc}</p>
+        `;
+        list.appendChild(card);
+      });
+
+      const activeP = gameState.players[gameState.activePlayerIndex];
+      if (activeP.isAi) {
+        setTimeout(() => {
+          const randomRes = UN_SUMMIT_RESOLUTIONS[Math.floor(Math.random() * UN_SUMMIT_RESOLUTIONS.length)];
+          castUNResolutionVote(randomRes);
+        }, 1200);
+      } else {
+        modal.classList.remove('hidden');
+      }
+    }
+
+    function closeUNAssemblyModal() {
+      document.getElementById('unAssemblyModal').classList.add('hidden');
+    }
+
+    function castUNResolutionVote(selectedResolution) {
+      closeUNAssemblyModal();
+      playSound('gavel');
+      logEvent(`🇺🇳 UN RESOLUTION RATIFIED: "${selectedResolution.title}"!`);
+
+      if (selectedResolution.type === 'stimulus') {
+        gameState.players.forEach(p => {
+          if (!p.bankrupt) {
+            p.money += 100;
+          }
+        });
+        logEvent(`💵 UN STIMULUS: Every sovereign nation received $100M development funds.`);
+      } else if (selectedResolution.type === 'climate') {
+        let totalPaid = 0;
+        gameState.players.forEach(p => {
+          if (!p.bankrupt) {
+            p.properties.forEach(tid => {
+              const up = gameState.ownership[tid];
+              if (up && up.level >= 2) {
+                p.money -= 40;
+                totalPaid += 40;
+              }
+            });
+            if (p.money < 0) processLiquidityCrisis(p);
+          }
+        });
+        gameState.taxPool += totalPaid;
+        logEvent(`🌱 CLIMATE ACCORD: $${totalPaid}M collected from upgraded properties into Summit Pool.`);
+      } else if (selectedResolution.type === 'ceasefire') {
+        gameState.ceasefireRounds = 1;
+        logEvent(`🕊️ GLOBAL CEASEFIRE RATIFIED: All sovereign rent collection frozen for 1 full round!`);
+      } else if (selectedResolution.type === 'sanction_richest') {
+        // Find richest player
+        let richest = null;
+        let maxNet = -Infinity;
+        gameState.players.filter(p => !p.bankrupt).forEach(p => {
+          let net = p.money;
+          p.properties.forEach(tid => net += TILES[tid].price);
+          if (net > maxNet) {
+            maxNet = net;
+            richest = p;
+          }
+        });
+
+        if (richest && richest.properties.length > 0) {
+          // Freeze their most expensive property
+          const topPropertyId = [...richest.properties].sort((a, b) => TILES[b].price - TILES[a].price)[0];
+          if (gameState.ownership[topPropertyId]) {
+            gameState.ownership[topPropertyId].frozenRounds = 2;
+            logEvent(`❄️ TARGETED SANCTIONS: ${richest.name}'s top title ${TILES[topPropertyId].name} is frozen for 2 rounds!`);
+          }
+        }
+      }
+
+      updateEconomicIndicators();
+      updatePlayerListUI();
+    }
+
+    /* =========================================================================
+       IMF SOVEREIGN BAILOUT & RESTRUCTURING (SYSTEM 3)
+       ========================================================================= */
+    function processLiquidityCrisis(player, creditor = null) {
+      if (!player.imfLoanActive) {
+        // First liquidity exhaustion: extend IMF Bailout Package
+        player.imfLoanActive = true;
+        player.money += 300;
+        player.imfDebtRemaining = 350; // $300M principal + $50M interest
+        playSound('buy');
+        logEvent(`🏛️ IMF EMERGENCY BAILOUT: ${player.name} received $300M rescue credit! Enters 50% Austerity garnishment.`);
+
+        if (!player.isAi) {
+          document.getElementById('imfPlayerName').innerText = `${player.name} Under IMF Austerity`;
+          document.getElementById('imfBailoutModal').classList.remove('hidden');
+        }
+      } else {
+        // Second liquidity exhaustion while already under IMF loan: Sovereign Default (Bankruptcy)
+        triggerBankruptcy(player, creditor);
+      }
+    }
+
+    function closeIMFBailoutModal() {
+      document.getElementById('imfBailoutModal').classList.add('hidden');
+    }
+
+    function triggerBankruptcy(player, creditor = null) {
+      player.bankrupt = true;
+      playSound('jail');
+      logEvent(`☠️ SOVEREIGN DEFAULT: ${player.name} declared insolvent! Liquidating national sovereign assets.`);
+
+      player.properties.forEach(tid => {
+        if (creditor) {
+          gameState.ownership[tid].ownerId = creditor.id;
+          creditor.properties.push(tid);
+          const tag = document.getElementById(`owner-tag-${tid}`);
+          if (tag) tag.className = `w-2.5 h-2.5 rounded-full ${creditor.token.color} border border-white`;
+        } else {
+          delete gameState.ownership[tid];
+          const tag = document.getElementById(`owner-tag-${tid}`);
+          if (tag) tag.className = `w-2.5 h-2.5 rounded-full border border-slate-700 bg-transparent`;
+        }
+      });
+
+      player.properties = [];
+      renderTokens();
+      updateDominanceTracker();
+      updatePlayerListUI();
+      checkVictoryConditions();
+    }
+
+    /* =========================================================================
+       EVENT CARD DECKS (Headlines & UN Resolutions Deck)
+       ========================================================================= */
+    function drawHeadlineCard(player) {
+      const card = HEADLINE_CARDS[Math.floor(Math.random() * HEADLINE_CARDS.length)];
+      showCardModal("Global Headline", card.title, card.desc, card.icon);
+
+      if (card.action === 'airport_windfall') {
+        const airportOwners = TILES.filter(t => t.type === 'airport').map(t => gameState.ownership[t.id]?.ownerId);
+        airportOwners.forEach(oid => {
+          if (oid !== undefined) {
+            gameState.players[oid].money += 100;
+            logEvent(`🚢 Canal Jam Windfall: ${gameState.players[oid].name} collected $100M cargo dividend.`);
+          }
+        });
+      } else if (card.action === 'grant_all') {
+        gameState.players.forEach(p => { if (!p.bankrupt) p.money += card.amount; });
+        logEvent(`⚡ Green Transition: All sovereign delegations received $${card.amount}M grant.`);
+      } else if (card.action === 'advance_tile') {
+        player.position = card.tileId;
+        renderTokens();
+        handleTileLanded(player, TILES[card.tileId]);
+      } else if (card.action === 'tax_pool') {
+        player.money -= card.amount;
+        gameState.taxPool += card.amount;
+        updateEconomicIndicators();
+      } else if (card.action === 'fly_airport') {
+        if (player.position > card.tileId) player.money += 200;
+        player.position = card.tileId;
+        renderTokens();
+        handleTileLanded(player, TILES[card.tileId]);
+      }
+      updatePlayerListUI();
+    }
+
+    function drawUNResolution(player) {
+      const card = UN_RESOLUTIONS_DECK[Math.floor(Math.random() * UN_RESOLUTIONS_DECK.length)];
+      showCardModal("UN Resolution Directive", card.title, card.desc, card.icon);
+
+      if (card.action === 'collect') {
+        player.money += card.amount;
+      } else if (card.action === 'jail_free') {
+        player.jailFreeCards++;
+        logEvent(`🛡️ ${player.name} obtained a Diplomatic Immunity Exemption card.`);
+      } else if (card.action === 'pay_all') {
+        gameState.players.forEach(other => {
+          if (other.id !== player.id && !other.bankrupt) {
+            player.money -= card.amount;
+            other.money += card.amount;
+          }
+        });
+      } else if (card.action === 'jail') {
+        sendToJail(player);
+      }
+      updatePlayerListUI();
+    }
+
+    function showCardModal(tag, title, desc, icon) {
+      const modal = document.getElementById('cardModal');
+      document.getElementById('cardTypeTag').innerText = tag;
+      document.getElementById('cardTitle').innerText = title;
+      document.getElementById('cardDescription').innerText = desc;
+      document.getElementById('cardIcon').className = icon;
+      modal.classList.remove('hidden');
+    }
+
+    function closeCardModal() {
+      document.getElementById('cardModal').classList.add('hidden');
+    }
+
+    /* =========================================================================
+       PROPERTY PURCHASE & UPGRADES (Consulates & Embassies)
+       ========================================================================= */
+    function promptBuyModal(tile) {
+      gameState.pendingActionTile = tile;
+      const modal = document.getElementById('propertyModal');
+      document.getElementById('modalTileCategory').innerText = tile.type === 'airport' ? 'Continental Airport Hub' : 'Sovereign Land Title';
+      document.getElementById('modalTileRegionTag').innerText = tile.region.toUpperCase();
+      document.getElementById('modalTileName').innerText = tile.name;
+      document.getElementById('modalTileGdp').innerText = tile.gdp || 'Strategic Transport Hub';
+      document.getElementById('modalTilePrice').innerText = `$${tile.price}M`;
+      document.getElementById('modalTileImage').src = tile.photo;
+      document.getElementById('modalTileFact').innerText = tile.fact;
+      document.getElementById('modalHeaderColor').style.backgroundColor = tile.color || '#475569';
+
+      if (tile.type === 'country') {
+        document.getElementById('modalRentBase').innerText = `$${tile.rent[0]}M`;
+        document.getElementById('modalRent1').innerText = `$${tile.rent[1]}M`;
+        document.getElementById('modalRent2').innerText = `$${tile.rent[2]}M`;
+        document.getElementById('modalRent3').innerText = `$${tile.rent[3]}M`;
+        document.getElementById('modalRent4').innerText = `$${tile.rent[4]}M`;
+      } else {
+        document.getElementById('modalRentBase').innerText = '$25M (1 Hub)';
+        document.getElementById('modalRent1').innerText = '$50M (2 Hubs)';
+        document.getElementById('modalRent2').innerText = '$100M (3 Hubs)';
+        document.getElementById('modalRent3').innerText = '$200M (4 Hubs)';
+        document.getElementById('modalRent4').innerText = 'N/A';
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function confirmTilePurchase() {
+      const tile = gameState.pendingActionTile;
+      const p = gameState.players[gameState.activePlayerIndex];
+      if (!tile || !p) return;
+
+      if (p.money >= tile.price) {
+        p.money -= tile.price;
+        p.properties.push(tile.id);
+        gameState.ownership[tile.id] = { ownerId: p.id, level: 0, frozenRounds: 0 };
+        playSound('buy');
+        logEvent(`🏛️ ${p.name} acquired sovereign title to ${tile.name} for $${tile.price}M.`);
+
+        const ownerTag = document.getElementById(`owner-tag-${tile.id}`);
+        if (ownerTag) {
+          ownerTag.className = `w-2.5 h-2.5 rounded-full ${p.token.color} border border-white`;
+        }
+
+        updateDominanceTracker();
+        updatePlayerListUI();
+      } else {
+        logEvent(`❌ ${p.name} lacks sufficient liquidity to acquire ${tile.name}.`);
+      }
+      closePropertyModal();
+    }
+
+    function closePropertyModal() {
+      gameState.pendingActionTile = null;
+      document.getElementById('propertyModal').classList.add('hidden');
+    }
+
+    function upgradeProperty(tileId) {
+      const tile = TILES[tileId];
+      const ownership = gameState.ownership[tileId];
+      const p = gameState.players[gameState.activePlayerIndex];
+
+      if (!tile || !ownership || ownership.ownerId !== p.id) return;
+      if (ownership.level >= 4) return;
+
+      // IMF Austerity upgrade freeze check
+      if (p.imfLoanActive) {
+        logEvent(`❌ IMF AUSTERITY FREEZE: Cannot build diplomatic upgrades while under active IMF loan.`);
+        return;
+      }
+
+      // Check African Union trade bloc -25% upgrade cost perk
+      let cost = tile.upgradeCost || 100;
+      if (checkPlayerTradeBloc(p.id, 'africa')) {
+        cost = Math.round(cost * 0.75);
+      }
+
+      if (p.money >= cost) {
+        p.money -= cost;
+        ownership.level = (ownership.level || 0) + 1;
+        playSound('buy');
+
+        const tierTitles = ["None", "1 Consulate", "2 Consulates", "3 Consulates", "Embassy (Max Tier)"];
+        logEvent(`🏗️ ${p.name} built ${tierTitles[ownership.level]} in ${tile.name} for $${cost}M!`);
+
+        const badge = document.getElementById(`badge-upgrade-${tileId}`);
+        if (badge) {
+          badge.classList.remove('hidden');
+          const shortCodes = ["", "C1", "C2", "C3", "★ EMB"];
+          badge.innerText = shortCodes[ownership.level];
+        }
+
+        updatePlayerListUI();
+        renderManageModalList();
+      } else {
+        logEvent(`❌ Insufficient funds to upgrade ${tile.name} ($${cost}M needed).`);
+      }
+    }
+
+    function openManageAllModal() {
+      renderManageModalList();
+      document.getElementById('manageModal').classList.remove('hidden');
+    }
+
+    function closeManageModal() {
+      document.getElementById('manageModal').classList.add('hidden');
+    }
+
+    function renderManageModalList() {
+      const activeP = gameState.players[gameState.activePlayerIndex];
+      const container = document.getElementById('manageModalList');
+      if (!activeP) return;
+
+      container.innerHTML = '';
+      if (activeP.properties.length === 0) {
+        container.innerHTML = `<div class="text-center py-8 text-slate-400 text-xs">No sovereign land titles registered under your delegation.</div>`;
+        return;
+      }
+
+      const tierTitles = ["Base Territory", "1 Consulate", "2 Consulates", "3 Consulates", "Embassy (Max Tier)"];
+
+      activeP.properties.forEach(tid => {
+        const tile = TILES[tid];
+        const ownership = gameState.ownership[tid];
+        const level = ownership.level || 0;
+        let cost = tile.upgradeCost || 100;
+        if (checkPlayerTradeBloc(activeP.id, 'africa')) {
+          cost = Math.round(cost * 0.75);
+        }
+
+        const item = document.createElement('div');
+        item.className = 'p-3 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-between gap-3';
+        item.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg overflow-hidden border border-slate-700 hidden sm:block">
+              <img src="${tile.photo || ''}" alt="" class="w-full h-full object-cover">
+            </div>
+            <div>
+              <div class="text-sm font-bold text-white flex items-center gap-2">
+                <span>${tile.name}</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-amber-400 font-semibold">${tierTitles[level]}</span>
+              </div>
+              <div class="text-xs text-slate-400">Current Toll: <strong class="text-emerald-400 font-mono">$${tile.rent[level]}M</strong></div>
+            </div>
+          </div>
+          <div>
+            ${tile.type === 'country' && level < 4 ? `
+              <button onclick="upgradeProperty(${tid})" class="px-3 py-1.5 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 text-black font-bold text-xs rounded-lg shadow transition">
+                Build ${level === 3 ? 'Embassy' : 'Consulate'} ($${cost}M)
+              </button>
+            ` : '<span class="text-xs text-slate-500 font-mono font-bold">Max Development</span>'}
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    /* =========================================================================
+       BILATERAL DIPLOMATIC TRADE SYSTEM
+       ========================================================================= */
+    function openTradeModal() {
+      const senderSelect = document.getElementById('tradeSenderSelect');
+      const receiverSelect = document.getElementById('tradeReceiverSelect');
+
+      senderSelect.innerHTML = '';
+      receiverSelect.innerHTML = '';
+
+      gameState.players.forEach(p => {
+        if (!p.bankrupt) {
+          senderSelect.innerHTML += `<option value="${p.id}">${p.name} ($${p.money}M)</option>`;
+          receiverSelect.innerHTML += `<option value="${p.id}">${p.name} ($${p.money}M)</option>`;
+        }
+      });
+
+      if (gameState.players.length > 1) {
+        senderSelect.selectedIndex = gameState.activePlayerIndex;
+        receiverSelect.selectedIndex = (gameState.activePlayerIndex + 1) % gameState.players.length;
+      }
+
+      renderTradeInventory();
+      document.getElementById('tradeModal').classList.remove('hidden');
+    }
+
+    function closeTradeModal() {
+      document.getElementById('tradeModal').classList.add('hidden');
+    }
+
+    function renderTradeInventory() {
+      const senderId = parseInt(document.getElementById('tradeSenderSelect').value);
+      const receiverId = parseInt(document.getElementById('tradeReceiverSelect').value);
+
+      const senderProps = document.getElementById('tradeSenderProperties');
+      const receiverProps = document.getElementById('tradeReceiverProperties');
+
+      senderProps.innerHTML = '';
+      receiverProps.innerHTML = '';
+
+      const sender = gameState.players[senderId];
+      const receiver = gameState.players[receiverId];
+
+      if (sender) {
+        sender.properties.forEach(tid => {
+          senderProps.innerHTML += `
+            <label class="flex items-center gap-2 p-1.5 rounded bg-slate-950 border border-slate-800 text-[11px] text-slate-200">
+              <input type="checkbox" name="senderProps" value="${tid}" class="rounded">
+              <span class="truncate">${TILES[tid].name} ($${TILES[tid].price}M)</span>
+            </label>
+          `;
+        });
+      }
+
+      if (receiver) {
+        receiver.properties.forEach(tid => {
+          receiverProps.innerHTML += `
+            <label class="flex items-center gap-2 p-1.5 rounded bg-slate-950 border border-slate-800 text-[11px] text-slate-200">
+              <input type="checkbox" name="receiverProps" value="${tid}" class="rounded">
+              <span class="truncate">${TILES[tid].name} ($${TILES[tid].price}M)</span>
+            </label>
+          `;
+        });
+      }
+    }
+
+    function executeBilateralTrade() {
+      const senderId = parseInt(document.getElementById('tradeSenderSelect').value);
+      const receiverId = parseInt(document.getElementById('tradeReceiverSelect').value);
+      if (senderId === receiverId) {
+        logEvent("❌ Diplomatic notice: Select two distinct delegations for trade.");
+        return;
+      }
+
+      const sender = gameState.players[senderId];
+      const receiver = gameState.players[receiverId];
+      const senderCash = parseInt(document.getElementById('tradeSenderCash').value) || 0;
+      const receiverCash = parseInt(document.getElementById('tradeReceiverCash').value) || 0;
+
+      if (sender.money < senderCash || receiver.money < receiverCash) {
+        logEvent("❌ Liquidity deficiency: One of the delegations lacks sufficient funds.");
+        return;
+      }
+
+      const senderSelectedProps = Array.from(document.querySelectorAll('input[name="senderProps"]:checked')).map(el => parseInt(el.value));
+      const receiverSelectedProps = Array.from(document.querySelectorAll('input[name="receiverProps"]:checked')).map(el => parseInt(el.value));
+
+      if (receiver.isAi) {
+        const valueGiven = receiverCash + receiverSelectedProps.reduce((sum, tid) => sum + TILES[tid].price, 0);
+        const valueReceived = senderCash + senderSelectedProps.reduce((sum, tid) => sum + TILES[tid].price, 0);
+        if (valueReceived < valueGiven * 0.85) {
+          logEvent(`❌ TREATY REJECTED: ${receiver.name} declined trade as economically unfavorable.`);
+          closeTradeModal();
+          return;
+        }
+      }
+
+      sender.money -= senderCash;
+      receiver.money += senderCash;
+      receiver.money -= receiverCash;
+      sender.money += receiverCash;
+
+      senderSelectedProps.forEach(tid => {
+        sender.properties = sender.properties.filter(id => id !== tid);
+        receiver.properties.push(tid);
+        gameState.ownership[tid].ownerId = receiver.id;
+        const tag = document.getElementById(`owner-tag-${tid}`);
+        if (tag) tag.className = `w-2.5 h-2.5 rounded-full ${receiver.token.color} border border-white`;
+      });
+
+      receiverSelectedProps.forEach(tid => {
+        receiver.properties = receiver.properties.filter(id => id !== tid);
+        sender.properties.push(tid);
+        gameState.ownership[tid].ownerId = sender.id;
+        const tag = document.getElementById(`owner-tag-${tid}`);
+        if (tag) tag.className = `w-2.5 h-2.5 rounded-full ${sender.token.color} border border-white`;
+      });
+
+      playSound('buy');
+      logEvent(`🤝 Diplomatic treaty ratified between ${sender.name} and ${receiver.name}!`);
+      closeTradeModal();
+      updateDominanceTracker();
+      updatePlayerListUI();
+    }
+
+    /* =========================================================================
+       AI BOT DECISION ROUTINES
+       ========================================================================= */
+    function handleAITurn() {
+      const activeP = gameState.players[gameState.activePlayerIndex];
+      if (!activeP.isAi || activeP.bankrupt) return;
+
+      if (activeP.inJail) {
+        if (activeP.jailFreeCards > 0) {
+          sanctionsUseImmunity();
+          return;
+        } else if (activeP.money > 350) {
+          sanctionsPayFine();
+          return;
+        } else {
+          sanctionsRollDoubles();
+          return;
+        }
+      }
+
+      handleRollDice();
+
+      setTimeout(() => {
+        if (!activeP.bankrupt) {
+          attemptAIUpgrades(activeP);
+          handleEndTurn();
+        }
+      }, 2400);
+    }
+
+    function handleAIBuyDecision(player, tile) {
+      const cashReserve = 150;
+      if (player.money - tile.price >= cashReserve) {
+        player.money -= tile.price;
+        player.properties.push(tile.id);
+        gameState.ownership[tile.id] = { ownerId: player.id, level: 0, frozenRounds: 0 };
+        playSound('buy');
+        logEvent(`🤖 ${player.name} acquired sovereign title to ${tile.name} ($${tile.price}M).`);
+
+        const ownerTag = document.getElementById(`owner-tag-${tile.id}`);
+        if (ownerTag) {
+          ownerTag.className = `w-2.5 h-2.5 rounded-full ${player.token.color} border border-white`;
+        }
+
+        updateDominanceTracker();
+        updatePlayerListUI();
+      } else {
+        logEvent(`🤖 ${player.name} preserved capital liquidity and passed on ${tile.name}.`);
+      }
+    }
+
+    function attemptAIUpgrades(player) {
+      if (player.money < 300 || player.imfLoanActive) return;
+      for (const tid of player.properties) {
+        const tile = TILES[tid];
+        const ownership = gameState.ownership[tid];
+        if (tile.type === 'country' && ownership && ownership.level < 4 && player.money > 250) {
+          upgradeProperty(tid);
+          break;
+        }
+      }
+    }
+
+    /* =========================================================================
+       TURN CYCLING & ROUND PROGRESSION
+       ========================================================================= */
+    function handleEndTurn() {
+      if (!gameState.rolledThisTurn && !gameState.players[gameState.activePlayerIndex].inJail) {
+        return;
+      }
+
+      let nextIndex = (gameState.activePlayerIndex + 1) % gameState.players.length;
+      let loopCount = 0;
+      while (gameState.players[nextIndex].bankrupt && loopCount < gameState.players.length) {
+        nextIndex = (nextIndex + 1) % gameState.players.length;
+        loopCount++;
+      }
+
+      if (nextIndex <= gameState.activePlayerIndex) {
+        gameState.roundNumber++;
+        if (gameState.ceasefireRounds > 0) {
+          gameState.ceasefireRounds--;
+        }
+        // Decrement frozen property timers
+        Object.values(gameState.ownership).forEach(up => {
+          if (up.frozenRounds > 0) up.frozenRounds--;
+        });
+        updateEconomicIndicators();
+      }
+
+      gameState.activePlayerIndex = nextIndex;
+      gameState.rolledThisTurn = false;
+      gameState.isRolling = false;
+      gameState.consecutiveDoubles = 0;
+
+      updateTurnBanner();
+      updatePlayerListUI();
+    }
+
+    function sendToJail(player) {
+      playSound('jail');
+      player.position = 10;
+      player.inJail = true;
+      player.jailTurns = 0;
+      renderTokens();
+      logEvent(`⛔ DIPLOMATIC CRISIS: ${player.name} sent to Trade Sanctions (Tile 10)!`);
+      updatePlayerListUI();
+    }
+
+    /* =========================================================================
+       VICTORY CONDITIONS & GAME OVER EVALUATION
+       ========================================================================= */
+    function checkVictoryConditions() {
+      if (gameState.gameOver) return;
+
+      const activeSurvivors = gameState.players.filter(p => !p.bankrupt);
+
+      // Condition 1: Sole survivor by bankruptcy
+      if (activeSurvivors.length === 1) {
+        triggerVictory(activeSurvivors[0], "Bankruptcy Domination (Sole Survivor)");
+        return;
+      }
+
+      // Condition 2: Milestone Hegemon Victory ($6,000M net worth)
+      for (const p of activeSurvivors) {
+        let totalNet = p.money;
+        p.properties.forEach(tid => {
+          totalNet += TILES[tid].price;
+          const up = gameState.ownership[tid];
+          if (up && up.level > 0) totalNet += up.level * (TILES[tid].upgradeCost || 100);
+        });
+
+        if (totalNet >= 6000) {
+          triggerVictory(p, "Global Hegemon Milestone (Net Worth > $6,000M)");
+          return;
+        }
+      }
+    }
+
+    function triggerVictory(winner, victoryReason = "Sole Survivor") {
+      gameState.gameOver = true;
+      gameState.winner = winner;
+      playSound('go');
+
+      let finalNetWorth = winner.money;
+      winner.properties.forEach(tid => {
+        finalNetWorth += TILES[tid].price;
+        const up = gameState.ownership[tid];
+        if (up && up.level > 0) finalNetWorth += up.level * (TILES[tid].upgradeCost || 100);
+      });
+
+      document.getElementById('victoryWinnerTitle').innerText = `${winner.name.toUpperCase()} WINS!`;
+      document.getElementById('victorySubtitle').innerText = `${winner.name} has unified world markets under its sovereign leadership.`;
+      document.getElementById('victoryNetWorth').innerText = `$${finalNetWorth}M`;
+      document.getElementById('victoryTitlesCount').innerText = `${winner.properties.length} / 40`;
+      document.getElementById('victoryRoundsCount').innerText = gameState.roundNumber;
+      document.getElementById('victoryTypeTag').innerText = victoryReason;
+
+      const rollBtn = document.getElementById('rollDiceBtn');
+      const endBtn = document.getElementById('endTurnBtn');
+      rollBtn.disabled = true;
+      rollBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      endBtn.disabled = true;
+      endBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+      logEvent(`🏆 GAME OVER! ${winner.name} ratified victory: ${victoryReason}!`);
+
+      try {
+        if (typeof confetti === 'function') {
+          confetti({
+            particleCount: 120,
+            spread: 80,
+            origin: { y: 0.6 }
+          });
+          setTimeout(() => {
+            confetti({
+              particleCount: 80,
+              angle: 60,
+              spread: 55,
+              origin: { x: 0 }
+            });
+            confetti({
+              particleCount: 80,
+              angle: 120,
+              spread: 55,
+              origin: { x: 1 }
+            });
+          }, 350);
+        }
+      } catch (err) {
+        console.warn('Confetti effect failed', err);
+      }
+
+      document.getElementById('victoryModal').classList.remove('hidden');
+    }
+
+    function closeVictoryModal() {
+      document.getElementById('victoryModal').classList.add('hidden');
+    }
+
+    /* =========================================================================
+       UTILITY & LOGGING FUNCTIONS
+       ========================================================================= */
+    function logEvent(msg) {
+      const log = document.getElementById('gameLog');
+      const entry = document.createElement('div');
+      entry.className = "text-slate-300 text-[11px] leading-relaxed pb-1 border-b border-slate-800/40";
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      entry.innerHTML = `<span class="text-slate-500 font-mono text-[9px] mr-1.5">[${time}]</span> ${msg}`;
+      log.prepend(entry);
+    }
+
+    function clearEventLog() {
+      document.getElementById('gameLog').innerHTML = '<div class="text-slate-500 text-xs italic">Diplomatic wire log cleared.</div>';
+    }
+
+    function inspectTile(tileId) {
+      promptBuyModal(TILES[tileId]);
+    }
+
+    function inspectDelegation(playerId) {
+      gameState.activePlayerIndex = playerId;
+      updateTurnBanner();
+      updatePlayerListUI();
+      openManageAllModal();
+    }
+
+    function openRulesModal() { document.getElementById('rulesModal').classList.remove('hidden'); }
+    function closeRulesModal() { document.getElementById('rulesModal').classList.add('hidden'); }
+    function openNewGameModal() { document.getElementById('newGameModal').classList.remove('hidden'); }
+    function closeNewGameModal() { document.getElementById('newGameModal').classList.add('hidden'); }
+
+    let selectedPlayerCount = 4;
+    function selectPlayerCount(count) {
+      selectedPlayerCount = count;
+      document.querySelectorAll('.count-btn').forEach(btn => {
+        if (parseInt(btn.getAttribute('data-count')) === count) {
+          btn.classList.add('border-blue-500', 'bg-blue-950', 'text-blue-300');
+          btn.classList.remove('bg-slate-800', 'border-slate-700');
+        } else {
+          btn.classList.remove('border-blue-500', 'bg-blue-950', 'text-blue-300');
+          btn.classList.add('bg-slate-800', 'border-slate-700');
+        }
+      });
+    }
+
+    function initNewGame() {
+      const mode = document.getElementById('botSetupSelect').value;
+      const treasury = parseInt(document.getElementById('startingTreasurySelect').value);
+      closeNewGameModal();
+      initializeMatch(selectedPlayerCount, mode, treasury);
+    }
+
+    /* =========================================================================
+       WINDOW LIFECYCLE INITIALIZATION
+       ========================================================================= */
+    function bootApp() {
+      renderBoardTiles();
+      selectPlayerCount(4);
+      initializeMatch(4, 'all_ai', 1500);
+      logEvent('Geopoly: World Edition online. All 4 geopolitical systems active.');
+    }
+
+    window.addEventListener('DOMContentLoaded', bootApp);
+    window.onload = bootApp;
+  </script>
 </body>
 </html>
