@@ -1,0 +1,2182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Giovanni's Cupcake Studio Deluxe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@600;700;800&family=Shrikhand&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    :root {
+      --bg-pattern: #3a1e12;
+      --accent-gold: #f59e0b;
+      --card-cream: #fffbf0;
+    }
+
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Quicksand', sans-serif;
+      background-color: var(--bg-pattern);
+      background-image: radial-gradient(#5a2e1c 15%, transparent 16%), radial-gradient(#5a2e1c 15%, transparent 16%);
+      background-size: 32px 32px;
+      background-position: 0 0, 16px 16px;
+      overflow: hidden;
+    }
+
+    .font-brand { font-family: 'Shrikhand', cursive; }
+    .font-chunky { font-family: 'Fredoka One', cursive; }
+
+    /* Seasonal Wallpaper Overlays */
+    body.theme-spring {
+      background-color: #2b442b;
+      background-image: radial-gradient(#4d7a4d 15%, transparent 16%), radial-gradient(#4d7a4d 15%, transparent 16%);
+    }
+    body.theme-summer {
+      background-color: #7c2d12;
+      background-image: radial-gradient(#c2410c 15%, transparent 16%), radial-gradient(#c2410c 15%, transparent 16%);
+    }
+    body.theme-halloween {
+      background-color: #1e112a;
+      background-image: radial-gradient(#4c1d95 15%, transparent 16%), radial-gradient(#4c1d95 15%, transparent 16%);
+    }
+    body.theme-winter {
+      background-color: #0f2c42;
+      background-image: radial-gradient(#1e4e75 15%, transparent 16%), radial-gradient(#1e4e75 15%, transparent 16%);
+    }
+
+    /* Ticket clothesline styling */
+    .ticket-paper {
+      background: #fffdf2;
+      border: 2px dashed #b79c74;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+      border-radius: 8px;
+    }
+
+    .ticket-peg {
+      width: 14px;
+      height: 16px;
+      background: #e2e8f0;
+      border: 2px solid #64748b;
+      border-radius: 4px;
+      box-shadow: inset 0 2px 2px rgba(0,0,0,0.25);
+    }
+
+    /* Station navigation button active state */
+    .station-btn.active {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 0 20px 4px rgba(251, 191, 36, 0.65);
+      border-color: #fde047;
+    }
+
+    @keyframes pulseAlert {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(239,68,68,0)); }
+      50% { transform: scale(1.08); filter: drop-shadow(0 0 14px rgba(239,68,68,0.9)); }
+    }
+    .alarm-flash {
+      animation: pulseAlert 0.4s infinite;
+    }
+
+    /* Canvas styling */
+    canvas {
+      display: block;
+      touch-action: none;
+    }
+
+    ::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #f59e0b;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+
+<body class="w-screen h-screen flex flex-col justify-between items-center text-slate-800 antialiased p-1 sm:p-2.5 transition-colors duration-700">
+
+  <header class="w-full max-w-6xl bg-amber-950/90 backdrop-blur-md border-2 border-amber-600 rounded-2xl p-2 sm:px-4 flex flex-col gap-1.5 shadow-2xl shrink-0 z-30">
+    <div class="flex items-center justify-between gap-2 border-b border-amber-800/80 pb-1.5">
+      <!-- Title, Season Badge & Day Counter -->
+      <div class="flex items-center gap-2.5">
+        <div id="player-avatar-mini" class="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-tr from-amber-400 to-rose-400 border border-white/50 flex items-center justify-center text-xl shadow cursor-pointer hover:scale-105 transition-transform" title="Customize Baker">
+          👨‍🍳
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-sm sm:text-lg font-brand tracking-wide text-amber-100 flex items-center gap-1.5">
+              Giovanni's Cupcake Studio <span class="text-xs bg-amber-500 text-amber-950 px-1.5 py-0.2 rounded font-chunky">DELUXE</span>
+            </h1>
+            <span id="holiday-badge" class="hidden sm:inline text-[11px] font-chunky bg-pink-900/80 text-pink-200 border border-pink-500 px-2 py-0.5 rounded-full">
+              🌸 Spring Sakura
+            </span>
+          </div>
+          <div class="flex items-center gap-2 text-xs font-chunky text-amber-300">
+            <span id="day-counter">Day 1</span>
+            <span>•</span>
+            <span id="time-display">10:00 AM</span>
+            <span id="blue-ribbon-indicator" class="hidden text-xs bg-sky-600 text-white px-1.5 py-0.5 rounded-md font-bold">
+              🎖️ Blue Ribbon (+25% Tips)
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Utilities (Recipe book, Mini-game tickets, Shop, Wardrobe) -->
+      <div class="flex items-center gap-1.5 sm:gap-3">
+        <div class="bg-amber-900/90 border border-amber-600 rounded-xl px-2.5 py-1 flex items-center gap-1.5 text-yellow-300 font-chunky text-xs sm:text-base shadow">
+          <span>💰</span>
+          <span id="cash-counter">$0.00</span>
+        </div>
+        <div class="bg-amber-900/90 border border-amber-600 rounded-xl px-2 py-1 flex items-center gap-1 text-amber-200 font-chunky text-xs sm:text-sm shadow" title="Mini-Game Tickets">
+          <span>🎟️</span>
+          <span id="ticket-count">0</span>
+        </div>
+        <button id="cookbook-btn" class="bg-amber-800 hover:bg-amber-700 text-amber-200 border border-amber-600 px-2 sm:px-2.5 py-1 rounded-xl text-xs sm:text-sm font-chunky shadow" title="Giovanni's Recipe Specials">
+          📖 Special
+        </button>
+        <button id="wardrobe-btn" class="bg-purple-800 hover:bg-purple-700 text-purple-200 border border-purple-500 px-2 sm:px-2.5 py-1 rounded-xl text-xs sm:text-sm font-chunky shadow" title="Baker Wardrobe">
+          🎨 Style
+        </button>
+        <button id="shop-toggle-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400 px-2 sm:px-3 py-1 rounded-xl text-xs sm:text-sm font-chunky shadow">
+          🛒 Shop
+        </button>
+        <button id="mute-btn" class="bg-amber-800 hover:bg-amber-700 text-amber-200 p-1 sm:p-1.5 rounded-xl border border-amber-600 text-xs sm:text-sm">
+          🔊
+        </button>
+      </div>
+    </div>
+
+    <!-- Multi-Ticket Clothesline Rack -->
+    <div class="flex items-center gap-2 overflow-x-auto py-1 px-1 min-h-[46px] relative bg-amber-950/60 rounded-xl border border-amber-800/60" id="ticket-clothesline">
+      <div class="text-[11px] font-bold tracking-wider text-amber-400 uppercase px-2 shrink-0 flex items-center gap-1">
+        <span>📎</span> Rack:
+      </div>
+      <div id="ticket-rack-container" class="flex items-center gap-2.5 overflow-x-auto w-full py-0.5">
+        <span id="no-tickets-msg" class="text-amber-400/70 text-xs italic">Front counter quiet. Greet customers to take tickets!</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="w-full max-w-6xl flex-1 my-1 sm:my-1.5 flex flex-col items-center justify-center relative overflow-hidden rounded-2xl border-4 border-amber-900 shadow-2xl bg-gradient-to-b from-amber-100 via-orange-50 to-amber-100">
+
+    <!-- Active Ticket Preview Drawer (Papa's Style Floating Inspector) -->
+    <div id="active-ticket-drawer" class="absolute top-2 right-2 z-20 w-48 sm:w-56 ticket-paper p-2.5 flex flex-col gap-1 transition-all duration-300 transform scale-95 shadow-2xl hidden">
+      <div class="flex justify-between items-center border-b border-amber-300 pb-1">
+        <div class="flex items-center gap-1">
+          <span id="ticket-badge-closer" class="hidden text-[10px] bg-rose-600 text-white px-1.5 py-0.5 rounded font-chunky">CLOSER</span>
+          <span class="text-xs font-bold text-amber-950 uppercase" id="ticket-cust-name">Order</span>
+        </div>
+        <button id="close-ticket-preview" class="text-xs text-amber-800 hover:text-red-500 font-bold px-1">✕</button>
+      </div>
+
+      <div class="text-[11px] flex flex-col gap-0.5 font-semibold text-amber-950 pt-0.5" id="ticket-order-details">
+        <div class="flex justify-between items-center"><span class="text-amber-700">Liner:</span> <span id="t-liner" class="font-bold">--</span></div>
+        <div class="flex justify-between items-center"><span class="text-amber-700">Batter:</span> <span id="t-batter" class="font-bold">--</span></div>
+        <div class="flex justify-between items-center"><span class="text-amber-700">Frosting:</span> <span id="t-frosting" class="font-bold">--</span></div>
+        <div class="flex justify-between items-center"><span class="text-amber-700">Topper:</span> <span id="t-topping" class="font-bold">--</span></div>
+      </div>
+
+      <div class="mt-2 text-center">
+        <button id="serve-this-ticket-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-chunky text-xs py-1.5 rounded-lg shadow active:scale-95 transition-all">
+          🍽️ Serve Cupcake!
+        </button>
+      </div>
+    </div>
+
+    <section id="station-order" class="w-full h-full flex flex-col items-center justify-between p-3 sm:p-5 relative">
+      <div class="w-full flex justify-between items-center">
+        <div class="bg-amber-900/85 text-amber-100 px-3.5 py-1 rounded-full text-xs sm:text-sm font-chunky shadow border border-amber-700 flex items-center gap-1.5">
+          <span>🛎️</span> Front Dining & Order Counter
+        </div>
+        <!-- Daily Special Chalkboard Banner -->
+        <div id="counter-special-board" class="bg-stone-900 border-2 border-amber-500 px-3 py-1 rounded-xl text-[11px] text-amber-200 font-chunky shadow cursor-pointer hover:scale-105 transition-transform">
+          📋 Today's Special: <span id="counter-special-name" class="text-yellow-400">Matcha Sakura Dream</span> (+Bonus Tip!)
+        </div>
+        <!-- Customer Patience Meter -->
+        <div id="customer-patience-wrap" class="hidden flex items-center gap-2 bg-white/80 px-3 py-1 rounded-full shadow border border-amber-200">
+          <span class="text-xs font-bold text-amber-900">Patience:</span>
+          <div class="w-24 sm:w-32 h-2.5 bg-slate-200 rounded-full overflow-hidden border border-slate-300">
+            <div id="customer-patience-bar" class="h-full bg-emerald-500 transition-all duration-200" style="width: 100%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Animated Customer Stage -->
+      <div class="flex-1 flex flex-col items-center justify-center relative w-full">
+        <div id="closer-banner" class="hidden bg-gradient-to-r from-red-600 to-rose-700 text-white font-chunky text-xs sm:text-sm px-4 py-1 rounded-full shadow-lg border-2 border-yellow-300 mb-2 animate-bounce">
+          👑 CLOSER ARRIVED: SIGNORA BEATRICE (FOOD CRITIC)!
+        </div>
+
+        <div id="customer-avatar-box" class="w-48 h-52 sm:w-60 sm:h-64 bg-white/80 backdrop-blur rounded-3xl border-4 border-amber-300 shadow-2xl flex flex-col items-center justify-center p-3 relative">
+          <div id="customer-emoji" class="text-6xl sm:text-8xl drop-shadow-md transition-transform duration-300 transform hover:scale-110">
+            🧍
+          </div>
+          <div id="customer-name-tag" class="mt-2 font-chunky text-amber-950 text-base sm:text-lg bg-amber-100 px-4 py-0.5 rounded-full border border-amber-300 shadow-sm">
+            Waiting for guest...
+          </div>
+          <div id="customer-speech" class="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-100 text-amber-900 text-[10px] sm:text-xs font-bold py-1 px-3 rounded-full border border-amber-400 shadow-md whitespace-nowrap opacity-0 transition-opacity">
+            "Hello Giovanni! Craving sweets!"
+          </div>
+        </div>
+
+        <!-- Take Order Action -->
+        <button id="take-order-btn" class="mt-4 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:brightness-110 text-white font-chunky text-base sm:text-lg px-8 py-3 rounded-2xl shadow-xl active:scale-95 transition-all border-2 border-yellow-200 flex items-center gap-2">
+          <span>📝</span> Take Order
+        </button>
+      </div>
+
+      <div class="w-full text-center text-xs text-amber-900 font-semibold bg-amber-200/50 py-1 rounded-xl">
+        Tip: Customers who order Today's Special or Closer Critics award massive bonus tip payouts!
+      </div>
+    </section>
+
+    <section id="station-bake" class="w-full h-full flex flex-col items-center justify-between p-2 sm:p-4 hidden">
+      <!-- Sub-tabs for Prep vs Oven -->
+      <div class="w-full flex justify-between items-center border-b border-amber-300 pb-1.5 gap-2">
+        <div class="flex items-center gap-1.5">
+          <button id="subtab-batter-btn" class="bg-amber-700 text-white font-chunky text-xs sm:text-sm px-3 py-1 rounded-xl border border-amber-500 shadow">
+            🥣 1. Prep & Fill Batter
+          </button>
+          <button id="subtab-oven-btn" class="bg-amber-200 text-amber-900 font-chunky text-xs sm:text-sm px-3 py-1 rounded-xl border border-amber-300 shadow hover:bg-amber-300">
+            🔥 2. Brick Oven
+          </button>
+        </div>
+
+        <div class="text-xs font-bold text-amber-900 bg-amber-200/60 px-2.5 py-1 rounded-xl border border-amber-300">
+          Cupcake Status: <span id="cupcake-bake-status-tag" class="text-pink-600 font-chunky">Prep</span>
+        </div>
+      </div>
+
+      <!-- Batter Mixing & Pouring Sub-view -->
+      <div id="batter-prep-view" class="w-full flex-1 flex flex-col md:flex-row items-center justify-around gap-3 p-2 overflow-y-auto">
+        <!-- Liner Selection -->
+        <div class="flex flex-col items-center bg-white/70 p-3 rounded-2xl border-2 border-amber-300 shadow w-full md:w-56">
+          <span class="text-xs font-chunky text-amber-900 mb-2">Step 1: Cupcake Liner</span>
+          <div class="grid grid-cols-3 gap-2 w-full">
+            <button class="liner-opt p-2 rounded-xl border-2 border-slate-300 bg-amber-50 flex flex-col items-center active:scale-95" data-liner="polka">
+              <span class="text-xl">🔴</span>
+              <span class="text-[10px] font-bold mt-0.5">Polka</span>
+            </button>
+            <button class="liner-opt p-2 rounded-xl border-2 border-slate-300 bg-amber-50 flex flex-col items-center active:scale-95" data-liner="stripes">
+              <span class="text-xl">💈</span>
+              <span class="text-[10px] font-bold mt-0.5">Stripe</span>
+            </button>
+            <button class="liner-opt p-2 rounded-xl border-2 border-slate-300 bg-amber-50 flex flex-col items-center active:scale-95" data-liner="gold">
+              <span class="text-xl">✨</span>
+              <span class="text-[10px] font-bold mt-0.5">Gold Foil</span>
+            </button>
+          </div>
+          <span id="selected-liner-label" class="text-xs text-amber-800 font-bold mt-2">Liner: None</span>
+        </div>
+
+        <!-- Flavor Picker & Pouring Canvas -->
+        <div class="flex-1 max-w-sm w-full flex flex-col items-center bg-amber-100/70 p-3 rounded-3xl border-2 border-amber-300 shadow">
+          <div class="flex items-center gap-2 mb-2 w-full justify-between">
+            <span class="text-xs font-chunky text-amber-900">Step 2: Batter Mix:</span>
+            <select id="batter-flavor-select" class="text-xs font-bold bg-white border border-amber-400 rounded-lg px-2 py-1 text-amber-900">
+              <option value="vanilla">Vanilla Sponge 🍦</option>
+              <option value="chocolate">Dark Chocolate 🍫</option>
+              <option value="redvelvet">Red Velvet 🍓</option>
+              <option value="matcha">Matcha Green Tea 🍵</option>
+              <!-- Seasonal options populated dynamically -->
+            </select>
+          </div>
+
+          <div class="relative w-44 h-44 bg-white/95 rounded-2xl border-4 border-amber-200 shadow-inner flex items-center justify-center overflow-hidden">
+            <canvas id="batterCanvas" width="180" height="180" class="w-full h-full"></canvas>
+            <div class="absolute right-2 top-2 bottom-2 w-3.5 bg-slate-200 rounded-full border border-slate-400 overflow-hidden flex flex-col justify-end">
+              <div id="fill-target-zone" class="absolute w-full bg-emerald-400/60 border-y border-emerald-600" style="bottom: 58%; height: 26%;"></div>
+              <div id="fill-level-bar" class="w-full bg-amber-500 transition-all duration-75" style="height: 0%"></div>
+            </div>
+          </div>
+
+          <button id="pour-batter-btn" class="mt-3 w-full bg-gradient-to-b from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 active:scale-95 text-white font-chunky py-2.5 px-4 rounded-xl shadow-lg border-2 border-yellow-200 text-xs sm:text-sm flex items-center justify-center gap-2">
+            <span>💧</span> HOLD TO POUR BATTER
+          </button>
+        </div>
+
+        <!-- Transfer To Oven Action -->
+        <div class="flex flex-col items-center bg-white/70 p-3 rounded-2xl border-2 border-amber-300 shadow w-full md:w-44 text-center">
+          <span class="text-xs font-chunky text-amber-900 mb-2">Step 3: Brick Oven</span>
+          <button id="transfer-to-oven-btn" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-chunky text-xs py-3 px-2 rounded-xl shadow active:scale-95 border border-orange-400 flex flex-col items-center gap-1">
+            <span class="text-2xl">🚪🔥</span>
+            Slide into Oven
+          </button>
+          <button id="reset-batter-btn" class="mt-2 text-[10px] text-rose-600 underline font-bold">Discard Batter</button>
+        </div>
+      </div>
+
+      <!-- Oven Rack View with Visual Auto-Alarm and Real-Time Dials -->
+      <div id="oven-rack-view" class="w-full flex-1 flex flex-col items-center justify-center p-3 hidden">
+        <div class="w-full max-w-xl bg-gradient-to-b from-stone-900 via-stone-800 to-stone-950 p-4 rounded-3xl border-4 border-amber-600 shadow-2xl flex flex-col gap-3 text-amber-100 relative">
+          <div class="flex justify-between items-center border-b border-stone-700 pb-2">
+            <span class="font-chunky text-sm sm:text-base text-amber-300 flex items-center gap-2">
+              <span>🔥</span> Giovanni's Artisan Oven
+            </span>
+            <span id="oven-alarm-indicator" class="hidden text-xs bg-red-600 text-white font-chunky px-2 py-0.5 rounded-full alarm-flash">
+              ⏰ AUTO-ALARM ACTIVE
+            </span>
+            <span id="oven-status-badge" class="bg-stone-950 px-3 py-0.5 rounded-full text-xs font-bold text-amber-400 border border-stone-600">
+              Oven Idle
+            </span>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-center justify-around gap-4 py-2">
+            <div class="w-36 h-36 bg-orange-950/80 rounded-2xl border-4 border-stone-600 shadow-inner flex flex-col items-center justify-center relative overflow-hidden">
+              <div id="oven-fire-glow" class="absolute inset-0 bg-orange-500/10 transition-colors duration-500"></div>
+              <div id="oven-cupcake-preview" class="text-5xl transition-transform duration-300">🥧</div>
+              <div id="oven-smoke" class="absolute top-1 text-lg opacity-0 transition-opacity">💨</div>
+            </div>
+
+            <div class="flex-1 w-full flex flex-col gap-2">
+              <div class="flex justify-between text-xs font-bold">
+                <span class="text-sky-300">Raw</span>
+                <span class="text-emerald-400 font-black">★ PERFECT GOLDEN ★</span>
+                <span class="text-rose-500">Burnt</span>
+              </div>
+              <div class="w-full h-7 bg-stone-950 rounded-xl border-2 border-stone-700 relative overflow-hidden flex items-center">
+                <div class="absolute left-0 w-2/5 h-full bg-sky-950/50"></div>
+                <div class="absolute left-[40%] w-[35%] h-full bg-emerald-500/30 border-x-2 border-emerald-400"></div>
+                <div class="absolute right-0 w-[25%] h-full bg-rose-950/60"></div>
+                <div id="bake-progress-bar" class="h-full bg-gradient-to-r from-amber-400 via-emerald-400 to-rose-600 transition-all duration-100" style="width: 0%"></div>
+              </div>
+              <div class="flex justify-between text-[11px] text-stone-300">
+                <span>0s</span>
+                <span id="bake-timer-text" class="text-amber-300 font-chunky text-xs sm:text-sm">Bake Time: 0s</span>
+                <span>20s</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-center gap-4 pt-1">
+            <button id="pull-from-oven-btn" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 active:scale-95 text-white font-chunky text-xs sm:text-sm px-6 py-2 rounded-xl shadow-xl border border-emerald-300 flex items-center gap-2">
+              <span>🧤</span> Remove & Transfer to Platter
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="station-frosting" class="w-full h-full flex flex-col items-center justify-between p-2 sm:p-4 hidden">
+      <div class="w-full flex justify-between items-center border-b border-amber-300 pb-1">
+        <div class="bg-amber-900/85 text-amber-100 px-3 py-1 rounded-full text-xs font-chunky shadow flex items-center gap-1.5">
+          <span>🍦</span> Frosting Station
+        </div>
+        <!-- Precision Stencil Toggle (Unlocked via Shop) -->
+        <div class="flex items-center gap-2">
+          <label id="stencil-toggle-wrap" class="hidden text-xs font-bold text-amber-900 flex items-center gap-1 bg-amber-200/80 px-2 py-0.5 rounded-lg border border-amber-400 cursor-pointer">
+            <input type="checkbox" id="stencil-guide-toggle" class="cursor-pointer">
+            <span>Spiral Guide</span>
+          </label>
+          <div class="text-xs font-bold text-amber-900 bg-white/75 px-2.5 py-0.5 rounded-xl border border-amber-200">
+            Icing: <span id="frosting-coverage-num" class="text-pink-600 font-chunky">0%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex-1 w-full flex flex-col md:flex-row items-center justify-around gap-3 py-2">
+        <!-- Frosting Flavors Palette -->
+        <div class="flex md:flex-col gap-2 bg-white/70 p-2.5 rounded-2xl border-2 border-amber-300 shadow overflow-x-auto max-w-full" id="frosting-palette">
+          <span class="text-xs font-chunky text-amber-900 text-center mb-0.5">Frosting Flavor</span>
+          <button class="frost-flavor-btn active-flavor p-1.5 rounded-xl border-2 border-amber-400 bg-amber-100 flex items-center gap-1.5 text-xs font-bold shadow-sm" data-flavor="vanilla" data-color="#fff8e7">
+            <span class="w-3.5 h-3.5 rounded-full bg-[#fff8e7] border border-stone-400"></span> Vanilla Cream
+          </button>
+          <button class="frost-flavor-btn p-1.5 rounded-xl border-2 border-stone-200 bg-amber-50 flex items-center gap-1.5 text-xs font-bold shadow-sm" data-flavor="strawberry" data-color="#ff758f">
+            <span class="w-3.5 h-3.5 rounded-full bg-[#ff758f] border border-stone-400"></span> Strawberry
+          </button>
+          <button class="frost-flavor-btn p-1.5 rounded-xl border-2 border-stone-200 bg-amber-50 flex items-center gap-1.5 text-xs font-bold shadow-sm" data-flavor="chocolate" data-color="#5a3825">
+            <span class="w-3.5 h-3.5 rounded-full bg-[#5a3825] border border-stone-400"></span> Choco Fudge
+          </button>
+          <button class="frost-flavor-btn p-1.5 rounded-xl border-2 border-stone-200 bg-amber-50 flex items-center gap-1.5 text-xs font-bold shadow-sm" data-flavor="mint" data-color="#80ed99">
+            <span class="w-3.5 h-3.5 rounded-full bg-[#80ed99] border border-stone-400"></span> Mint Cream
+          </button>
+        </div>
+
+        <!-- Frosting Turntable Canvas -->
+        <div class="canvas-container bg-white rounded-3xl border-4 border-amber-300 shadow-2xl p-2 relative flex flex-col items-center">
+          <div class="text-[11px] font-bold text-amber-800 mb-1">
+            Drag mouse or touch to pipe swirls!
+          </div>
+          <canvas id="frostingCanvas" width="270" height="270" class="rounded-2xl cursor-crosshair border border-amber-100 shadow-inner bg-amber-50/50"></canvas>
+          <div class="flex gap-2 mt-2">
+            <button id="clear-frosting-btn" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1 rounded-lg">
+              Scrape Off Icing
+            </button>
+          </div>
+        </div>
+
+        <div class="flex flex-col items-center gap-2 bg-amber-100/70 p-3 rounded-2xl border-2 border-amber-300">
+          <span class="text-xs font-chunky text-amber-900 text-center">Topping Station</span>
+          <button id="goto-topping-btn" class="bg-gradient-to-r from-pink-500 to-rose-600 hover:brightness-110 active:scale-95 text-white font-chunky text-xs sm:text-sm px-4 py-2.5 rounded-2xl shadow-xl border border-pink-300 flex items-center gap-2">
+            <span>🍒</span> Add Decor & Toppings
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id="station-topping" class="w-full h-full flex flex-col items-center justify-between p-2 sm:p-4 hidden">
+      <div class="w-full flex justify-between items-center border-b border-amber-300 pb-1">
+        <div class="bg-amber-900/85 text-amber-100 px-3 py-1 rounded-full text-xs font-chunky shadow flex items-center gap-1.5">
+          <span>🍒</span> Topping & Presentation Station
+        </div>
+        <div class="text-xs font-bold text-amber-900 bg-white/75 px-2.5 py-0.5 rounded-xl border border-amber-200">
+          Toppers: <span id="toppings-placed-count" class="text-pink-600 font-chunky">0</span>
+        </div>
+      </div>
+
+      <div class="flex-1 w-full flex flex-col md:flex-row items-center justify-around gap-3 py-2">
+        <!-- Topping Selector Rack -->
+        <div class="flex md:flex-col gap-1.5 bg-white/70 p-2.5 rounded-2xl border-2 border-amber-300 shadow overflow-x-auto max-w-full" id="topping-palette">
+          <span class="text-xs font-chunky text-amber-900 text-center mb-0.5">Topping Bar</span>
+          <button class="top-item-btn active-topping p-1.5 rounded-xl border-2 border-amber-400 bg-amber-100 flex items-center gap-2 text-xs font-bold" data-topping="cherry">
+            <span class="text-lg">🍒</span> Cherry
+          </button>
+          <button class="top-item-btn p-1.5 rounded-xl border-2 border-stone-200 bg-amber-50 flex items-center gap-2 text-xs font-bold" data-topping="sprinkles">
+            <span class="text-lg">✨</span> Sprinkles
+          </button>
+          <button class="top-item-btn p-1.5 rounded-xl border-2 border-stone-200 bg-amber-50 flex items-center gap-2 text-xs font-bold" data-topping="wafer">
+            <span class="text-lg">🥖</span> Wafer Roll
+          </button>
+          <button class="top-item-btn p-1.5 rounded-xl border-2 border-stone-200 bg-amber-50 flex items-center gap-2 text-xs font-bold" data-topping="macaron">
+            <span class="text-lg">🍪</span> Macaron
+          </button>
+          <!-- Seasonal toppers added dynamically -->
+        </div>
+
+        <!-- Topping Placement Canvas -->
+        <div class="canvas-container bg-white rounded-3xl border-4 border-amber-300 shadow-2xl p-2 relative flex flex-col items-center">
+          <div class="text-[11px] font-bold text-amber-800 mb-1">
+            Tap directly on cupcake to place toppings!
+          </div>
+          <canvas id="toppingCanvas" width="270" height="270" class="rounded-2xl cursor-pointer border border-amber-100 shadow-inner bg-amber-50/50"></canvas>
+          <div class="flex gap-2 mt-2">
+            <button id="clear-toppings-btn" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1 rounded-lg">
+              Reset Toppings
+            </button>
+          </div>
+        </div>
+
+        <!-- Complete & Serve Platter -->
+        <div class="flex flex-col items-center gap-2 bg-amber-100/70 p-3.5 rounded-2xl border-2 border-amber-300 shadow">
+          <span class="text-xs font-chunky text-amber-900 text-center">Serving Platter</span>
+          <div class="text-[11px] text-slate-700 bg-white/80 px-3 py-1.5 rounded-lg border border-amber-200 text-center">
+            Status: <span id="single-cupcake-status" class="font-bold text-pink-600">In Preparation</span>
+          </div>
+          <button id="finish-cupcake-btn" class="bg-gradient-to-r from-emerald-500 to-green-600 hover:brightness-110 active:scale-95 text-white font-chunky text-xs sm:text-sm px-5 py-2.5 rounded-2xl shadow-xl border-2 border-emerald-300 flex items-center gap-2">
+            <span>🛎️</span> Deliver to Customer!
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <div id="review-modal" class="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
+      <div class="bg-white rounded-3xl border-4 border-amber-400 p-4 sm:p-6 max-w-md w-full shadow-2xl flex flex-col items-center relative animate-bounce-short">
+        <h2 class="font-brand text-2xl text-amber-900 mb-1" id="review-modal-title">Customer Review</h2>
+        <div id="eval-customer-header" class="flex items-center gap-3 my-1.5 bg-amber-50 px-4 py-1 rounded-full border border-amber-200">
+          <span id="eval-cust-avatar" class="text-3xl">🧍</span>
+          <span id="eval-cust-name" class="font-chunky text-amber-900 text-sm">Customer</span>
+        </div>
+
+        <div id="ribbon-awarded-banner" class="hidden bg-gradient-to-r from-sky-600 to-blue-700 text-white font-chunky text-xs px-3 py-1 rounded-full border border-yellow-300 shadow my-1 flex items-center gap-1">
+          <span>🎖️</span> SIGNORA BEATRICE BLUE RIBBON AWARDED! (+25% Tips)
+        </div>
+
+        <!-- 4 Score Bars -->
+        <div class="w-full space-y-2 my-2 text-xs font-bold text-amber-950">
+          <div>
+            <div class="flex justify-between mb-0.5">
+              <span>🥣 Batter & Liner Match:</span>
+              <span id="score-batter-txt" class="text-pink-600 font-chunky">95%</span>
+            </div>
+            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+              <div id="score-batter-bar" class="h-full bg-emerald-500" style="width: 95%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-0.5">
+              <span>🔥 Brick Oven Doneness:</span>
+              <span id="score-bake-txt" class="text-pink-600 font-chunky">90%</span>
+            </div>
+            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+              <div id="score-bake-bar" class="h-full bg-emerald-500" style="width: 90%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-0.5">
+              <span>🍦 Frosting Swirl Accuracy:</span>
+              <span id="score-frost-txt" class="text-pink-600 font-chunky">88%</span>
+            </div>
+            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+              <div id="score-frost-bar" class="h-full bg-emerald-500" style="width: 88%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-0.5">
+              <span>🍒 Topper Craftsmanship:</span>
+              <span id="score-top-txt" class="text-pink-600 font-chunky">92%</span>
+            </div>
+            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+              <div id="score-top-bar" class="h-full bg-emerald-500" style="width: 92%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="w-full bg-gradient-to-r from-amber-100 to-orange-100 rounded-2xl p-2.5 border border-amber-300 flex justify-around items-center my-1.5 text-center">
+          <div>
+            <div class="text-[10px] uppercase font-bold text-amber-800">Total Score</div>
+            <div id="eval-total-score" class="font-chunky text-xl sm:text-2xl text-amber-900">92%</div>
+          </div>
+          <div class="h-7 w-px bg-amber-300"></div>
+          <div>
+            <div class="text-[10px] uppercase font-bold text-amber-800">Tip Earned</div>
+            <div id="eval-tip-earned" class="font-chunky text-xl sm:text-2xl text-emerald-600">+$4.50</div>
+          </div>
+        </div>
+
+        <button id="close-review-modal-btn" class="mt-2 w-full bg-amber-600 hover:bg-amber-500 active:scale-95 text-white font-chunky py-2 rounded-xl shadow-lg border border-yellow-300 text-sm">
+          Next Customer
+        </button>
+      </div>
+    </div>
+
+    <div id="minigame-modal" class="absolute inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-3 hidden">
+      <div class="bg-gradient-to-b from-amber-100 to-amber-200 rounded-3xl border-4 border-amber-500 p-4 max-w-lg w-full shadow-2xl flex flex-col items-center relative">
+        <div class="flex justify-between items-center w-full border-b border-amber-300 pb-2 mb-2">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">🎪</span>
+            <h2 class="font-brand text-xl text-amber-950">Foodini's Topping Frenzy!</h2>
+          </div>
+          <div class="text-xs font-chunky text-amber-900 bg-amber-300 px-3 py-1 rounded-full">
+            Tickets: <span id="minigame-ticket-indicator">0</span>
+          </div>
+        </div>
+
+        <p class="text-xs text-amber-800 font-semibold text-center mb-2">
+          Move your mixing bowl with mouse/touch! Catch fresh fruit & choco chips! <b>Avoid rotten eggs & burnt cupcakes!</b>
+        </p>
+
+        <!-- Mini-Game Interactive Canvas -->
+        <div class="relative bg-sky-100 border-2 border-amber-400 rounded-2xl overflow-hidden shadow-inner">
+          <canvas id="miniGameCanvas" width="340" height="280"></canvas>
+          <div id="minigame-start-overlay" class="absolute inset-0 bg-amber-950/70 flex flex-col items-center justify-center gap-2">
+            <span class="text-amber-100 font-chunky text-base">Ready for the Carnival?</span>
+            <button id="start-minigame-play-btn" class="bg-yellow-400 hover:bg-yellow-300 text-amber-950 font-chunky px-5 py-2 rounded-xl shadow-lg border-2 border-yellow-200 text-sm active:scale-95">
+              Insert 1 Ticket & Play!
+            </button>
+          </div>
+        </div>
+
+        <div class="flex justify-between items-center w-full mt-3 px-2">
+          <div class="text-xs font-chunky text-amber-900">
+            Score: <span id="minigame-score" class="text-emerald-700">0</span>
+          </div>
+          <button id="exit-minigame-btn" class="text-xs bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold px-4 py-1.5 rounded-xl">
+            Start Next Day ☀️
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="wardrobe-modal" class="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
+      <div class="bg-white rounded-3xl border-4 border-purple-400 p-5 max-w-md w-full shadow-2xl flex flex-col relative">
+        <div class="flex justify-between items-center border-b border-purple-200 pb-2 mb-3">
+          <h2 class="font-brand text-xl text-purple-900 flex items-center gap-2">
+            <span>🎨</span> Baker Wardrobe & Style
+          </h2>
+          <button id="close-wardrobe-btn" class="text-purple-800 hover:text-red-500 font-chunky text-lg px-2">✕</button>
+        </div>
+
+        <div class="flex flex-col items-center gap-3">
+          <div class="w-24 h-24 rounded-2xl bg-amber-100 border-2 border-purple-300 flex items-center justify-center text-5xl shadow-inner" id="avatar-preview-box">
+            👨‍🍳
+          </div>
+
+          <div class="w-full space-y-2 text-xs font-bold text-purple-950">
+            <div>
+              <span class="block mb-1">Baker Persona:</span>
+              <div class="grid grid-cols-4 gap-2">
+                <button class="char-opt p-1.5 rounded-lg border border-purple-300 bg-purple-50 text-center active:scale-95" data-avatar="👨‍🍳">Chef Guy</button>
+                <button class="char-opt p-1.5 rounded-lg border border-purple-300 bg-purple-50 text-center active:scale-95" data-avatar="👩‍🍳">Chef Lady</button>
+                <button class="char-opt p-1.5 rounded-lg border border-purple-300 bg-purple-50 text-center active:scale-95" data-avatar="🧑‍🍳">Junior</button>
+                <button class="char-opt p-1.5 rounded-lg border border-purple-300 bg-purple-50 text-center active:scale-95" data-avatar="🎩">Giovanni</button>
+              </div>
+            </div>
+
+            <div>
+              <span class="block mb-1">Apron Color:</span>
+              <div class="flex gap-2">
+                <button class="apron-opt w-8 h-8 rounded-full bg-pink-500 border-2 border-white shadow" data-color="#ec4899"></button>
+                <button class="apron-opt w-8 h-8 rounded-full bg-amber-600 border-2 border-white shadow" data-color="#d97706"></button>
+                <button class="apron-opt w-8 h-8 rounded-full bg-teal-600 border-2 border-white shadow" data-color="#0d9488"></button>
+                <button class="apron-opt w-8 h-8 rounded-full bg-purple-600 border-2 border-white shadow" data-color="#9333ea"></button>
+              </div>
+            </div>
+          </div>
+
+          <button id="save-wardrobe-btn" class="w-full mt-2 bg-purple-600 hover:bg-purple-500 text-white font-chunky py-2 rounded-xl shadow active:scale-95 text-xs sm:text-sm">
+            Save Look!
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="cookbook-modal" class="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
+      <div class="bg-amber-50 rounded-3xl border-4 border-amber-600 p-5 max-w-lg w-full shadow-2xl flex flex-col relative max-h-[90vh]">
+        <div class="flex justify-between items-center border-b border-amber-300 pb-2 mb-3">
+          <h2 class="font-brand text-xl text-amber-950 flex items-center gap-2">
+            <span>📖</span> Giovanni's Secret Recipe Book
+          </h2>
+          <button id="close-cookbook-btn" class="text-amber-800 hover:text-red-500 font-chunky text-lg px-2">✕</button>
+        </div>
+
+        <p class="text-xs text-amber-800 font-semibold mb-3">
+          Set any master recipe as <b>"Today's Counter Special"</b> to attract patrons who tip huge bonuses!
+        </p>
+
+        <div class="overflow-y-auto space-y-2.5 pr-1 text-xs" id="cookbook-list">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+    </div>
+
+    <div id="shop-modal" class="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
+      <div class="bg-white rounded-3xl border-4 border-amber-400 p-5 max-w-lg w-full shadow-2xl flex flex-col relative max-h-[90vh]">
+        <div class="flex justify-between items-center border-b border-amber-200 pb-2 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">🛒</span>
+            <h2 class="font-brand text-xl text-amber-900">Kitchen Automation & Upgrades</h2>
+          </div>
+          <button id="close-shop-btn" class="text-amber-800 hover:text-red-500 font-chunky text-lg px-2">✕</button>
+        </div>
+
+        <div class="overflow-y-auto space-y-2.5 pr-1 text-xs">
+          <div class="flex items-center justify-between p-2.5 rounded-2xl bg-amber-50 border border-amber-200">
+            <div>
+              <div class="font-chunky text-amber-900 text-sm">Turbo Oven Boost</div>
+              <div class="text-slate-600">Bakes cupcakes 35% faster without easily burning.</div>
+            </div>
+            <button id="buy-turbo-oven" class="bg-emerald-600 hover:bg-emerald-500 text-white font-chunky px-3 py-1.5 rounded-xl shadow active:scale-95">
+              $15.00
+            </button>
+          </div>
+          <div class="flex items-center justify-between p-2.5 rounded-2xl bg-amber-50 border border-amber-200">
+            <div>
+              <div class="font-chunky text-amber-900 text-sm">Oven Auto-Alarm Bell</div>
+              <div class="text-slate-600">Flashes bright alerts and chimes before cupcakes overbake.</div>
+            </div>
+            <button id="buy-auto-alarm" class="bg-emerald-600 hover:bg-emerald-500 text-white font-chunky px-3 py-1.5 rounded-xl shadow active:scale-95">
+              $20.00
+            </button>
+          </div>
+          <div class="flex items-center justify-between p-2.5 rounded-2xl bg-amber-50 border border-amber-200">
+            <div>
+              <div class="font-chunky text-amber-900 text-sm">Precision Piping Guide</div>
+              <div class="text-slate-600">Displays a translucent spiral stencil on frosting turntable.</div>
+            </div>
+            <button id="buy-piping-guide" class="bg-emerald-600 hover:bg-emerald-500 text-white font-chunky px-3 py-1.5 rounded-xl shadow active:scale-95">
+              $25.00
+            </button>
+          </div>
+          <div class="flex items-center justify-between p-2.5 rounded-2xl bg-amber-50 border border-amber-200">
+            <div>
+              <div class="font-chunky text-amber-900 text-sm">Lobby Jukebox & Comfy Couch</div>
+              <div class="text-slate-600">Boosts waiting customer patience by +35%.</div>
+            </div>
+            <button id="buy-lounge" class="bg-emerald-600 hover:bg-emerald-500 text-white font-chunky px-3 py-1.5 rounded-xl shadow active:scale-95">
+              $30.00
+            </button>
+          </div>
+          <div class="flex items-center justify-between p-2.5 rounded-2xl bg-amber-50 border border-amber-200">
+            <div>
+              <div class="font-chunky text-amber-900 text-sm">Golden Spatula & Dust</div>
+              <div class="text-slate-600">Adds an automatic +15% tip multiplier on all served platters.</div>
+            </div>
+            <button id="buy-gold-spatula" class="bg-emerald-600 hover:bg-emerald-500 text-white font-chunky px-3 py-1.5 rounded-xl shadow active:scale-95">
+              $45.00
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="w-full max-w-6xl bg-amber-950/90 backdrop-blur border-2 border-amber-600 rounded-2xl p-1.5 sm:p-2 flex items-center justify-around gap-1.5 sm:gap-4 shadow-2xl shrink-0 z-30">
+    <button class="station-btn active flex-1 bg-gradient-to-b from-amber-600 to-amber-800 text-amber-100 font-chunky text-xs sm:text-base py-2 px-1 sm:px-4 rounded-xl border border-amber-400 shadow-md flex items-center justify-center gap-1.5 transition-all" data-station="order">
+      <span>🛎️</span>
+      <span class="hidden sm:inline">Order Station</span>
+      <span class="sm:hidden">Order</span>
+    </button>
+    <button class="station-btn flex-1 bg-gradient-to-b from-orange-600 to-amber-900 text-amber-100 font-chunky text-xs sm:text-base py-2 px-1 sm:px-4 rounded-xl border border-amber-700 shadow-md flex items-center justify-center gap-1.5 transition-all" data-station="bake">
+      <span>🥣🔥</span>
+      <span class="hidden sm:inline">Bake Station</span>
+      <span class="sm:hidden">Bake</span>
+    </button>
+    <button class="station-btn flex-1 bg-gradient-to-b from-pink-600 to-rose-900 text-pink-100 font-chunky text-xs sm:text-base py-2 px-1 sm:px-4 rounded-xl border border-pink-700 shadow-md flex items-center justify-center gap-1.5 transition-all" data-station="frosting">
+      <span>🍦</span>
+      <span class="hidden sm:inline">Frosting Station</span>
+      <span class="sm:hidden">Frost</span>
+    </button>
+    <button class="station-btn flex-1 bg-gradient-to-b from-red-600 to-red-950 text-red-100 font-chunky text-xs sm:text-base py-2 px-1 sm:px-4 rounded-xl border border-red-700 shadow-md flex items-center justify-center gap-1.5 transition-all" data-station="topping">
+      <span>🍒</span>
+      <span class="hidden sm:inline">Topping Station</span>
+      <span class="sm:hidden">Topping</span>
+    </button>
+  </footer>
+
+  <script>
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.isMuted = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playTone(freq, type = 'sine', duration = 0.15, vol = 0.25) {
+        if (this.isMuted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch(e) {}
+      }
+
+      playClick() { this.playTone(850, 'triangle', 0.05, 0.2); }
+      playOrderBell() {
+        this.playTone(1174, 'sine', 0.35, 0.25);
+        setTimeout(() => this.playTone(1760, 'sine', 0.45, 0.25), 90);
+      }
+      playOvenDing() { this.playTone(1864, 'sine', 0.8, 0.35); }
+      playAlarm() {
+        this.playTone(900, 'square', 0.1, 0.2);
+        setTimeout(() => this.playTone(1200, 'square', 0.1, 0.2), 110);
+      }
+      playSquirt() {
+        if (this.isMuted) return;
+        this.init();
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(560, this.ctx.currentTime + 0.07);
+          gain.gain.setValueAtTime(0.06, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.07);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.07);
+        } catch(e) {}
+      }
+      playCatch() { this.playTone(950, 'sine', 0.1, 0.3); }
+      playSplat() { this.playTone(180, 'sawtooth', 0.25, 0.3); }
+      playCash() {
+        this.playTone(987.77, 'triangle', 0.1, 0.3);
+        setTimeout(() => this.playTone(1318.51, 'triangle', 0.3, 0.3), 90);
+      }
+      playFanfare() {
+        [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach((freq, idx) => {
+          setTimeout(() => this.playTone(freq, 'sine', 0.25, 0.2), idx * 100);
+        });
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    const SEASONS = {
+      spring: {
+        id: 'spring',
+        name: '🌸 Spring Sakura',
+        themeClass: 'theme-spring',
+        specialBatter: { key: 'sakura', name: 'Sakura Petal 🌸', hex: '#fbcfe8' },
+        specialFrosting: { key: 'matcha', name: 'Matcha Whip', hex: '#86efac' },
+        specialTopper: { key: 'cherry_blossom', name: 'Sakura Bloom', emoji: '🌸' }
+      },
+      summer: {
+        id: 'summer',
+        name: '☀️ Summer Fiesta',
+        themeClass: 'theme-summer',
+        specialBatter: { key: 'mango', name: 'Mango Sunshine 🥭', hex: '#fde047' },
+        specialFrosting: { key: 'coconut', name: 'Toasted Coconut', hex: '#fef08a' },
+        specialTopper: { key: 'umbrella', name: 'Mini Umbrella', emoji: '⛱️' }
+      },
+      halloween: {
+        id: 'halloween',
+        name: '🎃 Spooky Halloween',
+        themeClass: 'theme-halloween',
+        specialBatter: { key: 'pumpkin', name: 'Pumpkin Spice 🎃', hex: '#ea580c' },
+        specialFrosting: { key: 'blackcocoa', name: 'Black Cocoa', hex: '#262626' },
+        specialTopper: { key: 'ghost', name: 'Ghost Marshmallow', emoji: '👻' }
+      },
+      winter: {
+        id: 'winter',
+        name: '❄️ Winter Wonderland',
+        themeClass: 'theme-winter',
+        specialBatter: { key: 'gingerbread', name: 'Spiced Ginger 🍪', hex: '#92400e' },
+        specialFrosting: { key: 'peppermint', name: 'Peppermint Swirl', hex: '#f43f5e' },
+        specialTopper: { key: 'snowflake', name: 'Sugar Snowflake', emoji: '❄️' }
+      }
+    };
+
+    const SECRET_RECIPES = [
+      {
+        id: 'matcha_sakura',
+        name: 'Matcha Sakura Dream',
+        desc: 'Delicate green tea cake topped with floral sakura frosting and wafer.',
+        liner: 'gold',
+        batter: 'matcha',
+        frosting: 'strawberry',
+        topping: 'wafer'
+      },
+      {
+        id: 'vesuvius',
+        name: 'Vesuvius Chocolate Lava',
+        desc: 'Decadent chocolate cupcake with rich fudge and double cherries.',
+        liner: 'stripes',
+        batter: 'chocolate',
+        frosting: 'chocolate',
+        topping: 'cherry'
+      },
+      {
+        id: 'cannoli',
+        name: 'Sicilian Cannoli Delizia',
+        desc: 'Classic Italian vanilla sponge with sweet cream and crunchy macaron.',
+        liner: 'polka',
+        batter: 'vanilla',
+        frosting: 'vanilla',
+        topping: 'macaron'
+      }
+    ];
+
+    function createEmptyCupcake() {
+      return {
+        liner: null,
+        batterFlavor: 'vanilla',
+        fillLevel: 0,
+        bakeStatus: 'raw',
+        bakeTime: 0,
+        frostingFlavor: 'vanilla',
+        frostingStrokes: [],
+        frostingCoverage: 0,
+        toppings: []
+      };
+    }
+
+    const GAME = {
+      cash: 0.00,
+      tickets: 0,
+      day: 1,
+      timeSeconds: 600, // 10:00 AM
+      seasonOrder: ['spring', 'summer', 'halloween', 'winter'],
+      currentSeasonIdx: 0,
+      dailySpecial: SECRET_RECIPES[0],
+      blueRibbonDaysLeft: 0,
+
+      upgrades: {
+        turboOven: false,
+        autoAlarm: false,
+        pipingGuide: false,
+        lounge: false,
+        goldSpatula: false
+      },
+
+      playerAvatar: {
+        emoji: '👨‍🍳',
+        apronColor: '#ec4899'
+      },
+
+      currentStation: 'order',
+      currentCustomer: null,
+      activeCloser: false,
+      ordersTodayCount: 0,
+      maxOrdersToday: 4,
+
+      orderTickets: [],
+      activeTicketId: null,
+
+      // Strictly single cupcake per order
+      currentCupcake: createEmptyCupcake(),
+
+      ovenCupcake: null,
+      ovenBakeSeconds: 0,
+      ovenInterval: null,
+      pourInterval: null
+    };
+
+    const dayCounterEl = document.getElementById('day-counter');
+    const timeDisplayEl = document.getElementById('time-display');
+    const cashCounterEl = document.getElementById('cash-counter');
+    const ticketCountEl = document.getElementById('ticket-count');
+    const blueRibbonIndicator = document.getElementById('blue-ribbon-indicator');
+    const holidayBadge = document.getElementById('holiday-badge');
+    const counterSpecialName = document.getElementById('counter-special-name');
+
+    // Canvases
+    const batterCanvas = document.getElementById('batterCanvas');
+    const batterCtx = batterCanvas.getContext('2d');
+    const frostingCanvas = document.getElementById('frostingCanvas');
+    const frostingCtx = frostingCanvas.getContext('2d');
+    const toppingCanvas = document.getElementById('toppingCanvas');
+    const toppingCtx = toppingCanvas.getContext('2d');
+    const miniGameCanvas = document.getElementById('miniGameCanvas');
+    const miniGameCtx = miniGameCanvas.getContext('2d');
+
+    function applyCurrentSeason() {
+      const seasonKey = GAME.seasonOrder[GAME.currentSeasonIdx];
+      const season = SEASONS[seasonKey];
+
+      document.body.className = `${season.themeClass} w-screen h-screen flex flex-col justify-between items-center text-slate-800 antialiased p-1 sm:p-2.5 transition-colors duration-700`;
+      holidayBadge.textContent = season.name;
+
+      // Update Batter select with seasonal flavor
+      const batterSelect = document.getElementById('batter-flavor-select');
+      const seasonalOptionExists = batterSelect.querySelector(`option[value="${season.specialBatter.key}"]`);
+      if (!seasonalOptionExists) {
+        const opt = document.createElement('option');
+        opt.value = season.specialBatter.key;
+        opt.textContent = season.specialBatter.name;
+        opt.classList.add('season-opt');
+        batterSelect.appendChild(opt);
+      }
+
+      // Add seasonal topper button if not already in palette
+      const toppingPalette = document.getElementById('topping-palette');
+      const existingSeasonalTopper = toppingPalette.querySelector(`button[data-topping="${season.specialTopper.key}"]`);
+      if (!existingSeasonalTopper) {
+        const btn = document.createElement('button');
+        btn.className = 'top-item-btn p-1.5 rounded-xl border-2 border-amber-300 bg-amber-50 flex items-center gap-1.5 text-xs font-bold';
+        btn.dataset.topping = season.specialTopper.key;
+        btn.innerHTML = `<span class="text-lg">${season.specialTopper.emoji}</span> ${season.specialTopper.name}`;
+        btn.addEventListener('click', () => {
+          sound.playClick();
+          document.querySelectorAll('.top-item-btn').forEach(b => b.classList.remove('border-amber-400', 'bg-amber-100'));
+          btn.classList.add('border-amber-400', 'bg-amber-100');
+          selectedToppingType = season.specialTopper.key;
+        });
+        toppingPalette.appendChild(btn);
+      }
+    }
+
+    const stationOrder = document.getElementById('station-order');
+    const stationBake = document.getElementById('station-bake');
+    const stationFrosting = document.getElementById('station-frosting');
+    const stationTopping = document.getElementById('station-topping');
+    const stationBtns = document.querySelectorAll('.station-btn');
+
+    function switchStation(stationName) {
+      sound.playClick();
+      GAME.currentStation = stationName;
+
+      stationBtns.forEach(btn => {
+        if (btn.dataset.station === stationName) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      stationOrder.classList.add('hidden');
+      stationBake.classList.add('hidden');
+      stationFrosting.classList.add('hidden');
+      stationTopping.classList.add('hidden');
+
+      if (stationName === 'order') stationOrder.classList.remove('hidden');
+      if (stationName === 'bake') {
+        stationBake.classList.remove('hidden');
+        renderBatterCanvas();
+      }
+      if (stationName === 'frosting') {
+        stationFrosting.classList.remove('hidden');
+        renderFrostingCanvas();
+      }
+      if (stationName === 'topping') {
+        stationTopping.classList.remove('hidden');
+        renderToppingCanvas();
+      }
+    }
+
+    stationBtns.forEach(b => {
+      b.addEventListener('click', () => switchStation(b.dataset.station));
+    });
+
+    const CUSTOMER_POOL = [
+      { name: "Prudence", emoji: "👩‍🦰" },
+      { name: "Wally", emoji: "👨‍🦳" },
+      { name: "Penny", emoji: "👧" },
+      { name: "Alberto", emoji: "👨‍🍳" },
+      { name: "Mindy", emoji: "👩‍🎤" },
+      { name: "Taylor", emoji: "🧔" }
+    ];
+
+    function spawnCustomer() {
+      if (GAME.currentCustomer) return;
+
+      const isCloser = (GAME.ordersTodayCount >= GAME.maxOrdersToday - 1);
+      GAME.activeCloser = isCloser;
+
+      let guest;
+      if (isCloser) {
+        guest = { name: "Signora Beatrice", emoji: "🧐" };
+      } else {
+        guest = CUSTOMER_POOL[Math.floor(Math.random() * CUSTOMER_POOL.length)];
+      }
+
+      // Check if customer orders Today's Special
+      const ordersSpecial = (Math.random() < 0.4 && !isCloser);
+
+      const liners = ['polka', 'stripes', 'gold'];
+      const batters = ['vanilla', 'chocolate', 'redvelvet', 'matcha'];
+      const frostings = ['vanilla', 'strawberry', 'chocolate', 'mint'];
+      const toppings = ['cherry', 'sprinkles', 'wafer', 'macaron'];
+
+      let item1;
+      if (ordersSpecial) {
+        item1 = {
+          liner: GAME.dailySpecial.liner,
+          batter: GAME.dailySpecial.batter,
+          frosting: GAME.dailySpecial.frosting,
+          topping: GAME.dailySpecial.topping
+        };
+      } else {
+        item1 = {
+          liner: liners[Math.floor(Math.random() * liners.length)],
+          batter: batters[Math.floor(Math.random() * batters.length)],
+          frosting: frostings[Math.floor(Math.random() * frostings.length)],
+          topping: toppings[Math.floor(Math.random() * toppings.length)]
+        };
+      }
+
+      GAME.currentCustomer = {
+        id: Date.now(),
+        customerName: guest.name,
+        customerEmoji: guest.emoji,
+        isCloser: isCloser,
+        isSpecial: ordersSpecial,
+        item: item1,
+        patience: 100,
+        maxPatience: GAME.upgrades.lounge ? 145 : 100
+      };
+
+      updateCustomerDisplay();
+      sound.playOrderBell();
+    }
+
+    function updateCustomerDisplay() {
+      const avatarBox = document.getElementById('customer-emoji');
+      const nameTag = document.getElementById('customer-name-tag');
+      const speech = document.getElementById('customer-speech');
+      const takeBtn = document.getElementById('take-order-btn');
+      const patienceWrap = document.getElementById('customer-patience-wrap');
+      const closerBanner = document.getElementById('closer-banner');
+
+      if (GAME.currentCustomer) {
+        avatarBox.textContent = GAME.currentCustomer.customerEmoji;
+        nameTag.textContent = GAME.currentCustomer.customerName;
+        speech.classList.remove('opacity-0');
+        takeBtn.classList.remove('hidden');
+        patienceWrap.classList.remove('hidden');
+
+        if (GAME.currentCustomer.isCloser) {
+          closerBanner.classList.remove('hidden');
+          speech.textContent = "I expect absolute perfection on my cupcake!";
+        } else if (GAME.currentCustomer.isSpecial) {
+          closerBanner.classList.add('hidden');
+          speech.textContent = `I'd love the ${GAME.dailySpecial.name}!`;
+        } else {
+          closerBanner.classList.add('hidden');
+          speech.textContent = "One delicious cupcake please!";
+        }
+      } else {
+        avatarBox.textContent = '🧁';
+        nameTag.textContent = 'Waiting for guest...';
+        speech.classList.add('opacity-0');
+        takeBtn.classList.add('hidden');
+        patienceWrap.classList.add('hidden');
+        closerBanner.classList.add('hidden');
+      }
+    }
+
+    document.getElementById('take-order-btn').addEventListener('click', () => {
+      if (!GAME.currentCustomer) return;
+      sound.playCash();
+
+      const ticket = { ...GAME.currentCustomer };
+      GAME.orderTickets.push(ticket);
+      GAME.ordersTodayCount++;
+      GAME.currentCustomer = null;
+      updateCustomerDisplay();
+      renderTicketsRack();
+      showActiveTicketPreview(ticket.id);
+
+      // If more orders remaining today, schedule next arrival
+      if (GAME.ordersTodayCount < GAME.maxOrdersToday) {
+        setTimeout(spawnCustomer, 7000);
+      }
+    });
+
+    const ticketRackContainer = document.getElementById('ticket-rack-container');
+    const noTicketsMsg = document.getElementById('no-tickets-msg');
+    const activeTicketDrawer = document.getElementById('active-ticket-drawer');
+
+    function renderTicketsRack() {
+      if (GAME.orderTickets.length === 0) {
+        noTicketsMsg.classList.remove('hidden');
+      } else {
+        noTicketsMsg.classList.add('hidden');
+      }
+
+      ticketRackContainer.querySelectorAll('.ticket-badge-btn').forEach(e => e.remove());
+
+      GAME.orderTickets.forEach(ticket => {
+        const badge = document.createElement('button');
+        const isSelected = (GAME.activeTicketId === ticket.id);
+        badge.className = `ticket-badge-btn shrink-0 bg-amber-50 hover:bg-amber-100 border-2 ${isSelected ? 'border-amber-600 scale-105 shadow-md' : 'border-amber-300'} px-2.5 py-1 rounded-lg text-xs font-bold text-amber-950 flex items-center gap-1.5 transition-all`;
+        badge.innerHTML = `<span>${ticket.customerEmoji}</span><span>${ticket.customerName}</span>`;
+        badge.addEventListener('click', () => {
+          sound.playClick();
+          showActiveTicketPreview(ticket.id);
+        });
+        ticketRackContainer.appendChild(badge);
+      });
+    }
+
+    function showActiveTicketPreview(ticketId) {
+      GAME.activeTicketId = ticketId;
+
+      const ticket = GAME.orderTickets.find(t => t.id === ticketId);
+      if (!ticket) {
+        activeTicketDrawer.classList.add('hidden');
+        return;
+      }
+
+      const closerBadge = document.getElementById('ticket-badge-closer');
+      if (ticket.isCloser) closerBadge.classList.remove('hidden');
+      else closerBadge.classList.add('hidden');
+
+      document.getElementById('ticket-cust-name').textContent = `${ticket.customerName}`;
+
+      const item = ticket.item;
+      document.getElementById('t-liner').textContent = item.liner.toUpperCase();
+      document.getElementById('t-batter').textContent = item.batter.toUpperCase();
+      document.getElementById('t-frosting').textContent = item.frosting.toUpperCase();
+      document.getElementById('t-topping').textContent = item.topping.toUpperCase();
+
+      activeTicketDrawer.classList.remove('hidden');
+      renderTicketsRack();
+    }
+
+    document.getElementById('close-ticket-preview').addEventListener('click', () => {
+      activeTicketDrawer.classList.add('hidden');
+    });
+
+    const LINER_STYLES = {
+      polka: { bg: '#ff4d6d', dots: '#fff' },
+      stripes: { bg: '#38bdf8', stripe: '#0284c7' },
+      gold: { bg: '#fbbf24', rim: '#f59e0b' }
+    };
+
+    const BATTER_PALETTE = {
+      vanilla: '#fde68a',
+      chocolate: '#53311f',
+      redvelvet: '#9f1239',
+      matcha: '#65a30d',
+      sakura: '#fbcfe8',
+      mango: '#fde047',
+      pumpkin: '#ea580c',
+      gingerbread: '#92400e'
+    };
+
+    document.querySelectorAll('.liner-opt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        sound.playClick();
+        document.querySelectorAll('.liner-opt').forEach(b => b.classList.remove('border-amber-600', 'bg-amber-200'));
+        btn.classList.add('border-amber-600', 'bg-amber-200');
+
+        GAME.currentCupcake.liner = btn.dataset.liner;
+        document.getElementById('selected-liner-label').textContent = `Liner: ${btn.dataset.liner.toUpperCase()}`;
+        renderBatterCanvas();
+      });
+    });
+
+    document.getElementById('batter-flavor-select').addEventListener('change', (e) => {
+      GAME.currentCupcake.batterFlavor = e.target.value;
+      renderBatterCanvas();
+    });
+
+    const pourBtn = document.getElementById('pour-batter-btn');
+    const fillLevelBar = document.getElementById('fill-level-bar');
+
+    function startPouringBatter() {
+      if (!GAME.currentCupcake.liner) {
+        document.getElementById('selected-liner-label').textContent = '⚠️ Pick a liner first!';
+        return;
+      }
+      if (GAME.pourInterval) return;
+
+      GAME.pourInterval = setInterval(() => {
+        if (GAME.currentCupcake.fillLevel < 100) {
+          GAME.currentCupcake.fillLevel += 1.8;
+          fillLevelBar.style.height = `${GAME.currentCupcake.fillLevel}%`;
+          sound.playSquirt();
+          renderBatterCanvas();
+        }
+      }, 50);
+    }
+
+    function stopPouringBatter() {
+      if (GAME.pourInterval) {
+        clearInterval(GAME.pourInterval);
+        GAME.pourInterval = null;
+      }
+    }
+
+    pourBtn.addEventListener('mousedown', startPouringBatter);
+    window.addEventListener('mouseup', stopPouringBatter);
+    pourBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startPouringBatter(); });
+    window.addEventListener('touchend', stopPouringBatter);
+
+    function renderBatterCanvas() {
+      batterCtx.clearRect(0, 0, batterCanvas.width, batterCanvas.height);
+      const cx = batterCanvas.width / 2;
+      const cy = batterCanvas.height / 2 + 30;
+      const currentCupcake = GAME.currentCupcake;
+
+      // Draw Cupcake Tin Mold
+      batterCtx.fillStyle = '#cbd5e1';
+      batterCtx.beginPath();
+      batterCtx.moveTo(cx - 60, cy - 40);
+      batterCtx.lineTo(cx + 60, cy - 40);
+      batterCtx.lineTo(cx + 42, cy + 46);
+      batterCtx.lineTo(cx - 42, cy + 46);
+      batterCtx.closePath();
+      batterCtx.fill();
+
+      // Liner representation
+      if (currentCupcake.liner) {
+        const linerStyle = LINER_STYLES[currentCupcake.liner] || { bg: '#fbbf24' };
+        batterCtx.fillStyle = linerStyle.bg;
+        batterCtx.beginPath();
+        batterCtx.moveTo(cx - 56, cy - 38);
+        batterCtx.lineTo(cx + 56, cy - 38);
+        batterCtx.lineTo(cx + 40, cy + 44);
+        batterCtx.lineTo(cx - 40, cy + 44);
+        batterCtx.closePath();
+        batterCtx.fill();
+
+        batterCtx.strokeStyle = 'rgba(255,255,255,0.4)';
+        batterCtx.lineWidth = 2;
+        for (let i = -30; i <= 30; i += 12) {
+          batterCtx.beginPath();
+          batterCtx.moveTo(cx + i * 1.3, cy - 38);
+          batterCtx.lineTo(cx + i, cy + 44);
+          batterCtx.stroke();
+        }
+      }
+
+      // Batter Fill Animation
+      if (currentCupcake.fillLevel > 5) {
+        const batterHex = BATTER_PALETTE[currentCupcake.batterFlavor] || '#fde68a';
+        const fillScale = currentCupcake.fillLevel / 100;
+        const batterTop = cy + 40 - (68 * fillScale);
+
+        batterCtx.fillStyle = batterHex;
+        batterCtx.beginPath();
+        batterCtx.moveTo(cx - 48 * fillScale, batterTop);
+        batterCtx.quadraticCurveTo(cx, batterTop - 12 * fillScale, cx + 48 * fillScale, batterTop);
+        batterCtx.lineTo(cx + 36, cy + 40);
+        batterCtx.lineTo(cx - 36, cy + 40);
+        batterCtx.closePath();
+        batterCtx.fill();
+      }
+    }
+
+    /* Subtabs inside Bake station */
+    const subtabBatterBtn = document.getElementById('subtab-batter-btn');
+    const subtabOvenBtn = document.getElementById('subtab-oven-btn');
+    const batterPrepView = document.getElementById('batter-prep-view');
+    const ovenRackView = document.getElementById('oven-rack-view');
+
+    subtabBatterBtn.addEventListener('click', () => {
+      sound.playClick();
+      subtabBatterBtn.className = "bg-amber-700 text-white font-chunky text-xs sm:text-sm px-3 py-1 rounded-xl border border-amber-500 shadow";
+      subtabOvenBtn.className = "bg-amber-200 text-amber-900 font-chunky text-xs sm:text-sm px-3 py-1 rounded-xl border border-amber-300 shadow hover:bg-amber-300";
+      batterPrepView.classList.remove('hidden');
+      ovenRackView.classList.add('hidden');
+    });
+
+    subtabOvenBtn.addEventListener('click', () => {
+      sound.playClick();
+      subtabOvenBtn.className = "bg-amber-700 text-white font-chunky text-xs sm:text-sm px-3 py-1 rounded-xl border border-amber-500 shadow";
+      subtabBatterBtn.className = "bg-amber-200 text-amber-900 font-chunky text-xs sm:text-sm px-3 py-1 rounded-xl border border-amber-300 shadow hover:bg-amber-300";
+      ovenRackView.classList.remove('hidden');
+      batterPrepView.classList.add('hidden');
+    });
+
+    document.getElementById('reset-batter-btn').addEventListener('click', () => {
+      sound.playClick();
+      GAME.currentCupcake.liner = null;
+      GAME.currentCupcake.fillLevel = 0;
+      fillLevelBar.style.height = '0%';
+      document.getElementById('selected-liner-label').textContent = 'Liner: None';
+      renderBatterCanvas();
+    });
+
+    document.getElementById('transfer-to-oven-btn').addEventListener('click', () => {
+      if (!GAME.currentCupcake.liner || GAME.currentCupcake.fillLevel < 20) {
+        document.getElementById('selected-liner-label').textContent = '⚠️ Fill batter first!';
+        return;
+      }
+      sound.playClick();
+      GAME.ovenCupcake = JSON.parse(JSON.stringify(GAME.currentCupcake));
+      GAME.ovenBakeSeconds = 0;
+      subtabOvenBtn.click();
+      startOvenBaking();
+    });
+
+    function startOvenBaking() {
+      if (GAME.ovenInterval) clearInterval(GAME.ovenInterval);
+
+      const ovenBadge = document.getElementById('oven-status-badge');
+      const ovenAlarmIndicator = document.getElementById('oven-alarm-indicator');
+      const ovenFire = document.getElementById('oven-fire-glow');
+      const ovenCupcakePreview = document.getElementById('oven-cupcake-preview');
+      const bakeProgressBar = document.getElementById('bake-progress-bar');
+      const timerText = document.getElementById('bake-timer-text');
+      const ovenSmoke = document.getElementById('oven-smoke');
+
+      ovenBadge.textContent = 'Baking Active...';
+      ovenFire.className = 'absolute inset-0 bg-orange-500/30 transition-colors duration-500';
+
+      const bakeSpeedMultiplier = GAME.upgrades.turboOven ? 1.4 : 1.0;
+
+      GAME.ovenInterval = setInterval(() => {
+        GAME.ovenBakeSeconds += 0.2 * bakeSpeedMultiplier;
+        const progressPct = Math.min(100, (GAME.ovenBakeSeconds / 20) * 100);
+        bakeProgressBar.style.width = `${progressPct}%`;
+        timerText.textContent = `Bake Time: ${GAME.ovenBakeSeconds.toFixed(1)}s`;
+
+        // Check stages: 8-15s Perfect
+        if (GAME.ovenBakeSeconds >= 8 && GAME.ovenBakeSeconds <= 15) {
+          GAME.ovenCupcake.bakeStatus = 'baked';
+          ovenCupcakePreview.textContent = '🧁';
+          if (GAME.upgrades.autoAlarm) {
+            ovenAlarmIndicator.classList.remove('hidden');
+            if (Math.round(GAME.ovenBakeSeconds * 10) % 10 === 0) sound.playAlarm();
+          }
+        } else if (GAME.ovenBakeSeconds > 15) {
+          GAME.ovenCupcake.bakeStatus = 'burnt';
+          ovenCupcakePreview.textContent = '🟤';
+          ovenSmoke.classList.remove('opacity-0');
+        } else {
+          GAME.ovenCupcake.bakeStatus = 'raw';
+          ovenCupcakePreview.textContent = '🥧';
+        }
+      }, 200);
+    }
+
+    document.getElementById('pull-from-oven-btn').addEventListener('click', () => {
+      if (!GAME.ovenCupcake) return;
+      sound.playOvenDing();
+      clearInterval(GAME.ovenInterval);
+      GAME.ovenInterval = null;
+
+      // Transfer baked data back into active cupcake
+      GAME.currentCupcake = {
+        ...GAME.ovenCupcake,
+        bakeTime: GAME.ovenBakeSeconds
+      };
+      GAME.ovenCupcake = null;
+
+      document.getElementById('oven-status-badge').textContent = 'Oven Idle';
+      document.getElementById('oven-alarm-indicator').classList.add('hidden');
+      document.getElementById('oven-cupcake-preview').textContent = '✨';
+
+      const bakeTag = document.getElementById('cupcake-bake-status-tag');
+      bakeTag.textContent = GAME.currentCupcake.bakeStatus.toUpperCase();
+      bakeTag.className = GAME.currentCupcake.bakeStatus === 'baked' ? 'text-emerald-600 font-chunky' : 'text-amber-600 font-chunky';
+
+      document.getElementById('single-cupcake-status').textContent = 'Baked & Ready for Icing';
+      document.getElementById('single-cupcake-status').className = 'font-bold text-emerald-600';
+
+      switchStation('frosting');
+    });
+
+    let isDrawingFrosting = false;
+    let selectedFrostingColor = '#fff8e7';
+
+    document.querySelectorAll('.frost-flavor-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        sound.playClick();
+        document.querySelectorAll('.frost-flavor-btn').forEach(b => b.classList.remove('border-amber-400', 'bg-amber-100'));
+        btn.classList.add('border-amber-400', 'bg-amber-100');
+        GAME.currentCupcake.frostingFlavor = btn.dataset.flavor;
+        selectedFrostingColor = btn.dataset.color;
+      });
+    });
+
+    function getCanvasCoords(canvas, evt) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+      const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+      return {
+        x: (clientX - rect.left) * (canvas.width / rect.width),
+        y: (clientY - rect.top) * (canvas.height / rect.height)
+      };
+    }
+
+    function addFrostingStroke(x, y) {
+      const currentCupcake = GAME.currentCupcake;
+      const cupcakeCenter = { x: frostingCanvas.width / 2, y: frostingCanvas.height / 2 - 10 };
+      const dist = Math.hypot(x - cupcakeCenter.x, y - cupcakeCenter.y);
+
+      if (dist < 75) {
+        currentCupcake.frostingStrokes.push({
+          x, y,
+          color: selectedFrostingColor,
+          size: 15
+        });
+        sound.playSquirt();
+
+        currentCupcake.frostingCoverage = Math.min(100, Math.round((currentCupcake.frostingStrokes.length / 38) * 100));
+        document.getElementById('frosting-coverage-num').textContent = `${currentCupcake.frostingCoverage}%`;
+
+        renderFrostingCanvas();
+      }
+    }
+
+    frostingCanvas.addEventListener('mousedown', (e) => {
+      isDrawingFrosting = true;
+      const coords = getCanvasCoords(frostingCanvas, e);
+      addFrostingStroke(coords.x, coords.y);
+    });
+    frostingCanvas.addEventListener('mousemove', (e) => {
+      if (isDrawingFrosting) {
+        const coords = getCanvasCoords(frostingCanvas, e);
+        addFrostingStroke(coords.x, coords.y);
+      }
+    });
+    window.addEventListener('mouseup', () => { isDrawingFrosting = false; });
+
+    frostingCanvas.addEventListener('touchstart', (e) => {
+      isDrawingFrosting = true;
+      const coords = getCanvasCoords(frostingCanvas, e);
+      addFrostingStroke(coords.x, coords.y);
+    });
+    frostingCanvas.addEventListener('touchmove', (e) => {
+      if (isDrawingFrosting) {
+        e.preventDefault();
+        const coords = getCanvasCoords(frostingCanvas, e);
+        addFrostingStroke(coords.x, coords.y);
+      }
+    });
+    window.addEventListener('touchend', () => { isDrawingFrosting = false; });
+
+    document.getElementById('clear-frosting-btn').addEventListener('click', () => {
+      sound.playClick();
+      GAME.currentCupcake.frostingStrokes = [];
+      GAME.currentCupcake.frostingCoverage = 0;
+      document.getElementById('frosting-coverage-num').textContent = '0%';
+      renderFrostingCanvas();
+    });
+
+    const stencilGuideToggle = document.getElementById('stencil-guide-toggle');
+    stencilGuideToggle.addEventListener('change', () => {
+      renderFrostingCanvas();
+    });
+
+    function renderFrostingCanvas() {
+      frostingCtx.clearRect(0, 0, frostingCanvas.width, frostingCanvas.height);
+      const cx = frostingCanvas.width / 2;
+      const cy = frostingCanvas.height / 2 + 40;
+      const currentCupcake = GAME.currentCupcake;
+
+      // Base Cupcake Baked Body
+      const batterHex = BATTER_PALETTE[currentCupcake.batterFlavor] || '#fde68a';
+      frostingCtx.fillStyle = batterHex;
+      frostingCtx.beginPath();
+      frostingCtx.arc(cx, cy - 50, 58, 0, Math.PI * 2);
+      frostingCtx.fill();
+
+      // Liner wrapper bottom
+      const linerStyle = LINER_STYLES[currentCupcake.liner] || { bg: '#e09f56' };
+      frostingCtx.fillStyle = linerStyle.bg;
+      frostingCtx.beginPath();
+      frostingCtx.moveTo(cx - 62, cy - 50);
+      frostingCtx.lineTo(cx + 62, cy - 50);
+      frostingCtx.lineTo(cx + 42, cy + 42);
+      frostingCtx.lineTo(cx - 42, cy + 42);
+      frostingCtx.closePath();
+      frostingCtx.fill();
+
+      // Precision Piping Stencil Guide (if unlocked & enabled)
+      if (GAME.upgrades.pipingGuide && stencilGuideToggle.checked) {
+        frostingCtx.save();
+        frostingCtx.strokeStyle = 'rgba(59, 130, 246, 0.45)';
+        frostingCtx.lineWidth = 3;
+        frostingCtx.setLineDash([4, 4]);
+        frostingCtx.beginPath();
+        for (let angle = 0; angle < Math.PI * 6; angle += 0.1) {
+          const radius = 10 + (angle * 9);
+          const px = cx + radius * Math.cos(angle);
+          const py = (cy - 50) + radius * Math.sin(angle);
+          if (angle === 0) frostingCtx.moveTo(px, py);
+          else frostingCtx.lineTo(px, py);
+        }
+        frostingCtx.stroke();
+        frostingCtx.restore();
+      }
+
+      // Render Frosting Dollops
+      currentCupcake.frostingStrokes.forEach(stroke => {
+        frostingCtx.fillStyle = 'rgba(0,0,0,0.12)';
+        frostingCtx.beginPath();
+        frostingCtx.arc(stroke.x, stroke.y + 2, stroke.size, 0, Math.PI * 2);
+        frostingCtx.fill();
+
+        frostingCtx.fillStyle = stroke.color;
+        frostingCtx.beginPath();
+        frostingCtx.arc(stroke.x, stroke.y, stroke.size, 0, Math.PI * 2);
+        frostingCtx.fill();
+
+        frostingCtx.fillStyle = 'rgba(255,255,255,0.45)';
+        frostingCtx.beginPath();
+        frostingCtx.arc(stroke.x - 3, stroke.y - 3, stroke.size * 0.38, 0, Math.PI * 2);
+        frostingCtx.fill();
+      });
+    }
+
+    document.getElementById('goto-topping-btn').addEventListener('click', () => {
+      switchStation('topping');
+    });
+
+    let selectedToppingType = 'cherry';
+
+    document.querySelectorAll('.top-item-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        sound.playClick();
+        document.querySelectorAll('.top-item-btn').forEach(b => b.classList.remove('border-amber-400', 'bg-amber-100'));
+        btn.classList.add('border-amber-400', 'bg-amber-100');
+        selectedToppingType = btn.dataset.topping;
+      });
+    });
+
+    toppingCanvas.addEventListener('click', (e) => {
+      const coords = getCanvasCoords(toppingCanvas, e);
+      const cx = toppingCanvas.width / 2;
+      const cy = toppingCanvas.height / 2 - 15;
+      const dist = Math.hypot(coords.x - cx, coords.y - cy);
+
+      if (dist < 72) {
+        sound.playTone(680, 'triangle', 0.1, 0.25);
+        GAME.currentCupcake.toppings.push({
+          type: selectedToppingType,
+          x: coords.x,
+          y: coords.y
+        });
+        document.getElementById('toppings-placed-count').textContent = GAME.currentCupcake.toppings.length;
+        renderToppingCanvas();
+      }
+    });
+
+    document.getElementById('clear-toppings-btn').addEventListener('click', () => {
+      sound.playClick();
+      GAME.currentCupcake.toppings = [];
+      document.getElementById('toppings-placed-count').textContent = '0';
+      renderToppingCanvas();
+    });
+
+    function renderToppingCanvas() {
+      toppingCtx.clearRect(0, 0, toppingCanvas.width, toppingCanvas.height);
+      const cx = toppingCanvas.width / 2;
+      const cy = toppingCanvas.height / 2 + 40;
+      const currentCupcake = GAME.currentCupcake;
+
+      // Base Cupcake
+      const batterHex = BATTER_PALETTE[currentCupcake.batterFlavor] || '#fde68a';
+      toppingCtx.fillStyle = batterHex;
+      toppingCtx.beginPath();
+      toppingCtx.arc(cx, cy - 50, 58, 0, Math.PI * 2);
+      toppingCtx.fill();
+
+      // Liner
+      const linerStyle = LINER_STYLES[currentCupcake.liner] || { bg: '#e09f56' };
+      toppingCtx.fillStyle = linerStyle.bg;
+      toppingCtx.beginPath();
+      toppingCtx.moveTo(cx - 62, cy - 50);
+      toppingCtx.lineTo(cx + 62, cy - 50);
+      toppingCtx.lineTo(cx + 42, cy + 42);
+      toppingCtx.lineTo(cx - 42, cy + 42);
+      toppingCtx.closePath();
+      toppingCtx.fill();
+
+      // Frosting strokes
+      currentCupcake.frostingStrokes.forEach(stroke => {
+        toppingCtx.fillStyle = stroke.color;
+        toppingCtx.beginPath();
+        toppingCtx.arc(stroke.x, stroke.y, stroke.size, 0, Math.PI * 2);
+        toppingCtx.fill();
+
+        toppingCtx.fillStyle = 'rgba(255,255,255,0.4)';
+        toppingCtx.beginPath();
+        toppingCtx.arc(stroke.x - 3, stroke.y - 3, stroke.size * 0.35, 0, Math.PI * 2);
+        toppingCtx.fill();
+      });
+
+      // Render Toppers
+      currentCupcake.toppings.forEach(top => {
+        toppingCtx.save();
+        toppingCtx.translate(top.x, top.y);
+
+        if (top.type === 'cherry') {
+          toppingCtx.fillStyle = '#b7094c';
+          toppingCtx.beginPath();
+          toppingCtx.arc(0, 0, 11, 0, Math.PI * 2);
+          toppingCtx.fill();
+
+          toppingCtx.fillStyle = '#ff758f';
+          toppingCtx.beginPath();
+          toppingCtx.arc(-3, -3, 3.5, 0, Math.PI * 2);
+          toppingCtx.fill();
+
+          toppingCtx.strokeStyle = '#582f0e';
+          toppingCtx.lineWidth = 2;
+          toppingCtx.beginPath();
+          toppingCtx.moveTo(0, -9);
+          toppingCtx.quadraticCurveTo(8, -19, 12, -21);
+          toppingCtx.stroke();
+        } else if (top.type === 'sprinkles') {
+          const colors = ['#ec4899', '#38bdf8', '#a855f7', '#facc15'];
+          for (let i = 0; i < 4; i++) {
+            toppingCtx.fillStyle = colors[i % colors.length];
+            toppingCtx.fillRect((i * 4) - 6, (i * 2) - 4, 6, 2.5);
+          }
+        } else if (top.type === 'wafer') {
+          toppingCtx.rotate(-0.4);
+          toppingCtx.fillStyle = '#d4a373';
+          toppingCtx.fillRect(-4, -16, 8, 32);
+          toppingCtx.strokeStyle = '#78350f';
+          toppingCtx.lineWidth = 1.5;
+          toppingCtx.beginPath();
+          toppingCtx.moveTo(-4, -8);
+          toppingCtx.lineTo(4, -4);
+          toppingCtx.moveTo(-4, 2);
+          toppingCtx.lineTo(4, 6);
+          toppingCtx.stroke();
+        } else if (top.type === 'macaron') {
+          toppingCtx.fillStyle = '#a7f3d0';
+          toppingCtx.beginPath();
+          toppingCtx.ellipse(0, 0, 11, 7, 0, 0, Math.PI * 2);
+          toppingCtx.fill();
+          toppingCtx.fillStyle = '#ffffff';
+          toppingCtx.fillRect(-9, -1, 18, 2);
+        } else {
+          // Seasonal Emojis
+          toppingCtx.font = '22px sans-serif';
+          toppingCtx.textAlign = 'center';
+          toppingCtx.textBaseline = 'middle';
+          const emojiMap = {
+            cherry_blossom: '🌸',
+            umbrella: '⛱️',
+            ghost: '👻',
+            snowflake: '❄️'
+          };
+          toppingCtx.fillText(emojiMap[top.type] || '✨', 0, 0);
+        }
+
+        toppingCtx.restore();
+      });
+    }
+
+    function evaluateOrder(ticket) {
+      sound.playFanfare();
+
+      const item = ticket.item;
+      const c = GAME.currentCupcake;
+
+      // 1. Batter & Liner Score
+      let bScore = 40;
+      if (c.liner === item.liner) bScore += 30;
+      if (c.batterFlavor === item.batter) bScore += 30;
+
+      // 2. Bake Doneness Score
+      let kScore = 100;
+      if (c.bakeStatus === 'baked') kScore = 96;
+      else if (c.bakeStatus === 'raw') kScore = 35;
+      else if (c.bakeStatus === 'burnt') kScore = 20;
+
+      // 3. Frosting Coverage
+      let fScore = 40;
+      if (c.frostingFlavor === item.frosting) fScore += 25;
+      fScore += Math.min(35, Math.round((c.frostingCoverage / 100) * 35));
+
+      // 4. Topping Match
+      let tScore = 30;
+      const hasMatch = c.toppings.some(t => t.type === item.topping);
+      if (hasMatch) tScore += 50;
+      if (c.toppings.length >= 1) tScore += 20;
+
+      let avgBatter = bScore;
+      let avgBake = kScore;
+      let avgFrost = fScore;
+      let avgTop = tScore;
+
+      // Closer Critic Penalty: Signora Beatrice is notoriously strict!
+      if (ticket.isCloser) {
+        avgBatter = Math.max(10, avgBatter - 5);
+        avgFrost = Math.max(10, avgFrost - 5);
+      }
+
+      const totalScore = Math.round((avgBatter + avgBake + avgFrost + avgTop) / 4);
+
+      // Tip Calculation & Buffs
+      let baseTip = (totalScore / 100) * 5.50;
+      if (ticket.isSpecial) baseTip += 4.00; // Daily Special bonus!
+      if (ticket.isCloser) baseTip *= 1.5;   // Closer VIP payout
+      if (GAME.upgrades.goldSpatula) baseTip *= 1.15;
+      if (GAME.blueRibbonDaysLeft > 0) baseTip *= 1.25;
+
+      const finalTip = Math.max(1.00, baseTip);
+      GAME.cash += finalTip;
+      cashCounterEl.textContent = `$${GAME.cash.toFixed(2)}`;
+
+      // Mini-game ticket award for high performance
+      if (totalScore >= 80) {
+        GAME.tickets += (totalScore >= 95 ? 2 : 1);
+        ticketCountEl.textContent = GAME.tickets;
+      }
+
+      // Check Closer Blue Ribbon
+      const ribbonBanner = document.getElementById('ribbon-awarded-banner');
+      if (ticket.isCloser && totalScore >= 95) {
+        GAME.blueRibbonDaysLeft = 3;
+        blueRibbonIndicator.classList.remove('hidden');
+        ribbonBanner.classList.remove('hidden');
+      } else {
+        ribbonBanner.classList.add('hidden');
+      }
+
+      // Display in Review Modal
+      document.getElementById('eval-cust-avatar').textContent = ticket.customerEmoji;
+      document.getElementById('eval-cust-name').textContent = `${ticket.customerName} Review:`;
+      document.getElementById('score-batter-txt').textContent = `${avgBatter}%`;
+      document.getElementById('score-batter-bar').style.width = `${avgBatter}%`;
+      document.getElementById('score-bake-txt').textContent = `${avgBake}%`;
+      document.getElementById('score-bake-bar').style.width = `${avgBake}%`;
+      document.getElementById('score-frost-txt').textContent = `${avgFrost}%`;
+      document.getElementById('score-frost-bar').style.width = `${avgFrost}%`;
+      document.getElementById('score-top-txt').textContent = `${avgTop}%`;
+      document.getElementById('score-top-bar').style.width = `${avgTop}%`;
+      document.getElementById('eval-total-score').textContent = `${totalScore}%`;
+      document.getElementById('eval-tip-earned').textContent = `+$${finalTip.toFixed(2)}`;
+
+      document.getElementById('review-modal').classList.remove('hidden');
+
+      // Remove served ticket
+      GAME.orderTickets = GAME.orderTickets.filter(t => t.id !== ticket.id);
+      renderTicketsRack();
+      activeTicketDrawer.classList.add('hidden');
+    }
+
+    document.getElementById('finish-cupcake-btn').addEventListener('click', () => {
+      if (GAME.orderTickets.length === 0) return;
+      const ticketToServe = GAME.orderTickets.find(t => t.id === GAME.activeTicketId) || GAME.orderTickets[0];
+      evaluateOrder(ticketToServe);
+    });
+
+    document.getElementById('serve-this-ticket-btn').addEventListener('click', () => {
+      const ticketToServe = GAME.orderTickets.find(t => t.id === GAME.activeTicketId);
+      if (ticketToServe) evaluateOrder(ticketToServe);
+    });
+
+    document.getElementById('close-review-modal-btn').addEventListener('click', () => {
+      document.getElementById('review-modal').classList.add('hidden');
+
+      // Reset for next single cupcake
+      GAME.currentCupcake = createEmptyCupcake();
+      document.getElementById('selected-liner-label').textContent = 'Liner: None';
+      fillLevelBar.style.height = '0%';
+      document.getElementById('frosting-coverage-num').textContent = '0%';
+      document.getElementById('toppings-placed-count').textContent = '0';
+      document.getElementById('cupcake-bake-status-tag').textContent = 'Prep';
+      document.getElementById('cupcake-bake-status-tag').className = 'text-pink-600 font-chunky';
+      document.getElementById('single-cupcake-status').textContent = 'In Preparation';
+      document.getElementById('single-cupcake-status').className = 'font-bold text-pink-600';
+
+      renderBatterCanvas();
+      renderFrostingCanvas();
+      renderToppingCanvas();
+
+      // Check if day shift ended
+      if (GAME.ordersTodayCount >= GAME.maxOrdersToday && GAME.orderTickets.length === 0) {
+        openFoodiniMiniGame();
+      } else {
+        switchStation('order');
+      }
+    });
+
+    const minigameModal = document.getElementById('minigame-modal');
+    const startMiniGamePlayBtn = document.getElementById('start-minigame-play-btn');
+    const minigameStartOverlay = document.getElementById('minigame-start-overlay');
+    const exitMinigameBtn = document.getElementById('exit-minigame-btn');
+
+    let minigameRunning = false;
+    let minigameScore = 0;
+    let minigameBowl = { x: 170, y: 240, width: 65, height: 26 };
+    let fallingObjects = [];
+    let minigameAnimId = null;
+
+    function openFoodiniMiniGame() {
+      document.getElementById('minigame-ticket-indicator').textContent = GAME.tickets;
+      minigameStartOverlay.classList.remove('hidden');
+      minigameModal.classList.remove('hidden');
+    }
+
+    startMiniGamePlayBtn.addEventListener('click', () => {
+      if (GAME.tickets <= 0) {
+        alert("You need at least 1 Mini-game ticket earned from high customer reviews!");
+        return;
+      }
+      GAME.tickets--;
+      ticketCountEl.textContent = GAME.tickets;
+      document.getElementById('minigame-ticket-indicator').textContent = GAME.tickets;
+      minigameStartOverlay.classList.add('hidden');
+      startMiniGameRound();
+    });
+
+    function startMiniGameRound() {
+      minigameRunning = true;
+      minigameScore = 0;
+      document.getElementById('minigame-score').textContent = '0';
+      fallingObjects = [];
+
+      let spawnTimer = setInterval(() => {
+        if (!minigameRunning) {
+          clearInterval(spawnTimer);
+          return;
+        }
+        // Good items vs Hazards
+        const isHazard = Math.random() < 0.28;
+        fallingObjects.push({
+          x: Math.random() * (miniGameCanvas.width - 30) + 15,
+          y: -10,
+          speed: 2.2 + Math.random() * 2,
+          isHazard: isHazard,
+          emoji: isHazard ? (Math.random() < 0.5 ? '🥚' : '🟤') : (Math.random() < 0.5 ? '🍓' : '🍒')
+        });
+      }, 700);
+
+      // Round lasts 20 seconds
+      setTimeout(() => {
+        minigameRunning = false;
+        clearInterval(spawnTimer);
+        const earnedBonusCash = minigameScore * 0.50;
+        GAME.cash += earnedBonusCash;
+        cashCounterEl.textContent = `$${GAME.cash.toFixed(2)}`;
+        alert(`Time's Up! You scored ${minigameScore} points and won $${earnedBonusCash.toFixed(2)} carnival prize money!`);
+        minigameStartOverlay.classList.remove('hidden');
+      }, 20000);
+
+      miniGameLoop();
+    }
+
+    function miniGameLoop() {
+      if (!minigameRunning) return;
+      miniGameCtx.clearRect(0, 0, miniGameCanvas.width, miniGameCanvas.height);
+
+      // Draw Bowl
+      miniGameCtx.fillStyle = '#f59e0b';
+      miniGameCtx.beginPath();
+      miniGameCtx.arc(minigameBowl.x, minigameBowl.y, minigameBowl.width / 2, 0, Math.PI);
+      miniGameCtx.fill();
+      miniGameCtx.strokeStyle = '#78350f';
+      miniGameCtx.lineWidth = 3;
+      miniGameCtx.stroke();
+
+      // Update & Draw falling items
+      for (let i = fallingObjects.length - 1; i >= 0; i--) {
+        const obj = fallingObjects[i];
+        obj.y += obj.speed;
+
+        miniGameCtx.font = '20px sans-serif';
+        miniGameCtx.textAlign = 'center';
+        miniGameCtx.fillText(obj.emoji, obj.x, obj.y);
+
+        // Check Catch Collision
+        if (obj.y >= minigameBowl.y - 10 && obj.y <= minigameBowl.y + 15 &&
+            Math.abs(obj.x - minigameBowl.x) < (minigameBowl.width / 2 + 5)) {
+          if (obj.isHazard) {
+            sound.playSplat();
+            minigameScore = Math.max(0, minigameScore - 3);
+          } else {
+            sound.playCatch();
+            minigameScore += 2;
+          }
+          document.getElementById('minigame-score').textContent = minigameScore;
+          fallingObjects.splice(i, 1);
+          continue;
+        }
+
+        if (obj.y > miniGameCanvas.height + 20) {
+          fallingObjects.splice(i, 1);
+        }
+      }
+
+      minigameAnimId = requestAnimationFrame(miniGameLoop);
+    }
+
+    miniGameCanvas.addEventListener('mousemove', (e) => {
+      const rect = miniGameCanvas.getBoundingClientRect();
+      minigameBowl.x = (e.clientX - rect.left) * (miniGameCanvas.width / rect.width);
+    });
+
+    miniGameCanvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      const rect = miniGameCanvas.getBoundingClientRect();
+      minigameBowl.x = (e.touches[0].clientX - rect.left) * (miniGameCanvas.width / rect.width);
+    });
+
+    exitMinigameBtn.addEventListener('click', () => {
+      minigameRunning = false;
+      minigameModal.classList.add('hidden');
+
+      // Progress to Next Day Shift & rotate season every 3 days
+      GAME.day++;
+      dayCounterEl.textContent = `Day ${GAME.day}`;
+      GAME.ordersTodayCount = 0;
+      GAME.timeSeconds = 600;
+
+      if (GAME.day % 3 === 0) {
+        GAME.currentSeasonIdx = (GAME.currentSeasonIdx + 1) % GAME.seasonOrder.length;
+        applyCurrentSeason();
+      }
+
+      if (GAME.blueRibbonDaysLeft > 0) {
+        GAME.blueRibbonDaysLeft--;
+        if (GAME.blueRibbonDaysLeft === 0) blueRibbonIndicator.classList.add('hidden');
+      }
+
+      switchStation('order');
+      setTimeout(spawnCustomer, 2000);
+    });
+
+    const cookbookModal = document.getElementById('cookbook-modal');
+    const cookbookBtn = document.getElementById('cookbook-btn');
+    const closeCookbookBtn = document.getElementById('close-cookbook-btn');
+    const cookbookList = document.getElementById('cookbook-list');
+
+    function populateCookbook() {
+      cookbookList.innerHTML = '';
+      SECRET_RECIPES.forEach(rec => {
+        const isCurrent = (GAME.dailySpecial.id === rec.id);
+        const card = document.createElement('div');
+        card.className = `p-3 rounded-2xl border-2 ${isCurrent ? 'bg-amber-100 border-amber-500' : 'bg-white border-amber-200'} flex items-center justify-between gap-2 shadow-sm`;
+        card.innerHTML = `
+          <div>
+            <div class="font-chunky text-amber-950 text-sm">${rec.name}</div>
+            <div class="text-slate-600 text-[11px]">${rec.desc}</div>
+            <div class="text-[10px] font-bold text-amber-700 mt-1">Liner: ${rec.liner} | Batter: ${rec.batter} | Frost: ${rec.frosting} | Top: ${rec.topping}</div>
+          </div>
+          <button class="set-special-btn px-3 py-1.5 rounded-xl font-chunky text-xs ${isCurrent ? 'bg-emerald-600 text-white' : 'bg-amber-600 hover:bg-amber-500 text-white'}" data-recipe-id="${rec.id}">
+            ${isCurrent ? 'Active Special' : 'Promote'}
+          </button>
+        `;
+        cookbookList.appendChild(card);
+      });
+
+      document.querySelectorAll('.set-special-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          sound.playClick();
+          const chosen = SECRET_RECIPES.find(r => r.id === btn.dataset.recipeId);
+          if (chosen) {
+            GAME.dailySpecial = chosen;
+            counterSpecialName.textContent = chosen.name;
+            populateCookbook();
+          }
+        });
+      });
+    }
+
+    cookbookBtn.addEventListener('click', () => {
+      sound.playClick();
+      populateCookbook();
+      cookbookModal.classList.remove('hidden');
+    });
+    closeCookbookBtn.addEventListener('click', () => cookbookModal.classList.add('hidden'));
+
+    // Wardrobe
+    const wardrobeModal = document.getElementById('wardrobe-modal');
+    const wardrobeBtn = document.getElementById('wardrobe-btn');
+    const playerAvatarMini = document.getElementById('player-avatar-mini');
+    const closeWardrobeBtn = document.getElementById('close-wardrobe-btn');
+    const avatarPreviewBox = document.getElementById('avatar-preview-box');
+
+    wardrobeBtn.addEventListener('click', () => {
+      sound.playClick();
+      wardrobeModal.classList.remove('hidden');
+    });
+    playerAvatarMini.addEventListener('click', () => wardrobeBtn.click());
+    closeWardrobeBtn.addEventListener('click', () => wardrobeModal.classList.add('hidden'));
+
+    document.querySelectorAll('.char-opt').forEach(b => {
+      b.addEventListener('click', () => {
+        sound.playClick();
+        GAME.playerAvatar.emoji = b.dataset.avatar;
+        avatarPreviewBox.textContent = b.dataset.avatar;
+      });
+    });
+
+    document.querySelectorAll('.apron-opt').forEach(b => {
+      b.addEventListener('click', () => {
+        sound.playClick();
+        GAME.playerAvatar.apronColor = b.dataset.color;
+        avatarPreviewBox.style.backgroundColor = b.dataset.color + '33';
+      });
+    });
+
+    document.getElementById('save-wardrobe-btn').addEventListener('click', () => {
+      sound.playCash();
+      playerAvatarMini.textContent = GAME.playerAvatar.emoji;
+      wardrobeModal.classList.add('hidden');
+    });
+
+    const shopToggleBtn = document.getElementById('shop-toggle-btn');
+    const shopModal = document.getElementById('shop-modal');
+    const closeShopBtn = document.getElementById('close-shop-btn');
+
+    shopToggleBtn.addEventListener('click', () => {
+      sound.playClick();
+      shopModal.classList.remove('hidden');
+    });
+    closeShopBtn.addEventListener('click', () => shopModal.classList.add('hidden'));
+
+    document.getElementById('buy-turbo-oven').addEventListener('click', function() {
+      if (GAME.cash >= 15.00 && !GAME.upgrades.turboOven) {
+        GAME.cash -= 15.00;
+        GAME.upgrades.turboOven = true;
+        this.textContent = 'Installed ✓';
+        this.disabled = true;
+        this.className = 'bg-slate-400 text-white font-chunky px-3 py-1.5 rounded-xl text-xs';
+        cashCounterEl.textContent = `$${GAME.cash.toFixed(2)}`;
+        sound.playCash();
+      }
+    });
+
+    document.getElementById('buy-auto-alarm').addEventListener('click', function() {
+      if (GAME.cash >= 20.00 && !GAME.upgrades.autoAlarm) {
+        GAME.cash -= 20.00;
+        GAME.upgrades.autoAlarm = true;
+        this.textContent = 'Installed ✓';
+        this.disabled = true;
+        this.className = 'bg-slate-400 text-white font-chunky px-3 py-1.5 rounded-xl text-xs';
+        cashCounterEl.textContent = `$${GAME.cash.toFixed(2)}`;
+        sound.playCash();
+      }
+    });
+
+    document.getElementById('buy-piping-guide').addEventListener('click', function() {
+      if (GAME.cash >= 25.00 && !GAME.upgrades.pipingGuide) {
+        GAME.cash -= 25.00;
+        GAME.upgrades.pipingGuide = true;
+        document.getElementById('stencil-toggle-wrap').classList.remove('hidden');
+        document.getElementById('stencil-guide-toggle').checked = true;
+        this.textContent = 'Installed ✓';
+        this.disabled = true;
+        this.className = 'bg-slate-400 text-white font-chunky px-3 py-1.5 rounded-xl text-xs';
+        cashCounterEl.textContent = `$${GAME.cash.toFixed(2)}`;
+        sound.playCash();
+      }
+    });
+
+    document.getElementById('buy-lounge').addEventListener('click', function() {
+      if (GAME.cash >= 30.00 && !GAME.upgrades.lounge) {
+        GAME.cash -= 30.00;
+        GAME.upgrades.lounge = true;
+        this.textContent = 'Installed ✓';
+        this.disabled = true;
+        this.className = 'bg-slate-400 text-white font-chunky px-3 py-1.5 rounded-xl text-xs';
+        cashCounterEl.textContent = `$${GAME.cash.toFixed(2)}`;
+        sound.playCash();
+      }
+    });
+
+    document.getElementById('buy-gold-spatula').addEventListener('click', function() {
+      if (GAME.cash >= 45.00 && !GAME.upgrades.goldSpatula) {
+        GAME.cash -= 45.00;
+        GAME.upgrades.goldSpatula = true;
+        this.textContent = 'Installed ✓';
+        this.disabled = true;
+        this.className = 'bg-slate-400 text-white font-chunky px-3 py-1.5 rounded-xl text-xs';
+        cashCounterEl.textContent = `$${GAME.cash.toFixed(2)}`;
+        sound.playCash();
+      }
+    });
+
+    document.getElementById('mute-btn').addEventListener('click', function() {
+      sound.isMuted = !sound.isMuted;
+      this.textContent = sound.isMuted ? '🔇' : '🔊';
+    });
+
+    /* Game Clock & Waiting Patience Loop */
+    setInterval(() => {
+      GAME.timeSeconds += 1;
+      const hours = Math.floor(GAME.timeSeconds / 60);
+      const mins = GAME.timeSeconds % 60;
+      const displayHours = hours > 12 ? hours - 12 : hours;
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      timeDisplayEl.textContent = `${displayHours}:${mins < 10 ? '0' : ''}${mins} ${ampm}`;
+
+      // Patience Decay
+      if (GAME.currentCustomer) {
+        const decayRate = GAME.upgrades.lounge ? 0.18 : 0.38;
+        GAME.currentCustomer.patience = Math.max(0, GAME.currentCustomer.patience - decayRate);
+        const pBar = document.getElementById('customer-patience-bar');
+        if (pBar) {
+          pBar.style.width = `${(GAME.currentCustomer.patience / GAME.currentCustomer.maxPatience) * 100}%`;
+          if (GAME.currentCustomer.patience < 30) {
+            pBar.className = 'h-full bg-rose-500 transition-all duration-200';
+          } else {
+            pBar.className = 'h-full bg-emerald-500 transition-all duration-200';
+          }
+        }
+      }
+    }, 1000);
+
+    window.onload = function() {
+      applyCurrentSeason();
+      renderBatterCanvas();
+      renderFrostingCanvas();
+      renderToppingCanvas();
+      counterSpecialName.textContent = GAME.dailySpecial.name;
+      setTimeout(spawnCustomer, 1500);
+    };
+  </script>
+</body>
+</html>
