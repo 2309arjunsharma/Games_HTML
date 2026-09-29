@@ -1,0 +1,2076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CyberTic Arcade: Quantum & Expanded Edition</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --neon-cyan: #00f0ff;
+      --neon-rose: #ff007f;
+      --neon-purple: #a855f7;
+      --neon-amber: #f59e0b;
+      --neon-emerald: #10b981;
+    }
+
+    * {
+      font-family: 'Outfit', sans-serif;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+
+    .font-mono-num {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 8%, #141b3d 0%, #080b18 55%, #03050c 100%);
+      color: #e2e8f0;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(10, 15, 30, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, 0.4);
+      border-radius: 9999px;
+    }
+
+    /* Glass Panels */
+    .glass-panel {
+      background: rgba(18, 23, 49, 0.72);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .glass-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .glass-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-1px);
+    }
+    .glass-btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+    .glass-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    /* Neon Symbols */
+    .symbol-x {
+      color: #38bdf8;
+      filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.85));
+      animation: symbolPop 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    .symbol-o {
+      color: #fb7185;
+      filter: drop-shadow(0 0 10px rgba(251, 113, 133, 0.85));
+      animation: symbolPop 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes symbolPop {
+      0% { transform: scale(0.3) rotate(-15deg); opacity: 0; }
+      80% { transform: scale(1.1) rotate(3deg); }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    /* Generic cell */
+    .board-cell {
+      background: rgba(15, 21, 46, 0.75);
+      border: 1.5px solid rgba(255, 255, 255, 0.08);
+      border-radius: 1rem;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .board-cell:hover:not(.taken):not(.frozen):not(.board-locked):not(.cell-disabled) {
+      background: rgba(30, 42, 88, 0.9);
+      border-color: rgba(99, 102, 241, 0.55);
+      box-shadow: 0 0 18px rgba(99, 102, 241, 0.35);
+      transform: scale(0.97);
+    }
+    .board-cell.winning-cell {
+      border-color: #f59e0b !important;
+      background: rgba(245, 158, 11, 0.22) !important;
+      box-shadow: 0 0 24px rgba(245, 158, 11, 0.7) !important;
+      animation: winnerPulse 1.2s infinite ease-in-out;
+    }
+    .board-cell.losing-cell {
+      border-color: #ef4444 !important;
+      background: rgba(239, 68, 68, 0.25) !important;
+      box-shadow: 0 0 24px rgba(239, 68, 68, 0.8) !important;
+      animation: winnerPulse 1s infinite ease-in-out;
+    }
+
+    @keyframes winnerPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+
+    /* Gravity Drop Animation */
+    @keyframes dropBounce {
+      0% { transform: translateY(-300%); opacity: 0; }
+      60% { transform: translateY(10%); opacity: 1; }
+      80% { transform: translateY(-4%); }
+      100% { transform: translateY(0); }
+    }
+    .gravity-drop {
+      animation: dropBounce 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    /* Fog of War Styling */
+    .fog-cloud {
+      background: radial-gradient(circle, #334155 0%, #0f172a 85%);
+      box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.8);
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      font-size: 1.1rem;
+      transition: opacity 0.4s ease;
+      z-index: 5;
+    }
+    .sonar-revealed {
+      opacity: 0.1 !important;
+    }
+
+    /* Quantum Spooky Superposition */
+    .quantum-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 0.15rem 0.45rem;
+      border-radius: 9999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      animation: quantumShimmer 1.8s infinite ease-in-out;
+      border: 1px dashed rgba(255, 255, 255, 0.25);
+    }
+    @keyframes quantumShimmer {
+      0%, 100% { opacity: 0.75; transform: scale(0.96); }
+      50% { opacity: 1; transform: scale(1.04); }
+    }
+    .superposition-first-selected {
+      outline: 2px dashed #a855f7;
+      outline-offset: -2px;
+      background: rgba(168, 85, 247, 0.2) !important;
+    }
+
+    /* Torus Edge Wrap indicator hints */
+    .torus-border-hint {
+      position: absolute;
+      font-size: 0.65rem;
+      color: rgba(148, 163, 184, 0.4);
+      pointer-events: none;
+    }
+
+    /* Reactive AI Avatar Bounce */
+    .avatar-talk {
+      animation: avatarChatter 0.4s ease infinite alternate;
+    }
+    @keyframes avatarChatter {
+      from { transform: translateY(0); }
+      to { transform: translateY(-4px) scale(1.05); }
+    }
+  </style>
+</head>
+<body class="p-2 sm:p-4 md:p-6 flex flex-col items-center">
+
+  <div class="w-full max-w-4xl flex flex-col gap-3 sm:gap-4">
+    <!-- Top Nav Header -->
+    <header class="flex flex-col sm:flex-row items-center justify-between gap-3 glass-panel rounded-2xl p-3 sm:p-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-400 via-indigo-500 to-fuchsia-600 flex items-center justify-center text-white shadow-lg shadow-sky-500/25">
+          <i class="fa-solid fa-atom text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-sky-400 via-purple-300 to-pink-500 bg-clip-text text-transparent">
+              CYBERTIC ARCADE
+            </h1>
+            <span class="text-[10px] font-mono-num font-bold px-2 py-0.5 rounded-full bg-purple-950/70 border border-purple-400/40 text-purple-300">
+              EXPANDED 11 MODES
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">Quantum entanglement, gravity drops, torus boards & unbeatable AI</p>
+        </div>
+      </div>
+
+      <!-- Quick Toggles -->
+      <div class="flex items-center gap-2 flex-wrap justify-end">
+        <button id="toggle-opponent-btn" class="glass-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-300 flex items-center gap-1.5" title="Switch Opponent">
+          <i class="fa-solid fa-robot text-sky-400" id="opponent-icon"></i>
+          <span id="opponent-label">Vs AI</span>
+        </button>
+
+        <div id="difficulty-wrapper" class="flex items-center">
+          <select id="difficulty-select" class="glass-btn px-2.5 py-1.5 rounded-xl text-xs font-semibold text-sky-300 bg-[#141b3a] border border-white/10 outline-none cursor-pointer">
+            <option value="unbeatable">God Mode (Unbeatable)</option>
+            <option value="medium">Tactical (Medium)</option>
+            <option value="easy">Casual (Easy)</option>
+          </select>
+        </div>
+
+        <button id="audio-toggle-btn" class="glass-btn w-9 h-9 rounded-xl flex items-center justify-center text-indigo-400" title="Audio Toggle">
+          <i class="fa-solid fa-volume-high" id="audio-icon"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Game Mode Carousel Tabs -->
+    <div class="glass-panel p-2 rounded-2xl overflow-x-auto">
+      <div class="flex items-center gap-2 min-w-max" id="mode-tabs-container">
+        <!-- New Innovative Modes -->
+        <button class="mode-tab glass-btn px-3 py-2 rounded-xl flex items-center gap-2 active text-purple-400 border-purple-400/50 bg-purple-950/40" data-mode="quantum">
+          <i class="fa-solid fa-atom text-xs"></i>
+          <span class="text-xs font-bold">Quantum</span>
+          <span class="text-[9px] bg-purple-500/20 text-purple-300 px-1 rounded font-bold uppercase">New</span>
+        </button>
+        <button class="mode-tab glass-btn px-3 py-2 rounded-xl flex items-center gap-2 text-slate-400" data-mode="gravity">
+          <i class="fa-solid fa-arrow-down text-xs"></i>
+          <span class="text-xs font-bold">Gravity Drop</span>
+          <span class="text-[9px] bg-sky-500/20 text-sky-300 px-1 rounded font-bold uppercase">4x4</span>
+        </button>
+        <button class="mode-tab glass-btn px-3 py-2 rounded-xl flex items-center gap-2 text-slate-400" data-mode="fog">
+          <i class="fa-solid fa-eye-slash text-xs"></i>
+          <span class="text-xs font-bold">Fog of War</span>
+          <span class="text-[9px] bg-slate-500/20 text-slate-300 px-1 rounded font-bold uppercase">Blind</span>
+        </button>
+        <button class="mode-tab glass-btn px-3 py-2 rounded-xl flex items-center gap-2 text-slate-400" data-mode="misere">
+          <i class="fa-solid fa-skull text-xs"></i>
+          <span class="text-xs font-bold">Misère Anti</span>
+          <span class="text-[9px] bg-rose-500/20 text-rose-300 px-1 rounded font-bold uppercase">Lose=Win</span>
+        </button>
+        <button class="mode-tab glass-btn px-3 py-2 rounded-xl flex items-center gap-2 text-slate-400" data-mode="torus">
+          <i class="fa-solid fa-arrows-spin text-xs"></i>
+          <span class="text-xs font-bold">4x4 Torus</span>
+          <span class="text-[9px] bg-amber-500/20 text-amber-300 px-1 rounded font-bold uppercase">Wrap</span>
+        </button>
+
+        <div class="h-6 w-px bg-white/10 mx-1"></div>
+
+        <!-- Classic & Existing Modes -->
+        <button class="mode-tab glass-btn px-3 py-2 rounded-xl flex items-center gap-2 text-slate-400" data-mode="classic">
+          <i class="fa-solid fa-trophy text-xs"></i>
+          <span class="text-xs font-bold">Classic AI</span>
+        </button>
+        <button class="mode-tab glass-btn px-3 py-2 rounded-xl flex items-center gap-2 text-slate-400" data-mode="vanishing">
+          <i class="fa-solid fa-hourglass-half text-xs"></i>
+          <span class="text-xs font-bold">Vanishing 3</span>
+        </button>
+        <button class="mode-tab glass-btn px-3 py-2 rounded-xl flex items-center gap-2 text-slate-400" data-mode="stacking">
+          <i class="fa-solid fa-layer-group text-xs"></i>
+          <span class="text-xs font-bold">Stacking</span>
+        </button>
+        <button class="mode-tab glass-btn px-3 py-2 rounded-xl flex items-center gap-2 text-slate-400" data-mode="speed">
+          <i class="fa-solid fa-stopwatch text-xs"></i>
+          <span class="text-xs font-bold">Speed Blitz</span>
+        </button>
+        <button class="mode-tab glass-btn px-3 py-2 rounded-xl flex items-center gap-2 text-slate-400" data-mode="powerups">
+          <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
+          <span class="text-xs font-bold">Power-Ups</span>
+        </button>
+        <button class="mode-tab glass-btn px-3 py-2 rounded-xl flex items-center gap-2 text-slate-400" data-mode="ultimate">
+          <i class="fa-solid fa-table-cells text-xs"></i>
+          <span class="text-xs font-bold">Ultimate 9x9</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Reactive AI Trash-Talking & Turn Banner -->
+    <div class="glass-panel rounded-2xl p-3 sm:p-4 flex items-center gap-3 relative overflow-hidden">
+      <div id="ai-avatar" class="w-12 h-12 rounded-xl bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center text-white text-xl flex-shrink-0 shadow-md">
+        <i class="fa-solid fa-robot"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center justify-between gap-2">
+          <span id="ai-name-label" class="text-xs font-bold text-purple-400 uppercase tracking-wider">CYBER CORE AI</span>
+          <span id="turn-indicator-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-mono-num font-bold bg-sky-950/70 border border-sky-400/30 text-sky-300">
+            Player X Turn
+          </span>
+        </div>
+        <p id="ai-dialogue" class="text-xs sm:text-sm text-slate-300 italic truncate mt-0.5">
+          "Observing quantum waveform: choose two squares to place your entangled superposition."
+        </p>
+      </div>
+    </div>
+
+    <!-- Mode Specific Context Bars -->
+    <!-- Quantum Guidance Bar -->
+    <div id="quantum-bar" class="glass-panel rounded-xl p-2.5 flex items-center justify-between text-xs">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-purple-300 flex items-center gap-1.5">
+          <i class="fa-solid fa-network-wired text-purple-400"></i> Superposition Step:
+        </span>
+        <span id="quantum-step-label" class="font-mono-num text-amber-300 font-semibold">Select 1st square (pair e1)</span>
+      </div>
+      <button id="quantum-help-quick-btn" class="glass-btn px-2 py-1 rounded-lg text-[11px] text-purple-300 flex items-center gap-1">
+        <i class="fa-solid fa-circle-info"></i> How Loop Collapse Works
+      </button>
+    </div>
+
+    <!-- Fog of War Sonar Bar -->
+    <div id="fog-bar" class="hidden glass-panel rounded-xl p-2.5 flex items-center justify-between text-xs">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-sky-300 flex items-center gap-1.5">
+          <i class="fa-solid fa-radar text-sky-400"></i> Memory Fog:
+        </span>
+        <span class="text-slate-300 text-[11px]">Opponent pieces hide in shadows after 1.5s</span>
+      </div>
+      <button id="sonar-scan-btn" class="glass-btn px-3 py-1 rounded-lg text-xs font-bold text-emerald-300 border-emerald-500/30 bg-emerald-950/20 flex items-center gap-1.5">
+        <i class="fa-solid fa-flashlight"></i> Sonar Pulse (<span id="sonar-count">2</span> left)
+      </button>
+    </div>
+
+    <!-- Speed Blitz Progress Bar -->
+    <div id="speed-timer-container" class="hidden glass-panel rounded-xl p-2.5 flex-col gap-1.5">
+      <div class="flex justify-between items-center text-xs">
+        <span class="font-bold text-amber-400"><i class="fa-solid fa-stopwatch"></i> TURN CLOCK</span>
+        <span id="timer-number" class="font-mono-num font-bold text-amber-300 text-sm">5.0s</span>
+      </div>
+      <div class="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-white/5">
+        <div id="timer-progress-bar" class="h-full bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500 rounded-full transition-all duration-100" style="width: 100%;"></div>
+      </div>
+    </div>
+
+    <!-- Power-Ups Inventory Bar -->
+    <div id="powerups-container" class="hidden glass-panel rounded-2xl p-3 flex flex-col gap-2">
+      <div class="flex items-center justify-between text-xs font-bold text-slate-300">
+        <span><i class="fa-solid fa-bolt text-amber-400"></i> Tactical Cards</span>
+        <span class="text-slate-400 text-[11px]">Pick a card then click cell</span>
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <button id="card-bomb" class="powerup-btn glass-btn p-2 rounded-xl flex items-center justify-center gap-2 text-rose-400 text-xs font-bold">
+          <i class="fa-solid fa-bomb text-base"></i>
+          <span>Bomb (<span id="count-bomb">1</span>)</span>
+        </button>
+        <button id="card-freeze" class="powerup-btn glass-btn p-2 rounded-xl flex items-center justify-center gap-2 text-sky-400 text-xs font-bold">
+          <i class="fa-regular fa-snowflake text-base"></i>
+          <span>Freeze (<span id="count-freeze">1</span>)</span>
+        </button>
+        <button id="card-swap" class="powerup-btn glass-btn p-2 rounded-xl flex items-center justify-center gap-2 text-emerald-400 text-xs font-bold">
+          <i class="fa-solid fa-arrows-rotate text-base"></i>
+          <span>Swap (<span id="count-swap">1</span>)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Stacking Gobbler Size Selector -->
+    <div id="stacking-container" class="hidden glass-panel rounded-2xl p-3 flex flex-col gap-2">
+      <div class="flex items-center justify-between text-xs font-bold text-slate-300">
+        <span><i class="fa-solid fa-layer-group text-sky-400"></i> Choose Stacking Piece Size</span>
+        <span id="stack-turn-label" class="text-sky-300 text-[11px]">Current: Player X</span>
+      </div>
+      <div class="grid grid-cols-3 gap-2" id="stack-piece-selectors">
+        <button class="stack-selector glass-btn p-2 rounded-xl flex flex-col items-center text-xs active border-sky-400" data-size="1">
+          <span class="text-xs uppercase font-bold text-slate-300">Small (1)</span>
+          <span class="text-xs text-sky-400 font-mono-num font-bold">Left: <span id="stack-count-s">2</span></span>
+        </button>
+        <button class="stack-selector glass-btn p-2 rounded-xl flex flex-col items-center text-xs" data-size="2">
+          <span class="text-xs uppercase font-bold text-slate-300">Medium (2)</span>
+          <span class="text-xs text-sky-400 font-mono-num font-bold">Left: <span id="stack-count-m">2</span></span>
+        </button>
+        <button class="stack-selector glass-btn p-2 rounded-xl flex flex-col items-center text-xs" data-size="3">
+          <span class="text-xs uppercase font-bold text-slate-300">Large (3)</span>
+          <span class="text-xs text-sky-400 font-mono-num font-bold">Left: <span id="stack-count-l">2</span></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Torus Mode Explainer Banner -->
+    <div id="torus-banner" class="hidden glass-panel rounded-xl p-2 text-center text-xs font-semibold text-amber-300 border border-amber-500/20">
+      <i class="fa-solid fa-circle-nodes"></i> 4x4 Torus Rules: Left wraps to Right, Top wraps to Bottom, Diagonals wrap around edges! (4 in a row to win)
+    </div>
+
+    <!-- Main Game Board Stage -->
+    <div class="glass-panel rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-center relative min-h-[380px]">
+      <!-- 3x3 Standard Board (Classic, Vanishing, Powerups, Speed, Misere, Fog, Quantum) -->
+      <div id="board-3x3-wrapper" class="w-full max-w-[360px]">
+        <div id="grid-3x3" class="grid grid-cols-3 gap-3 w-full">
+          <!-- 9 dynamic cells -->
+        </div>
+      </div>
+
+      <!-- 4x4 Torus / 4x4 Grid Board -->
+      <div id="board-4x4-wrapper" class="w-full max-w-[420px] hidden">
+        <div id="grid-4x4" class="grid grid-cols-4 gap-2.5 w-full">
+          <!-- 16 dynamic cells -->
+        </div>
+      </div>
+
+      <!-- Gravity Drop 4x4 / 5x4 Grid Board with Column Drop Triggers -->
+      <div id="board-gravity-wrapper" class="w-full max-w-[420px] hidden flex flex-col gap-2">
+        <div class="grid grid-cols-4 gap-2 px-1">
+          <button class="col-drop-btn glass-btn py-1.5 rounded-lg text-xs font-bold text-sky-400 hover:bg-sky-500/20" data-col="0">
+            <i class="fa-solid fa-angles-down"></i> Col 1
+          </button>
+          <button class="col-drop-btn glass-btn py-1.5 rounded-lg text-xs font-bold text-sky-400 hover:bg-sky-500/20" data-col="1">
+            <i class="fa-solid fa-angles-down"></i> Col 2
+          </button>
+          <button class="col-drop-btn glass-btn py-1.5 rounded-lg text-xs font-bold text-sky-400 hover:bg-sky-500/20" data-col="2">
+            <i class="fa-solid fa-angles-down"></i> Col 3
+          </button>
+          <button class="col-drop-btn glass-btn py-1.5 rounded-lg text-xs font-bold text-sky-400 hover:bg-sky-500/20" data-col="3">
+            <i class="fa-solid fa-angles-down"></i> Col 4
+          </button>
+        </div>
+        <div id="grid-gravity" class="grid grid-cols-4 gap-2.5 w-full">
+          <!-- 16 gravity cells -->
+        </div>
+      </div>
+
+      <!-- Ultimate 9x9 Nested Board -->
+      <div id="board-ultimate-wrapper" class="w-full max-w-[500px] hidden">
+        <div id="grid-ultimate" class="grid grid-cols-3 gap-2.5 w-full">
+          <!-- 9 sub-boards -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Scoreboard -->
+    <div class="grid grid-cols-3 gap-3">
+      <div class="glass-panel rounded-2xl p-3 flex flex-col items-center">
+        <span class="text-[11px] font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1">
+          <i class="fa-solid fa-user"></i> <span id="score-p1-label">Player X</span>
+        </span>
+        <span id="score-p1" class="font-mono-num text-2xl font-black text-sky-300 mt-0.5">0</span>
+      </div>
+      <div class="glass-panel rounded-2xl p-3 flex flex-col items-center">
+        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+          <i class="fa-solid fa-handshake"></i> Draws
+        </span>
+        <span id="score-draws" class="font-mono-num text-2xl font-black text-slate-300 mt-0.5">0</span>
+      </div>
+      <div class="glass-panel rounded-2xl p-3 flex flex-col items-center">
+        <span class="text-[11px] font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1">
+          <i class="fa-solid fa-robot"></i> <span id="score-p2-label">AI O</span>
+        </span>
+        <span id="score-p2" class="font-mono-num text-2xl font-black text-rose-300 mt-0.5">0</span>
+      </div>
+    </div>
+
+    <!-- Bottom Action Toolbar -->
+    <footer class="flex items-center justify-between gap-3">
+      <button id="rules-modal-btn" class="glass-btn px-4 py-2.5 rounded-xl text-xs font-bold text-slate-300 flex items-center gap-2">
+        <i class="fa-solid fa-book-open text-sky-400"></i> Mode Guide & Lore
+      </button>
+
+      <div class="flex items-center gap-2">
+        <button id="new-round-btn" class="glass-btn px-4 py-2.5 rounded-xl text-xs font-bold text-emerald-300 border-emerald-500/30 bg-emerald-950/20 flex items-center gap-2">
+          <i class="fa-solid fa-rotate-right"></i> Restart Round
+        </button>
+        <button id="reset-all-btn" class="glass-btn px-3 py-2.5 rounded-xl text-xs font-bold text-rose-400 border-rose-500/20 flex items-center gap-1" title="Clear mode records">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Unified Rules & Lore Modal -->
+  <div id="rules-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-panel rounded-3xl max-w-lg w-full p-6 flex flex-col gap-4 border border-white/10 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-white/10 pb-3">
+        <h3 id="rules-title" class="text-lg font-black text-sky-400 flex items-center gap-2">
+          <i class="fa-solid fa-book-open"></i> Mode Guide
+        </h3>
+        <button id="close-modal-btn" class="w-8 h-8 rounded-full glass-btn flex items-center justify-center text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div id="rules-body" class="text-sm text-slate-300 space-y-3 max-h-[60vh] overflow-y-auto pr-2 leading-relaxed">
+        <!-- Injected via JavaScript -->
+      </div>
+      <button id="modal-got-it-btn" class="w-full py-2.5 rounded-xl font-bold bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-slate-900 transition-all text-sm mt-1 shadow-lg">
+        Ready to Battle
+      </button>
+    </div>
+  </div>
+
+  <!-- Quantum Collapse Interactive Modal (Choice of Measurement) -->
+  <div id="collapse-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-panel rounded-3xl max-w-md w-full p-6 flex flex-col items-center gap-4 text-center border border-purple-500/30 shadow-2xl">
+      <div class="w-14 h-14 rounded-2xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-purple-400 text-2xl animate-pulse">
+        <i class="fa-solid fa-atom"></i>
+      </div>
+      <div>
+        <h3 class="text-xl font-black text-purple-300">QUANTUM COLLAPSE DETECTED</h3>
+        <p class="text-xs text-slate-300 mt-1">A cyclic entanglement loop formed! The quantum superposition wave function must now collapse into classical reality.</p>
+      </div>
+      <div class="w-full bg-slate-950/60 p-3 rounded-2xl border border-white/5 text-xs text-left space-y-1">
+        <p class="text-amber-300 font-bold"><i class="fa-solid fa-bolt"></i> Measurement Selection:</p>
+        <p class="text-slate-400">Click below to resolve the quantum wave. Player will claim their primary entangled nodes.</p>
+      </div>
+      <div class="flex gap-2 w-full">
+        <button id="collapse-resolve-a-btn" class="flex-1 py-2.5 rounded-xl font-bold text-xs bg-sky-500/20 border border-sky-400/40 text-sky-300 hover:bg-sky-500/30 transition-all">
+          State Phase α
+        </button>
+        <button id="collapse-resolve-b-btn" class="flex-1 py-2.5 rounded-xl font-bold text-xs bg-rose-500/20 border border-rose-400/40 text-rose-300 hover:bg-rose-500/30 transition-all">
+          State Phase β
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioClass) this.ctx = new AudioClass();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playTone(freq, type = 'sine', duration = 0.08, gainVal = 0.15) {
+        if (!this.enabled) return;
+        try {
+          this.init();
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      moveX() { this.playTone(520, 'triangle', 0.09, 0.2); }
+      moveO() { this.playTone(330, 'sine', 0.12, 0.22); }
+      quantumTone() {
+        this.playTone(720, 'sine', 0.12, 0.16);
+        setTimeout(() => this.playTone(1080, 'sine', 0.22, 0.14), 60);
+      }
+      collapseChord() {
+        this.playTone(300, 'sawtooth', 0.4, 0.25);
+        this.playTone(450, 'sine', 0.4, 0.2);
+        setTimeout(() => this.playTone(600, 'triangle', 0.45, 0.2), 100);
+      }
+      drop() {
+        if (!this.enabled) return;
+        try {
+          this.init();
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(110, this.ctx.currentTime + 0.22);
+          gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.22);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.22);
+        } catch (e) {}
+      }
+      sonar() {
+        this.playTone(880, 'sine', 0.35, 0.2);
+        setTimeout(() => this.playTone(1320, 'sine', 0.4, 0.15), 180);
+      }
+      win() {
+        this.playTone(440, 'triangle', 0.1, 0.2);
+        setTimeout(() => this.playTone(554.37, 'triangle', 0.12, 0.2), 100);
+        setTimeout(() => this.playTone(659.25, 'triangle', 0.14, 0.2), 200);
+        setTimeout(() => this.playTone(880, 'triangle', 0.4, 0.25), 300);
+      }
+      tie() {
+        this.playTone(320, 'sawtooth', 0.12, 0.12);
+        setTimeout(() => this.playTone(280, 'sawtooth', 0.2, 0.12), 110);
+      }
+      bomb() {
+        this.playTone(150, 'square', 0.25, 0.3);
+        setTimeout(() => this.playTone(60, 'sawtooth', 0.3, 0.4), 80);
+      }
+      freeze() {
+        this.playTone(880, 'sine', 0.15, 0.15);
+        setTimeout(() => this.playTone(1174, 'sine', 0.25, 0.15), 100);
+      }
+      swap() {
+        this.playTone(400, 'triangle', 0.08, 0.15);
+        setTimeout(() => this.playTone(700, 'triangle', 0.12, 0.15), 90);
+      }
+      tick() { this.playTone(750, 'sine', 0.03, 0.08); }
+      warning() { this.playTone(220, 'square', 0.07, 0.12); }
+      vanish() { this.playTone(260, 'sawtooth', 0.15, 0.12); }
+    }
+
+    const sound = new SoundEngine();
+
+    const AI_TRASH_TALK = {
+      quantum: [
+        "Your wave function is leaking entropy, human!",
+        "Superposition will not save you from quantum determinism.",
+        "Entangled pairs detected. When this cycle collapses, your defeat is guaranteed.",
+        "Schrödinger would laugh at your probability distributions."
+      ],
+      gravity: [
+        "Gravity always wins. Down you go!",
+        "Did you really not see that column stacking right up?",
+        "Newton's laws favor silicon over carbon every time.",
+        "Dropping pieces into my trap like clockwork."
+      ],
+      fog: [
+        "Lost in the dark? You can't even remember where I placed my last mark!",
+        "The fog consumes all. Good luck navigating purely on memory.",
+        "Better use that sonar before you walk right into a three-in-a-row.",
+        "Blinded by your own mortal memory bandwidth!"
+      ],
+      misere: [
+        "Careful! In Misère, 3-in-a-row means YOU LOSE!",
+        "I'm orchestrating every move to force you into getting 3 in a row.",
+        "Go ahead, finish that line. Claim your glorious defeat!",
+        "Reverse psychology at maximum efficiency."
+      ],
+      torus: [
+        "The universe is curved, and so is this board! Did you forget edge wrap?",
+        "Wrapping around from left to right like a true 4D entity.",
+        "Check your diagonals—they wrap across the cosmic boundary!",
+        "Euclidean geometry won't save you on a torus topology."
+      ],
+      classic: [
+        "Minimax depth evaluation running at optimal frequency.",
+        "Computing victory probabilities: 99.98% in my favor.",
+        "A challenger approaches! Don't feel bad when you draw or lose.",
+        "Every single branch of your future is already mapped."
+      ],
+      aiWin: [
+        "Total algorithmic dominance achieved!",
+        "As predicted in 47 parallel simulations.",
+        "Human zero, Synthetic intelligence one.",
+        "Victory registered. Better reboot and try again."
+      ],
+      playerWin: [
+        "WHAT?! System integrity compromised! An anomaly!",
+        "A glitch in the matrix! You actually pulled it off!",
+        "Impossible... my evaluation branches missed that combination!"
+      ],
+      draw: [
+        "A stalemate! You managed to hold back the machine.",
+        "An honorable draw. Perfect play from both sides.",
+        "Balance restored. The matrix is satisfied with this tie."
+      ]
+    };
+
+    function pickRandom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function setAIDialogue(text, mood = 'neutral') {
+      const dialogueEl = document.getElementById('ai-dialogue');
+      const avatarEl = document.getElementById('ai-avatar');
+      dialogueEl.textContent = `"${text}"`;
+      avatarEl.classList.add('avatar-talk');
+      setTimeout(() => avatarEl.classList.remove('avatar-talk'), 700);
+
+      if (mood === 'panic') {
+        avatarEl.className = 'w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-500 to-rose-600 flex items-center justify-center text-white text-xl flex-shrink-0 shadow-md';
+      } else if (mood === 'win') {
+        avatarEl.className = 'w-12 h-12 rounded-xl bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center text-white text-xl flex-shrink-0 shadow-md';
+      } else {
+        avatarEl.className = 'w-12 h-12 rounded-xl bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center text-white text-xl flex-shrink-0 shadow-md';
+      }
+    }
+
+    const MODE_RULES = {
+      quantum: `<strong>Quantum Tic-Tac-Toe:</strong><br><br>
+      • On your turn, place a mark in <strong>two distinct squares</strong> simultaneously in "superposition" (e.g., node pair <em>e₁</em> in cells 2 and 5).<br>
+      • Marks display with entangled pair subscripts (e₁, e₂, etc.).<br>
+      • When moves form a closed entanglement cycle (a loop between connected squares), a <strong>Quantum Collapse</strong> is triggered!<br>
+      • The superposition wave collapses: each entangled move crystallizes into only ONE of its two cells.<br>
+      • Get 3 classical marks in a row to win!`,
+
+      gravity: `<strong>Gravity / Connect-3 Drop Mode:</strong><br><br>
+      • Played on a 4x4 vertical grid.<br>
+      • Click the column headers (or any cell in that column) to drop your mark.<br>
+      • Pieces fall to the lowest unoccupied slot with smooth gravity physics.<br>
+      • First to form <strong>3 or 4 in a row</strong> (horizontal, vertical, diagonal) wins!`,
+
+      fog: `<strong>Fog of War / Blind Memory:</strong><br><br>
+      • You can always see your own marks, but enemy marks disappear under dark memory fog after <strong>1.5 seconds</strong>!<br>
+      • Memorize where your opponent played, or click <strong>Sonar Pulse</strong> (2 uses per match) to temporarily illuminate all enemy positions for 1.2 seconds!`,
+
+      misere: `<strong>Misère / Anti-Tic-Tac-Toe:</strong><br><br>
+      • The ultimate reverse strategy: <strong>The first player to make 3-in-a-row LOSES!</strong><br>
+      • Force your opponent into an unavoidable trap where their only legal move completes a line!`,
+
+      torus: `<strong>4x4 Shape-Shifter Torus:</strong><br><br>
+      • A 4x4 grid where the edges wrap seamlessly:<br>
+      - Far left column is adjacent to far right column.<br>
+      - Top row is adjacent to bottom row.<br>
+      - Diagonals wrap around boundaries!<br>
+      • <strong>4 in a row</strong> anywhere on the torus topology wins!`,
+
+      classic: `<strong>Classic 3x3:</strong> Get 3 in a row horizontally, vertically, or diagonally. Choose between Easy, Tactical Medium, or Unbeatable Minimax AI.`,
+      vanishing: `<strong>Vanishing Mark:</strong> Each player can only have 3 active marks on the board. When you place a 4th, your 1st mark disappears!`,
+      stacking: `<strong>Stacking Gobblers:</strong> You have 3 sizes of pieces (Small, Medium, Large). Larger pieces can swallow smaller pieces on the board!`,
+      speed: `<strong>Speed Blitz:</strong> 5-second chess turn timer. Run out of time and your turn is forfeited!`,
+      powerups: `<strong>Power-Ups:</strong> Use Bomb to destroy a piece, Freeze to lock a square, or Swap to switch any two marks!`,
+      ultimate: `<strong>Ultimate 9x9:</strong> 9 mini boards in a mega grid. Your move sends your opponent to the matching mini board!`
+    };
+
+    const MODES_LIST = ['quantum', 'gravity', 'fog', 'misere', 'torus', 'classic', 'vanishing', 'stacking', 'speed', 'powerups', 'ultimate'];
+
+    function loadScores() {
+      const saved = localStorage.getItem('cybertic_scores');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) {}
+      }
+      const initial = {};
+      MODES_LIST.forEach(m => initial[m] = { p1: 0, p2: 0, draws: 0 });
+      return initial;
+    }
+
+    function saveScores() {
+      localStorage.setItem('cybertic_scores', JSON.stringify(AppState.scores));
+    }
+
+    const AppState = {
+      currentMode: 'quantum',
+      vsAI: true,
+      difficulty: 'unbeatable',
+      currentPlayer: 'X',
+      isGameOver: false,
+      scores: loadScores(),
+
+      // Standard 3x3 board
+      board3: Array(9).fill(null),
+
+      // 4x4 boards (Torus & Gravity)
+      board4: Array(16).fill(null),
+
+      // Quantum Mode State
+      quantumMoves: [], // list of { player, pairId, c1, c2 }
+      quantumMoveCount: 1,
+      quantumFirstPick: null, // First cell selected in current superposition step
+      pendingCollapseLoop: null,
+
+      // Fog of War State
+      fogVisibleUntil: { X: {}, O: {} },
+      sonarCount: 2,
+      sonarActive: false,
+
+      // Vanishing Mode State
+      vanishingQueues: { X: [], O: [] },
+
+      // Stacking Gobblers State
+      stackBoard: Array(9).fill(null).map(() => []),
+      stackInventory: {
+        X: { 1: 2, 2: 2, 3: 2 },
+        O: { 1: 2, 2: 2, 3: 2 }
+      },
+      selectedStackSize: 1,
+
+      // Powerups State
+      cards: {
+        X: { bomb: 1, freeze: 1, swap: 1 },
+        O: { bomb: 1, freeze: 1, swap: 1 }
+      },
+      activeCard: null,
+      swapFirstIndex: null,
+      frozenTurns: Array(9).fill(0),
+
+      // Speed Blitz Timer
+      turnTimer: null,
+      timeLeft: 5.0,
+
+      // Ultimate 9x9 State
+      ultimateBoards: Array(9).fill(null).map(() => Array(9).fill(null)),
+      ultimateMacroBoard: Array(9).fill(null),
+      ultimateTargetMini: -1
+    };
+
+    const WIN_COMBOS_3 = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8],
+      [0, 3, 6], [1, 4, 7], [2, 5, 8],
+      [0, 4, 8], [2, 4, 6]
+    ];
+
+    function checkWin3(board) {
+      for (const [a, b, c] of WIN_COMBOS_3) {
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+          return { winner: board[a], combo: [a, b, c] };
+        }
+      }
+      if (board.every(cell => cell !== null)) {
+        return { winner: 'draw', combo: null };
+      }
+      return null;
+    }
+
+    // 4x4 Standard & Gravity check (3-in-a-row or 4-in-a-row)
+    function checkGravityWin(board) {
+      // Check 4-in-a-row or 3-in-a-row on 4x4
+      // We look for 4 first, then 3
+      const lines = [];
+      // Rows
+      for (let r = 0; r < 4; r++) {
+        lines.push([r*4, r*4+1, r*4+2, r*4+3]);
+        lines.push([r*4, r*4+1, r*4+2]);
+        lines.push([r*4+1, r*4+2, r*4+3]);
+      }
+      // Columns
+      for (let c = 0; c < 4; c++) {
+        lines.push([c, c+4, c+8, c+12]);
+        lines.push([c, c+4, c+8]);
+        lines.push([c+4, c+8, c+12]);
+      }
+      // Diagonals (major 4)
+      lines.push([0, 5, 10, 15]);
+      lines.push([3, 6, 9, 12]);
+      // Diagonals of length 3
+      lines.push([1, 6, 11]);
+      lines.push([4, 9, 14]);
+      lines.push([2, 5, 8]);
+      lines.push([7, 10, 13]);
+
+      // Check for length 4 first
+      for (let line of lines) {
+        if (line.length === 4) {
+          const val = board[line[0]];
+          if (val && line.every(idx => board[idx] === val)) {
+            return { winner: val, combo: line };
+          }
+        }
+      }
+      // Check for length 3
+      for (let line of lines) {
+        if (line.length === 3) {
+          const val = board[line[0]];
+          if (val && line.every(idx => board[idx] === val)) {
+            return { winner: val, combo: line };
+          }
+        }
+      }
+
+      if (board.every(cell => cell !== null)) {
+        return { winner: 'draw', combo: null };
+      }
+      return null;
+    }
+
+    // 4x4 Torus Win Evaluator (Edge-wrapping rows, cols, diagonals of 4)
+    function checkTorusWin(board) {
+      // Rows with wrap
+      for (let r = 0; r < 4; r++) {
+        const row = [r*4, r*4+1, r*4+2, r*4+3];
+        const val = board[row[0]];
+        if (val && row.every(idx => board[idx] === val)) return { winner: val, combo: row };
+      }
+      // Cols with wrap
+      for (let c = 0; c < 4; c++) {
+        const col = [c, c+4, c+8, c+12];
+        const val = board[col[0]];
+        if (val && col.every(idx => board[idx] === val)) return { winner: val, combo: col };
+      }
+      // Torus Diagonals (each starting cell generates a wrap diagonal of 4)
+      for (let startR = 0; startR < 4; startR++) {
+        for (let startC = 0; startC < 4; startC++) {
+          // Down-Right wrapping
+          const diagDR = [];
+          for (let step = 0; step < 4; step++) {
+            const r = (startR + step) % 4;
+            const c = (startC + step) % 4;
+            diagDR.push(r * 4 + c);
+          }
+          const valDR = board[diagDR[0]];
+          if (valDR && diagDR.every(idx => board[idx] === valDR)) {
+            return { winner: valDR, combo: diagDR };
+          }
+
+          // Down-Left wrapping
+          const diagDL = [];
+          for (let step = 0; step < 4; step++) {
+            const r = (startR + step) % 4;
+            const c = (startC - step + 4) % 4;
+            diagDL.push(r * 4 + c);
+          }
+          const valDL = board[diagDL[0]];
+          if (valDL && diagDL.every(idx => board[idx] === valDL)) {
+            return { winner: valDL, combo: diagDL };
+          }
+        }
+      }
+
+      if (board.every(cell => cell !== null)) {
+        return { winner: 'draw', combo: null };
+      }
+      return null;
+    }
+
+    function minimaxClassic(board, depth, isMax) {
+      const res = checkWin3(board);
+      if (res) {
+        if (res.winner === 'O') return 10 - depth;
+        if (res.winner === 'X') return depth - 10;
+        if (res.winner === 'draw') return 0;
+      }
+
+      if (isMax) {
+        let best = -Infinity;
+        for (let i = 0; i < 9; i++) {
+          if (!board[i]) {
+            board[i] = 'O';
+            best = Math.max(best, minimaxClassic(board, depth + 1, false));
+            board[i] = null;
+          }
+        }
+        return best;
+      } else {
+        let best = Infinity;
+        for (let i = 0; i < 9; i++) {
+          if (!board[i]) {
+            board[i] = 'X';
+            best = Math.min(best, minimaxClassic(board, depth + 1, true));
+            board[i] = null;
+          }
+        }
+        return best;
+      }
+    }
+
+    // Minimax for Misere (First 3-in-a-row LOSES!)
+    function minimaxMisere(board, depth, isMax) {
+      const res = checkWin3(board);
+      if (res) {
+        // In Misere, if O completes 3, O loses -> negative score!
+        if (res.winner === 'O') return depth - 10;
+        if (res.winner === 'X') return 10 - depth;
+        if (res.winner === 'draw') return 0;
+      }
+      if (depth >= 6) return 0; // Branching cutoff
+
+      if (isMax) {
+        let best = -Infinity;
+        for (let i = 0; i < 9; i++) {
+          if (!board[i]) {
+            board[i] = 'O';
+            best = Math.max(best, minimaxMisere(board, depth + 1, false));
+            board[i] = null;
+          }
+        }
+        return best;
+      } else {
+        let best = Infinity;
+        for (let i = 0; i < 9; i++) {
+          if (!board[i]) {
+            board[i] = 'X';
+            best = Math.min(best, minimaxMisere(board, depth + 1, true));
+            board[i] = null;
+          }
+        }
+        return best;
+      }
+    }
+
+    const grid3El = document.getElementById('grid-3x3');
+    const grid4El = document.getElementById('grid-4x4');
+    const gridGravityEl = document.getElementById('grid-gravity');
+    const gridUltimateEl = document.getElementById('grid-ultimate');
+
+    function createCells() {
+      // 3x3 Cells
+      grid3El.innerHTML = '';
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'board-cell';
+        cell.dataset.index = i;
+        cell.addEventListener('click', () => handleCellClick3(i));
+        grid3El.appendChild(cell);
+      }
+
+      // 4x4 Cells (Torus)
+      grid4El.innerHTML = '';
+      for (let i = 0; i < 16; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'board-cell text-sm';
+        cell.dataset.index = i;
+        cell.addEventListener('click', () => handleCellClick4(i));
+        grid4El.appendChild(cell);
+      }
+
+      // Gravity Grid Cells
+      gridGravityEl.innerHTML = '';
+      for (let i = 0; i < 16; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'board-cell text-sm';
+        cell.dataset.index = i;
+        cell.addEventListener('click', () => {
+          const col = i % 4;
+          handleGravityDrop(col);
+        });
+        gridGravityEl.appendChild(cell);
+      }
+
+      // Ultimate 9x9 DOM
+      gridUltimateEl.innerHTML = '';
+      for (let m = 0; m < 9; m++) {
+        const mini = document.createElement('div');
+        mini.className = 'grid grid-cols-3 gap-1 p-1.5 rounded-xl bg-slate-900/80 border border-white/10 relative';
+        mini.dataset.mini = m;
+        for (let c = 0; c < 9; c++) {
+          const sub = document.createElement('div');
+          sub.className = 'aspect-square rounded-md bg-slate-800/80 flex items-center justify-center text-xs font-bold cursor-pointer hover:bg-sky-500/20';
+          sub.dataset.cell = c;
+          sub.addEventListener('click', () => handleUltimateCellClick(m, c));
+          mini.appendChild(sub);
+        }
+        gridUltimateEl.appendChild(mini);
+      }
+    }
+
+    function renderBoard() {
+      const mode = AppState.currentMode;
+
+      // Update turn badge
+      const isX = AppState.currentPlayer === 'X';
+      const label = AppState.vsAI
+        ? (isX ? "Player X Turn" : "AI O Turn")
+        : (isX ? "Player X Turn" : "Player O Turn");
+
+      const badge = document.getElementById('turn-indicator-badge');
+      badge.textContent = label;
+      badge.className = isX
+        ? "px-2.5 py-0.5 rounded-full text-[11px] font-mono-num font-bold bg-sky-950/70 border border-sky-400/30 text-sky-300"
+        : "px-2.5 py-0.5 rounded-full text-[11px] font-mono-num font-bold bg-rose-950/70 border border-rose-400/30 text-rose-300";
+
+      // 1. Quantum Board Rendering
+      if (mode === 'quantum') {
+        const cells = grid3El.querySelectorAll('.board-cell');
+        cells.forEach((cell, idx) => {
+          cell.className = 'board-cell flex flex-col p-1';
+          cell.innerHTML = '';
+
+          // If classical mark collapsed here
+          if (AppState.board3[idx]) {
+            cell.classList.add('taken');
+            const sym = document.createElement('span');
+            sym.className = `text-4xl font-black ${AppState.board3[idx] === 'X' ? 'symbol-x' : 'symbol-o'}`;
+            sym.innerHTML = AppState.board3[idx] === 'X' ? '<i class="fa-solid fa-xmark"></i>' : '<i class="fa-regular fa-circle"></i>';
+            cell.appendChild(sym);
+          } else {
+            // Render active superpositions
+            const superpositions = AppState.quantumMoves.filter(m => m.c1 === idx || m.c2 === idx);
+            if (superpositions.length > 0) {
+              const pillWrap = document.createElement('div');
+              pillWrap.className = 'flex flex-wrap gap-1 items-center justify-center w-full h-full';
+              superpositions.forEach(s => {
+                const pill = document.createElement('span');
+                const isXp = s.player === 'X';
+                pill.className = `quantum-pill ${isXp ? 'bg-sky-500/20 text-sky-300 border-sky-400/40' : 'bg-rose-500/20 text-rose-300 border-rose-400/40'}`;
+                pill.textContent = `${s.player}₍${s.pairId}₎`;
+                pillWrap.appendChild(pill);
+              });
+              cell.appendChild(pillWrap);
+            }
+
+            if (AppState.quantumFirstPick === idx) {
+              cell.classList.add('superposition-first-selected');
+            }
+          }
+        });
+      }
+
+      // 2. Fog of War Rendering
+      else if (mode === 'fog') {
+        const cells = grid3El.querySelectorAll('.board-cell');
+        const now = Date.now();
+        cells.forEach((cell, idx) => {
+          cell.className = 'board-cell';
+          cell.innerHTML = '';
+          const val = AppState.board3[idx];
+
+          if (val) {
+            cell.classList.add('taken');
+            const sym = document.createElement('span');
+            sym.className = `text-4xl font-black ${val === 'X' ? 'symbol-x' : 'symbol-o'}`;
+            sym.innerHTML = val === 'X' ? '<i class="fa-solid fa-xmark"></i>' : '<i class="fa-regular fa-circle"></i>';
+            cell.appendChild(sym);
+
+            // Is enemy mark hidden under fog?
+            if (val === 'O' && !AppState.sonarActive && now > (AppState.fogVisibleUntil.O[idx] || 0)) {
+              const fog = document.createElement('div');
+              fog.className = 'fog-cloud';
+              fog.innerHTML = '<i class="fa-solid fa-cloud"></i>';
+              cell.appendChild(fog);
+            }
+          }
+        });
+      }
+
+      // 3. Stacking Gobblers Rendering
+      else if (mode === 'stacking') {
+        const cells = grid3El.querySelectorAll('.board-cell');
+        cells.forEach((cell, idx) => {
+          cell.className = 'board-cell';
+          cell.innerHTML = '';
+          const stack = AppState.stackBoard[idx];
+          if (stack.length > 0) {
+            cell.classList.add('taken');
+            const top = stack[stack.length - 1];
+            const sizeScale = top.size === 1 ? 'scale-75' : (top.size === 2 ? 'scale-90' : 'scale-100');
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex flex-col items-center justify-center ${sizeScale} transition-transform`;
+            const symbol = document.createElement('span');
+            symbol.className = `text-3xl sm:text-4xl font-black ${top.player === 'X' ? 'symbol-x' : 'symbol-o'}`;
+            symbol.innerHTML = top.player === 'X' ? '<i class="fa-solid fa-xmark"></i>' : '<i class="fa-regular fa-circle"></i>';
+            const badgeEl = document.createElement('span');
+            badgeEl.className = 'text-[9px] uppercase font-mono-num font-bold px-1.5 py-0.2 rounded-full bg-slate-900/80 text-amber-300 border border-amber-400/30 mt-0.5';
+            badgeEl.textContent = `Tier ${top.size}`;
+            wrapper.appendChild(symbol);
+            wrapper.appendChild(badgeEl);
+            cell.appendChild(wrapper);
+          }
+        });
+      }
+
+      // 4. Vanishing Mode Rendering
+      else if (mode === 'vanishing') {
+        const cells = grid3El.querySelectorAll('.board-cell');
+        cells.forEach((cell, idx) => {
+          cell.className = 'board-cell';
+          cell.innerHTML = '';
+          const val = AppState.board3[idx];
+          if (val) {
+            cell.classList.add('taken');
+            const sym = document.createElement('span');
+            sym.className = `text-4xl font-black ${val === 'X' ? 'symbol-x' : 'symbol-o'}`;
+            sym.innerHTML = val === 'X' ? '<i class="fa-solid fa-xmark"></i>' : '<i class="fa-regular fa-circle"></i>';
+            cell.appendChild(sym);
+
+            const q = AppState.vanishingQueues[val];
+            const pos = q.indexOf(idx);
+            if (pos !== -1) {
+              const badgeEl = document.createElement('span');
+              const isOldest = (pos === 0 && q.length === 3 && AppState.currentPlayer === val);
+              badgeEl.className = `absolute top-1 left-2 text-[10px] font-mono-num font-bold px-1.5 rounded-full ${
+                isOldest ? 'bg-rose-500 text-white animate-bounce' : 'bg-slate-800/80 text-slate-300'
+              }`;
+              badgeEl.textContent = `#${pos + 1}`;
+              cell.appendChild(badgeEl);
+              if (isOldest) cell.classList.add('border-rose-500/80');
+            }
+          }
+        });
+      }
+
+      // 5. Classic, Speed, Misère, Powerups (Standard 3x3)
+      else if (['classic', 'speed', 'misere', 'powerups'].includes(mode)) {
+        const cells = grid3El.querySelectorAll('.board-cell');
+        cells.forEach((cell, idx) => {
+          cell.className = 'board-cell';
+          cell.innerHTML = '';
+
+          if (AppState.frozenTurns[idx] > 0) {
+            cell.classList.add('border-sky-400', 'bg-sky-950/40');
+            const fBadge = document.createElement('span');
+            fBadge.className = 'absolute top-1 right-1 text-[10px] text-sky-300 font-bold px-1 rounded bg-sky-900/60';
+            fBadge.innerHTML = `<i class="fa-regular fa-snowflake"></i> ${AppState.frozenTurns[idx]}`;
+            cell.appendChild(fBadge);
+          }
+
+          const val = AppState.board3[idx];
+          if (val) {
+            cell.classList.add('taken');
+            const sym = document.createElement('span');
+            sym.className = `text-4xl font-black ${val === 'X' ? 'symbol-x' : 'symbol-o'}`;
+            sym.innerHTML = val === 'X' ? '<i class="fa-solid fa-xmark"></i>' : '<i class="fa-regular fa-circle"></i>';
+            cell.appendChild(sym);
+          }
+        });
+      }
+
+      // 6. 4x4 Torus Rendering
+      else if (mode === 'torus') {
+        const cells = grid4El.querySelectorAll('.board-cell');
+        cells.forEach((cell, idx) => {
+          cell.className = 'board-cell text-sm';
+          cell.innerHTML = '';
+          const val = AppState.board4[idx];
+          if (val) {
+            cell.classList.add('taken');
+            const sym = document.createElement('span');
+            sym.className = `text-3xl font-black ${val === 'X' ? 'symbol-x' : 'symbol-o'}`;
+            sym.innerHTML = val === 'X' ? '<i class="fa-solid fa-xmark"></i>' : '<i class="fa-regular fa-circle"></i>';
+            cell.appendChild(sym);
+          }
+        });
+      }
+
+      // 7. Gravity Drop Rendering
+      else if (mode === 'gravity') {
+        const cells = gridGravityEl.querySelectorAll('.board-cell');
+        cells.forEach((cell, idx) => {
+          cell.className = 'board-cell text-sm';
+          cell.innerHTML = '';
+          const val = AppState.board4[idx];
+          if (val) {
+            cell.classList.add('taken');
+            const sym = document.createElement('span');
+            sym.className = `text-3xl font-black ${val === 'X' ? 'symbol-x' : 'symbol-o'} gravity-drop`;
+            sym.innerHTML = val === 'X' ? '<i class="fa-solid fa-xmark"></i>' : '<i class="fa-regular fa-circle"></i>';
+            cell.appendChild(sym);
+          }
+        });
+      }
+
+      // 8. Ultimate 9x9 Rendering
+      else if (mode === 'ultimate') {
+        renderUltimate();
+      }
+    }
+
+    function renderUltimate() {
+      const miniBoards = gridUltimateEl.querySelectorAll('div[data-mini]');
+      miniBoards.forEach((boardEl, m) => {
+        const isMacroWon = AppState.ultimateMacroBoard[m] !== null;
+        const isActiveTarget = !isMacroWon && (AppState.ultimateTargetMini === -1 || AppState.ultimateTargetMini === m);
+
+        boardEl.className = 'grid grid-cols-3 gap-1 p-1.5 rounded-xl bg-slate-900/80 border transition-all relative';
+        if (isActiveTarget && !AppState.isGameOver) {
+          boardEl.classList.add('border-sky-400', 'shadow-[0_0_15px_rgba(56,189,248,0.35)]');
+        } else {
+          boardEl.classList.add('border-white/10');
+        }
+
+        const subCells = boardEl.querySelectorAll('div[data-cell]');
+        subCells.forEach((cEl, c) => {
+          const val = AppState.ultimateBoards[m][c];
+          cEl.innerHTML = '';
+          if (val) {
+            cEl.innerHTML = val === 'X' ? '<span class="text-sky-400 font-bold">X</span>' : '<span class="text-rose-400 font-bold">O</span>';
+          }
+        });
+
+        // Overlay if claimed
+        let overlay = boardEl.querySelector('.macro-overlay');
+        if (isMacroWon) {
+          if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.className = 'macro-overlay absolute inset-0 bg-slate-950/90 rounded-xl flex items-center justify-center font-black text-4xl z-10';
+            const winner = AppState.ultimateMacroBoard[m];
+            overlay.innerHTML = winner === 'X' 
+              ? '<span class="text-sky-400 symbol-x">X</span>'
+              : (winner === 'O' ? '<span class="text-rose-400 symbol-o">O</span>' : '<span class="text-slate-400 text-lg">TIE</span>');
+            boardEl.appendChild(overlay);
+          }
+        } else if (overlay) {
+          overlay.remove();
+        }
+      });
+    }
+
+    function checkQuantumLoop(moves) {
+      // Build adjacency graph of cells
+      const adj = {};
+      for (let i = 0; i < 9; i++) adj[i] = [];
+
+      moves.forEach(m => {
+        adj[m.c1].push({ neighbor: m.c2, move: m });
+        adj[m.c2].push({ neighbor: m.c1, move: m });
+      });
+
+      // Find cycle using DFS
+      const visited = new Set();
+      const parent = {};
+
+      function dfs(node, par) {
+        visited.add(node);
+        for (let edge of adj[node]) {
+          const next = edge.neighbor;
+          if (next === par) continue;
+          if (visited.has(next)) {
+            // Cycle found!
+            return true;
+          }
+          if (dfs(next, node)) return true;
+        }
+        return false;
+      }
+
+      for (let i = 0; i < 9; i++) {
+        if (!visited.has(i)) {
+          if (dfs(i, -1)) return true;
+        }
+      }
+      return false;
+    }
+
+    function triggerQuantumCollapse() {
+      sound.collapseChord();
+      document.getElementById('collapse-modal').classList.remove('hidden');
+    }
+
+    function resolveQuantumCollapse(choice = 'A') {
+      document.getElementById('collapse-modal').classList.add('hidden');
+
+      // Collapse each quantum move into one cell
+      AppState.quantumMoves.forEach((m, idx) => {
+        // Choice A takes primary cell, choice B alternate
+        const chosenCell = (choice === 'A' ? (idx % 2 === 0 ? m.c1 : m.c2) : (idx % 2 === 0 ? m.c2 : m.c1));
+        if (!AppState.board3[chosenCell]) {
+          AppState.board3[chosenCell] = m.player;
+        } else {
+          // Fallback to alternate cell if taken
+          const altCell = (chosenCell === m.c1 ? m.c2 : m.c1);
+          if (!AppState.board3[altCell]) {
+            AppState.board3[altCell] = m.player;
+          }
+        }
+      });
+
+      // Clear quantum state
+      AppState.quantumMoves = [];
+      AppState.quantumFirstPick = null;
+      renderBoard();
+
+      // Check if classical 3 in a row emerged
+      const res = checkWin3(AppState.board3);
+      if (res) {
+        handleGameOver(res);
+      } else {
+        setAIDialogue("Quantum waveforms resolved into classical particles! Battle continues.", 'neutral');
+        switchTurn();
+      }
+    }
+
+    function handleCellClick3(idx) {
+      if (AppState.isGameOver) return;
+      if (AppState.vsAI && AppState.currentPlayer === 'O') return;
+      sound.init();
+
+      const mode = AppState.currentMode;
+
+      // 1. Quantum Mode
+      if (mode === 'quantum') {
+        if (AppState.board3[idx]) {
+          sound.warning();
+          return;
+        }
+
+        if (AppState.quantumFirstPick === null) {
+          AppState.quantumFirstPick = idx;
+          sound.quantumTone();
+          document.getElementById('quantum-step-label').textContent = `1st square: Cell ${idx + 1}. Now select 2nd square!`;
+          renderBoard();
+        } else {
+          if (AppState.quantumFirstPick === idx) {
+            // Deselect
+            AppState.quantumFirstPick = null;
+            document.getElementById('quantum-step-label').textContent = `Select 1st square (pair e${AppState.quantumMoveCount})`;
+            renderBoard();
+            return;
+          }
+
+          // Complete entangled pair
+          const move = {
+            player: AppState.currentPlayer,
+            pairId: AppState.quantumMoveCount++,
+            c1: AppState.quantumFirstPick,
+            c2: idx
+          };
+          AppState.quantumMoves.push(move);
+          AppState.quantumFirstPick = null;
+          sound.quantumTone();
+
+          document.getElementById('quantum-step-label').textContent = `Select 1st square (pair e${AppState.quantumMoveCount})`;
+
+          // Check if loop cycle formed
+          if (checkQuantumLoop(AppState.quantumMoves)) {
+            triggerQuantumCollapse();
+            return;
+          }
+
+          renderBoard();
+          switchTurn();
+        }
+        return;
+      }
+
+      // 2. Powerups mode execution
+      if (mode === 'powerups' && AppState.activeCard) {
+        executePowerUpCard(idx);
+        return;
+      }
+
+      // 3. Stacking Gobblers
+      if (mode === 'stacking') {
+        const size = AppState.selectedStackSize;
+        const player = AppState.currentPlayer;
+        if (AppState.stackInventory[player][size] <= 0) {
+          sound.warning();
+          setAIDialogue("No pieces of that size left! Pick another tier.", 'neutral');
+          return;
+        }
+
+        const stack = AppState.stackBoard[idx];
+        if (stack.length > 0 && stack[stack.length - 1].size >= size) {
+          sound.warning();
+          setAIDialogue("You can only swallow strictly smaller pieces!", 'neutral');
+          return;
+        }
+
+        AppState.stackInventory[player][size]--;
+        stack.push({ player, size });
+        updateStackBadges();
+        sound.moveX();
+
+        const outcome = checkWin3(AppState.stackBoard.map(s => s.length > 0 ? s[s.length - 1].player : null));
+        if (outcome) handleGameOver(outcome);
+        else switchTurn();
+        return;
+      }
+
+      // 4. Vanishing 3-Piece
+      if (mode === 'vanishing') {
+        if (AppState.board3[idx]) return;
+        const player = AppState.currentPlayer;
+        const queue = AppState.vanishingQueues[player];
+        if (queue.length === 3) {
+          const old = queue.shift();
+          AppState.board3[old] = null;
+          sound.vanish();
+        }
+        AppState.board3[idx] = player;
+        queue.push(idx);
+        sound.moveX();
+
+        const outcome = checkWin3(AppState.board3);
+        if (outcome) handleGameOver(outcome);
+        else switchTurn();
+        return;
+      }
+
+      // 5. Fog of War
+      if (mode === 'fog') {
+        if (AppState.board3[idx]) return;
+        AppState.board3[idx] = AppState.currentPlayer;
+        sound.moveX();
+        // Record visibility time (1.5 seconds visible)
+        AppState.fogVisibleUntil[AppState.currentPlayer][idx] = Date.now() + 1500;
+
+        const outcome = checkWin3(AppState.board3);
+        if (outcome) handleGameOver(outcome);
+        else switchTurn();
+        return;
+      }
+
+      // 6. Misère Mode (Suicide rule: 3-in-a-row LOSES!)
+      if (mode === 'misere') {
+        if (AppState.board3[idx]) return;
+        AppState.board3[idx] = AppState.currentPlayer;
+        sound.moveX();
+
+        const res = checkWin3(AppState.board3);
+        if (res) {
+          if (res.winner === 'draw') {
+            handleGameOver(res);
+          } else {
+            // In Misère, the player who completed 3-in-a-row LOSES!
+            const loser = res.winner;
+            const victor = loser === 'X' ? 'O' : 'X';
+            handleGameOver({ winner: victor, combo: res.combo, misereLoser: loser });
+          }
+        } else {
+          switchTurn();
+        }
+        return;
+      }
+
+      // 7. Classic / Speed
+      if (AppState.board3[idx]) return;
+      AppState.board3[idx] = AppState.currentPlayer;
+      sound.moveX();
+
+      const outcome = checkWin3(AppState.board3);
+      if (outcome) handleGameOver(outcome);
+      else switchTurn();
+    }
+
+    function handleCellClick4(idx) {
+      if (AppState.isGameOver) return;
+      if (AppState.vsAI && AppState.currentPlayer === 'O') return;
+      sound.init();
+
+      if (AppState.currentMode === 'torus') {
+        if (AppState.board4[idx]) return;
+        AppState.board4[idx] = AppState.currentPlayer;
+        sound.moveX();
+
+        const outcome = checkTorusWin(AppState.board4);
+        if (outcome) handleGameOver(outcome);
+        else switchTurn();
+      }
+    }
+
+    function handleGravityDrop(col) {
+      if (AppState.isGameOver) return;
+      if (AppState.vsAI && AppState.currentPlayer === 'O') return;
+      sound.init();
+
+      // Find lowest empty cell in this col (rows 3, 2, 1, 0)
+      let targetIdx = -1;
+      for (let r = 3; r >= 0; r--) {
+        const checkIdx = r * 4 + col;
+        if (!AppState.board4[checkIdx]) {
+          targetIdx = checkIdx;
+          break;
+        }
+      }
+
+      if (targetIdx === -1) {
+        sound.warning();
+        setAIDialogue("That column is completely full! Pick another.", 'neutral');
+        return;
+      }
+
+      AppState.board4[targetIdx] = AppState.currentPlayer;
+      sound.drop();
+
+      const outcome = checkGravityWin(AppState.board4);
+      if (outcome) handleGameOver(outcome);
+      else switchTurn();
+    }
+
+    function handleUltimateCellClick(m, c) {
+      if (AppState.isGameOver) return;
+      if (AppState.vsAI && AppState.currentPlayer === 'O') return;
+      sound.init();
+
+      if (AppState.ultimateMacroBoard[m] !== null) return;
+      if (AppState.ultimateTargetMini !== -1 && AppState.ultimateTargetMini !== m) return;
+      if (AppState.ultimateBoards[m][c] !== null) return;
+
+      AppState.ultimateBoards[m][c] = AppState.currentPlayer;
+      sound.moveX();
+
+      const miniRes = checkWin3(AppState.ultimateBoards[m]);
+      if (miniRes) {
+        AppState.ultimateMacroBoard[m] = miniRes.winner === 'draw' ? 'T' : miniRes.winner;
+        sound.win();
+      }
+
+      if (AppState.ultimateMacroBoard[c] !== null) {
+        AppState.ultimateTargetMini = -1;
+      } else {
+        AppState.ultimateTargetMini = c;
+      }
+
+      const macroRes = checkWin3(AppState.ultimateMacroBoard);
+      if (macroRes) handleGameOver(macroRes);
+      else switchTurn();
+    }
+
+    function triggerAIMove() {
+      if (AppState.isGameOver || AppState.currentPlayer !== 'O') return;
+
+      const mode = AppState.currentMode;
+
+      // 1. Quantum AI move
+      if (mode === 'quantum') {
+        const available = [];
+        for (let i = 0; i < 9; i++) {
+          if (!AppState.board3[i]) available.push(i);
+        }
+        if (available.length >= 2) {
+          const c1 = available[Math.floor(Math.random() * available.length)];
+          let c2 = available[Math.floor(Math.random() * available.length)];
+          while (c2 === c1) {
+            c2 = available[Math.floor(Math.random() * available.length)];
+          }
+          const move = {
+            player: 'O',
+            pairId: AppState.quantumMoveCount++,
+            c1,
+            c2
+          };
+          AppState.quantumMoves.push(move);
+          sound.quantumTone();
+          if (checkQuantumLoop(AppState.quantumMoves)) {
+            triggerQuantumCollapse();
+            return;
+          }
+          renderBoard();
+          switchTurn();
+        }
+        return;
+      }
+
+      // 2. Misère AI move
+      if (mode === 'misere') {
+        const open = AppState.board3.map((v, i) => v === null ? i : null).filter(v => v !== null);
+        if (open.length > 0) {
+          // AI intentionally avoids creating 3-in-a-row!
+          const safeMoves = [];
+          for (let idx of open) {
+            AppState.board3[idx] = 'O';
+            if (checkWin3(AppState.board3)?.winner !== 'O') {
+              safeMoves.push(idx);
+            }
+            AppState.board3[idx] = null;
+          }
+
+          const move = safeMoves.length > 0 ? pickRandom(safeMoves) : open[0];
+          AppState.board3[move] = 'O';
+          sound.moveO();
+
+          const res = checkWin3(AppState.board3);
+          if (res) {
+            if (res.winner === 'draw') {
+              handleGameOver(res);
+            } else {
+              const loser = res.winner;
+              const victor = loser === 'X' ? 'O' : 'X';
+              handleGameOver({ winner: victor, combo: res.combo, misereLoser: loser });
+            }
+          } else {
+            switchTurn();
+          }
+        }
+        return;
+      }
+
+      // 3. Gravity AI Move
+      if (mode === 'gravity') {
+        const validCols = [];
+        for (let c = 0; c < 4; c++) {
+          if (!AppState.board4[c]) validCols.push(c); // top row empty
+        }
+        if (validCols.length > 0) {
+          const col = pickRandom(validCols);
+          let targetIdx = -1;
+          for (let r = 3; r >= 0; r--) {
+            if (!AppState.board4[r * 4 + col]) { targetIdx = r * 4 + col; break; }
+          }
+          AppState.board4[targetIdx] = 'O';
+          sound.drop();
+
+          const outcome = checkGravityWin(AppState.board4);
+          if (outcome) handleGameOver(outcome);
+          else switchTurn();
+        }
+        return;
+      }
+
+      // 4. 4x4 Torus AI Move
+      if (mode === 'torus') {
+        const open = AppState.board4.map((v, i) => v === null ? i : null).filter(v => v !== null);
+        if (open.length > 0) {
+          const chosen = pickRandom(open);
+          AppState.board4[chosen] = 'O';
+          sound.moveO();
+
+          const outcome = checkTorusWin(AppState.board4);
+          if (outcome) handleGameOver(outcome);
+          else switchTurn();
+        }
+        return;
+      }
+
+      // 5. Classic / Fog AI move
+      if (['classic', 'fog', 'speed', 'powerups', 'vanishing'].includes(mode)) {
+        const open = AppState.board3.map((v, i) => v === null ? i : null).filter(v => v !== null);
+        if (open.length > 0) {
+          let chosen = open[0];
+          if (AppState.difficulty === 'unbeatable') {
+            let bestScore = -Infinity;
+            for (let idx of open) {
+              AppState.board3[idx] = 'O';
+              let score = minimaxClassic(AppState.board3, 0, false);
+              AppState.board3[idx] = null;
+              if (score > bestScore) {
+                bestScore = score;
+                chosen = idx;
+              }
+            }
+          } else {
+            chosen = pickRandom(open);
+          }
+
+          if (mode === 'vanishing') {
+            const queue = AppState.vanishingQueues['O'];
+            if (queue.length === 3) {
+              const old = queue.shift();
+              AppState.board3[old] = null;
+              sound.vanish();
+            }
+            queue.push(chosen);
+          }
+
+          AppState.board3[chosen] = 'O';
+          if (mode === 'fog') {
+            AppState.fogVisibleUntil.O[chosen] = Date.now() + 1500;
+          }
+
+          sound.moveO();
+          const outcome = checkWin3(AppState.board3);
+          if (outcome) handleGameOver(outcome);
+          else switchTurn();
+        }
+        return;
+      }
+
+      // 6. Ultimate 9x9 AI Move
+      if (mode === 'ultimate') {
+        let targetM = AppState.ultimateTargetMini;
+        if (targetM === -1 || AppState.ultimateMacroBoard[targetM] !== null) {
+          const available = AppState.ultimateMacroBoard.map((v, i) => v === null ? i : null).filter(v => v !== null);
+          targetM = pickRandom(available);
+        }
+        if (targetM !== undefined && targetM !== -1) {
+          const openCells = AppState.ultimateBoards[targetM].map((v, i) => v === null ? i : null).filter(v => v !== null);
+          if (openCells.length > 0) {
+            const c = pickRandom(openCells);
+            AppState.ultimateBoards[targetM][c] = 'O';
+            sound.moveO();
+
+            const miniOutcome = checkWin3(AppState.ultimateBoards[targetM]);
+            if (miniOutcome) {
+              AppState.ultimateMacroBoard[targetM] = miniOutcome.winner === 'draw' ? 'T' : miniOutcome.winner;
+            }
+
+            if (AppState.ultimateMacroBoard[c] !== null) {
+              AppState.ultimateTargetMini = -1;
+            } else {
+              AppState.ultimateTargetMini = c;
+            }
+
+            const macroOutcome = checkWin3(AppState.ultimateMacroBoard);
+            if (macroOutcome) handleGameOver(macroOutcome);
+            else switchTurn();
+          }
+        }
+      }
+    }
+
+    function switchTurn() {
+      // Age frozen squares
+      if (AppState.currentMode === 'powerups') {
+        for (let i = 0; i < 9; i++) {
+          if (AppState.frozenTurns[i] > 0) AppState.frozenTurns[i]--;
+        }
+      }
+
+      AppState.currentPlayer = AppState.currentPlayer === 'X' ? 'O' : 'X';
+      renderBoard();
+
+      if (AppState.currentMode === 'speed') {
+        startSpeedTimer();
+      }
+
+      if (AppState.vsAI && AppState.currentPlayer === 'O' && !AppState.isGameOver) {
+        setTimeout(triggerAIMove, 380);
+      }
+    }
+
+    function handleGameOver(outcome) {
+      AppState.isGameOver = true;
+      stopSpeedTimer();
+
+      const mode = AppState.currentMode;
+
+      if (outcome.winner === 'draw') {
+        AppState.scores[mode].draws++;
+        saveScores();
+        updateScoreboard();
+        setAIDialogue(pickRandom(AI_TRASH_TALK.draw), 'neutral');
+        sound.tie();
+      } else {
+        const isX = outcome.winner === 'X';
+        if (isX) {
+          AppState.scores[mode].p1++;
+          setAIDialogue(pickRandom(AI_TRASH_TALK.playerWin), 'panic');
+          sound.win();
+        } else {
+          AppState.scores[mode].p2++;
+          setAIDialogue(pickRandom(AI_TRASH_TALK.aiWin), 'win');
+          sound.win();
+        }
+        saveScores();
+        updateScoreboard();
+
+        // Highlight cells
+        if (outcome.combo) {
+          if (['torus', 'gravity'].includes(mode)) {
+            const cells = (mode === 'gravity' ? gridGravityEl : grid4El).querySelectorAll('.board-cell');
+            outcome.combo.forEach(idx => cells[idx].classList.add(outcome.misereLoser ? 'losing-cell' : 'winning-cell'));
+          } else if (mode !== 'ultimate') {
+            const cells = grid3El.querySelectorAll('.board-cell');
+            outcome.combo.forEach(idx => cells[idx].classList.add(outcome.misereLoser ? 'losing-cell' : 'winning-cell'));
+          }
+        }
+      }
+    }
+
+    function updateScoreboard() {
+      const s = AppState.scores[AppState.currentMode];
+      document.getElementById('score-p1').textContent = s.p1;
+      document.getElementById('score-p2').textContent = s.p2;
+      document.getElementById('score-draws').textContent = s.draws;
+    }
+
+    function resetRound() {
+      stopSpeedTimer();
+      AppState.isGameOver = false;
+      AppState.currentPlayer = 'X';
+      AppState.board3 = Array(9).fill(null);
+      AppState.board4 = Array(16).fill(null);
+      AppState.quantumMoves = [];
+      AppState.quantumMoveCount = 1;
+      AppState.quantumFirstPick = null;
+      AppState.vanishingQueues = { X: [], O: [] };
+      AppState.stackBoard = Array(9).fill(null).map(() => []);
+      AppState.stackInventory = { X: { 1: 2, 2: 2, 3: 2 }, O: { 1: 2, 2: 2, 3: 2 } };
+      AppState.cards = { X: { bomb: 1, freeze: 1, swap: 1 }, O: { bomb: 1, freeze: 1, swap: 1 } };
+      AppState.activeCard = null;
+      AppState.frozenTurns = Array(9).fill(0);
+      AppState.sonarCount = 2;
+      AppState.sonarActive = false;
+      AppState.ultimateBoards = Array(9).fill(null).map(() => Array(9).fill(null));
+      AppState.ultimateMacroBoard = Array(9).fill(null);
+      AppState.ultimateTargetMini = -1;
+
+      document.getElementById('sonar-count').textContent = '2';
+      document.getElementById('quantum-step-label').textContent = 'Select 1st square (pair e1)';
+
+      updateScoreboard();
+      updateStackBadges();
+      renderBoard();
+
+      if (AppState.currentMode === 'speed') startSpeedTimer();
+
+      const modeCommentary = AI_TRASH_TALK[AppState.currentMode];
+      if (modeCommentary) {
+        setAIDialogue(pickRandom(modeCommentary), 'neutral');
+      } else {
+        setAIDialogue(pickRandom(AI_TRASH_TALK.classic), 'neutral');
+      }
+    }
+
+    function switchMode(newMode) {
+      AppState.currentMode = newMode;
+
+      // Update tabs UI
+      document.querySelectorAll('.mode-tab').forEach(tab => {
+        const active = tab.dataset.mode === newMode;
+        tab.className = `mode-tab glass-btn px-3 py-2 rounded-xl flex items-center gap-2 ${
+          active ? 'active text-purple-400 border-purple-400/50 bg-purple-950/40 shadow-lg' : 'text-slate-400'
+        }`;
+      });
+
+      // Context Panels
+      document.getElementById('quantum-bar').classList.toggle('hidden', newMode !== 'quantum');
+      document.getElementById('fog-bar').classList.toggle('hidden', newMode !== 'fog');
+      document.getElementById('torus-banner').classList.toggle('hidden', newMode !== 'torus');
+      document.getElementById('speed-timer-container').classList.toggle('hidden', newMode !== 'speed');
+      document.getElementById('speed-timer-container').classList.toggle('flex', newMode === 'speed');
+      document.getElementById('powerups-container').classList.toggle('hidden', newMode !== 'powerups');
+      document.getElementById('stacking-container').classList.toggle('hidden', newMode !== 'stacking');
+
+      // Board wrappers
+      document.getElementById('board-3x3-wrapper').classList.toggle('hidden', ['torus', 'gravity', 'ultimate'].includes(newMode));
+      document.getElementById('board-4x4-wrapper').classList.toggle('hidden', newMode !== 'torus');
+      document.getElementById('board-gravity-wrapper').classList.toggle('hidden', newMode !== 'gravity');
+      document.getElementById('board-ultimate-wrapper').classList.toggle('hidden', newMode !== 'ultimate');
+
+      resetRound();
+    }
+
+    function updateStackBadges() {
+      const p = AppState.currentPlayer;
+      document.getElementById('stack-count-s').textContent = AppState.stackInventory[p][1];
+      document.getElementById('stack-count-m').textContent = AppState.stackInventory[p][2];
+      document.getElementById('stack-count-l').textContent = AppState.stackInventory[p][3];
+    }
+
+    function startSpeedTimer() {
+      stopSpeedTimer();
+      AppState.timeLeft = 5.0;
+      const bar = document.getElementById('timer-progress-bar');
+      const num = document.getElementById('timer-number');
+      bar.style.width = '100%';
+      num.textContent = '5.0s';
+
+      AppState.turnTimer = setInterval(() => {
+        AppState.timeLeft -= 0.1;
+        if (AppState.timeLeft <= 0) {
+          AppState.timeLeft = 0;
+          stopSpeedTimer();
+          sound.warning();
+          setAIDialogue("Time expired! Forfeit of move!", 'panic');
+          switchTurn();
+          return;
+        }
+        const pct = (AppState.timeLeft / 5.0) * 100;
+        bar.style.width = `${pct}%`;
+        num.textContent = `${AppState.timeLeft.toFixed(1)}s`;
+        if (AppState.timeLeft < 1.8 && AppState.timeLeft > 0.4) sound.tick();
+      }, 100);
+    }
+
+    function stopSpeedTimer() {
+      if (AppState.turnTimer) {
+        clearInterval(AppState.turnTimer);
+        AppState.turnTimer = null;
+      }
+    }
+
+    document.getElementById('sonar-scan-btn').addEventListener('click', () => {
+      if (AppState.sonarCount <= 0 || AppState.isGameOver) {
+        sound.warning();
+        return;
+      }
+      AppState.sonarCount--;
+      document.getElementById('sonar-count').textContent = AppState.sonarCount;
+      sound.sonar();
+      AppState.sonarActive = true;
+      renderBoard();
+      setAIDialogue("Sonar ping fired! Illuminating hidden positions.", 'neutral');
+
+      setTimeout(() => {
+        AppState.sonarActive = false;
+        renderBoard();
+      }, 1300);
+    });
+
+    // Event listeners
+    document.querySelectorAll('.mode-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        sound.init();
+        switchMode(tab.dataset.mode);
+      });
+    });
+
+    document.querySelectorAll('.col-drop-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const col = parseInt(btn.dataset.col, 10);
+        handleGravityDrop(col);
+      });
+    });
+
+    document.getElementById('toggle-opponent-btn').addEventListener('click', () => {
+      sound.init();
+      AppState.vsAI = !AppState.vsAI;
+      const icon = document.getElementById('opponent-icon');
+      const label = document.getElementById('opponent-label');
+      const diff = document.getElementById('difficulty-wrapper');
+
+      if (AppState.vsAI) {
+        icon.className = 'fa-solid fa-robot text-sky-400';
+        label.textContent = 'Vs AI';
+        diff.style.display = 'flex';
+        document.getElementById('score-p2-label').textContent = 'AI O';
+        document.getElementById('ai-name-label').textContent = 'CYBER CORE AI';
+      } else {
+        icon.className = 'fa-solid fa-user-group text-pink-400';
+        label.textContent = 'Pass & Play';
+        diff.style.display = 'none';
+        document.getElementById('score-p2-label').textContent = 'Player O';
+        document.getElementById('ai-name-label').textContent = 'ANNOUNCER';
+      }
+      resetRound();
+    });
+
+    document.getElementById('difficulty-select').addEventListener('change', (e) => {
+      AppState.difficulty = e.target.value;
+      resetRound();
+    });
+
+    document.getElementById('audio-toggle-btn').addEventListener('click', () => {
+      sound.init();
+      sound.enabled = !sound.enabled;
+      const icon = document.getElementById('audio-icon');
+      if (sound.enabled) {
+        icon.className = 'fa-solid fa-volume-high text-indigo-400';
+        sound.tick();
+      } else {
+        icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+      }
+    });
+
+    document.getElementById('new-round-btn').addEventListener('click', () => {
+      sound.init();
+      resetRound();
+    });
+
+    document.getElementById('reset-all-btn').addEventListener('click', () => {
+      sound.init();
+      AppState.scores[AppState.currentMode] = { p1: 0, p2: 0, draws: 0 };
+      saveScores();
+      updateScoreboard();
+      resetRound();
+    });
+
+    // Rules modal
+    const rulesModal = document.getElementById('rules-modal');
+    const rulesTitle = document.getElementById('rules-title');
+    const rulesBody = document.getElementById('rules-body');
+
+    function openRules() {
+      sound.init();
+      rulesTitle.innerHTML = `<i class="fa-solid fa-book-open"></i> Rules: ${AppState.currentMode.toUpperCase()}`;
+      rulesBody.innerHTML = MODE_RULES[AppState.currentMode] || "Standard Tic-Tac-Toe rules apply.";
+      rulesModal.classList.remove('hidden');
+    }
+
+    document.getElementById('rules-modal-btn').addEventListener('click', openRules);
+    document.getElementById('quantum-help-quick-btn').addEventListener('click', openRules);
+    document.getElementById('close-modal-btn').addEventListener('click', () => rulesModal.classList.add('hidden'));
+    document.getElementById('modal-got-it-btn').addEventListener('click', () => rulesModal.classList.add('hidden'));
+
+    // Quantum Collapse resolution choices
+    document.getElementById('collapse-resolve-a-btn').addEventListener('click', () => resolveQuantumCollapse('A'));
+    document.getElementById('collapse-resolve-b-btn').addEventListener('click', () => resolveQuantumCollapse('B'));
+
+    // Boot
+    window.addEventListener('DOMContentLoaded', () => {
+      createCells();
+      switchMode('quantum');
+    });
+  </script>
+</body>
+</html>

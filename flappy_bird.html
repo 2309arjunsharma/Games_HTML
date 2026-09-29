@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Flappy Hazards: Dynamic Weather & Gravity Twist</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,600;0,800;1,700&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0f172a;
+      overflow: hidden;
+      font-family: 'Chakra Petch', sans-serif;
+    }
+    .arcade-font {
+      font-family: 'Press Start 2P', monospace;
+    }
+    canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); }
+      50% { box-shadow: 0 0 35px rgba(239, 68, 68, 0.95); }
+    }
+    .hazard-pulse {
+      animation: pulse-glow 1s infinite alternate;
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center min-h-screen bg-slate-950 text-white relative">
+
+  <div class="relative w-full max-w-[480px] h-[92vh] max-h-[820px] bg-slate-900 shadow-2xl rounded-2xl overflow-hidden flex flex-col border border-slate-700/50">
+    
+    <!-- Top HUD Overlay -->
+    <header class="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/75 to-transparent pointer-events-none">
+      <div class="flex items-center space-x-3 pointer-events-auto">
+        <!-- Audio Mute Toggle Button -->
+        <button id="soundToggle" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-600/50 text-yellow-400 active:scale-95 transition backdrop-blur-sm" title="Toggle Audio">
+          <svg id="soundIconOn" class="w-5 h-5 block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+          <svg id="soundIconOff" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg>
+        </button>
+        <div class="flex flex-col">
+          <span class="text-[10px] tracking-wider text-slate-400 uppercase font-bold">Best</span>
+          <span id="bestScoreText" class="arcade-font text-xs text-amber-400">0</span>
+        </div>
+      </div>
+
+      <!-- Live Score Badge -->
+      <div class="flex flex-col items-center">
+        <span id="scoreText" class="arcade-font text-3xl font-extrabold text-white drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]">0</span>
+      </div>
+
+      <!-- Active Modifier Indicator -->
+      <div id="hazardBadge" class="hidden pointer-events-auto flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold border backdrop-blur-md bg-red-950/70 border-red-500 text-red-300">
+        <span class="inline-block w-2 h-2 rounded-full bg-red-400 animate-ping"></span>
+        <span id="hazardName">GALE FORCE</span>
+      </div>
+    </header>
+
+    <!-- Event Progress Countdown Bar -->
+    <div id="eventTimerContainer" class="absolute top-[58px] left-4 right-4 z-20 hidden pointer-events-none">
+      <div class="w-full bg-slate-900/60 rounded-full h-2 p-0.5 backdrop-blur-sm border border-slate-700/60">
+        <div id="eventTimerBar" class="bg-gradient-to-r from-amber-400 via-rose-500 to-purple-500 h-full rounded-full transition-all duration-100" style="width: 100%;"></div>
+      </div>
+    </div>
+
+    <!-- Surprise Alert Banner -->
+    <div id="alertBanner" class="absolute top-20 inset-x-4 z-30 transform -translate-y-24 opacity-0 transition-all duration-500 ease-out pointer-events-none">
+      <div class="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 p-0.5 rounded-xl shadow-2xl hazard-pulse">
+        <div class="bg-slate-950/90 rounded-[10px] px-4 py-2.5 text-center backdrop-blur-sm">
+          <div class="flex items-center justify-center space-x-2">
+            <span class="text-xl">⚠️</span>
+            <span id="bannerTitle" class="arcade-font text-xs font-black tracking-wide text-amber-300">SURPRISE ANOMALY!</span>
+            <span class="text-xl">⚠️</span>
+          </div>
+          <p id="bannerDesc" class="text-xs font-semibold text-slate-200 mt-1">Zero gravity activated! Don't overshoot!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Game Canvas -->
+    <canvas id="gameCanvas" class="w-full h-full block cursor-pointer"></canvas>
+
+    <!-- Start / Instruction Screen Overlay -->
+    <div id="startOverlay" class="absolute inset-0 z-40 bg-slate-950/75 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
+      <div class="relative mb-6">
+        <h1 class="arcade-font text-2xl md:text-3xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-orange-400 to-red-500 tracking-wider">
+          FLAPPY HAZARDS
+        </h1>
+        <p class="text-xs text-cyan-400 mt-1 tracking-widest font-semibold uppercase">Surprise Weather & Physics Twist</p>
+      </div>
+
+      <div class="bg-slate-900/80 border border-slate-700 rounded-xl p-4 mb-6 text-left text-xs space-y-2.5 max-w-xs shadow-xl text-slate-300">
+        <div class="flex items-center space-x-2">
+          <span class="text-base">🌪️</span>
+          <span><strong>Gale Winds:</strong> Pushes & shifts speed!</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="text-base">🌌</span>
+          <span><strong>Gravity Anomaly:</strong> Float or plummet!</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="text-base">🔦</span>
+          <span><strong>Blackout:</strong> Blind navigation spotlight!</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="text-base">🦷</span>
+          <span><strong>Hungry Pipes:</strong> Gaps move & clamp down!</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="text-base">🔄</span>
+          <span><strong>Inverted Flux:</strong> Gravity reverses upwards!</span>
+        </div>
+      </div>
+
+      <button id="startBtn" class="arcade-font px-6 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold rounded-xl shadow-lg shadow-emerald-500/30 transform active:scale-95 transition text-xs tracking-wider">
+        TAP OR SPACE TO FLY
+      </button>
+      <p class="text-[11px] text-slate-400 mt-3">Click or Tap anywhere to flap wings</p>
+    </div>
+
+    <!-- Game Over Screen Overlay -->
+    <div id="gameOverOverlay" class="absolute inset-0 z-40 bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center hidden">
+      <h2 class="arcade-font text-3xl text-rose-500 tracking-wider mb-2">GAME OVER</h2>
+      <p id="deathCause" class="text-xs text-rose-300 font-medium mb-6">You crashed into an obstacle!</p>
+
+      <div class="bg-slate-900/90 border border-slate-700/80 rounded-2xl p-5 w-full max-w-[280px] shadow-2xl mb-6">
+        <div class="flex justify-between items-center mb-3">
+          <span class="text-xs uppercase font-bold text-slate-400">Score</span>
+          <span id="finalScore" class="arcade-font text-xl text-white">0</span>
+        </div>
+        <div class="flex justify-between items-center pt-3 border-t border-slate-800">
+          <span class="text-xs uppercase font-bold text-amber-400">High Score</span>
+          <span id="finalHighScore" class="arcade-font text-xl text-amber-400">0</span>
+        </div>
+      </div>
+
+      <button id="restartBtn" class="arcade-font px-6 py-3.5 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-orange-500/30 transform active:scale-95 transition text-xs tracking-wider">
+        TRY AGAIN
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    /* Audio Synthesizer Class using standard Web Audio API */
+    class RetroAudio {
+      constructor() {
+        this.ctx = null;
+        this.isMuted = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playFlap() {
+        if (this.isMuted) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(420, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(780, this.ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.12);
+      }
+
+      playScore() {
+        if (this.isMuted) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(620, this.ctx.currentTime);
+        osc.frequency.setValueAtTime(932, this.ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.22);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.22);
+      }
+
+      playHazardAlert() {
+        if (this.isMuted) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(800, this.ctx.currentTime + 0.15);
+        osc.frequency.linearRampToValueAtTime(400, this.ctx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.35);
+      }
+
+      playCrash() {
+        if (this.isMuted) return;
+        this.init();
+        // White noise buffer for crash sound
+        const bufferSize = this.ctx.sampleRate * 0.35;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const output = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+        const whiteNoise = this.ctx.createBufferSource();
+        whiteNoise.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(800, this.ctx.currentTime);
+        filter.frequency.linearRampToValueAtTime(50, this.ctx.currentTime + 0.35);
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+        whiteNoise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        whiteNoise.start();
+      }
+    }
+
+    const audio = new RetroAudio();
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // UI Element references
+    const scoreText = document.getElementById('scoreText');
+    const bestScoreText = document.getElementById('bestScoreText');
+    const hazardBadge = document.getElementById('hazardBadge');
+    const hazardName = document.getElementById('hazardName');
+    const eventTimerContainer = document.getElementById('eventTimerContainer');
+    const eventTimerBar = document.getElementById('eventTimerBar');
+    const alertBanner = document.getElementById('alertBanner');
+    const bannerTitle = document.getElementById('bannerTitle');
+    const bannerDesc = document.getElementById('bannerDesc');
+    const startOverlay = document.getElementById('startOverlay');
+    const gameOverOverlay = document.getElementById('gameOverOverlay');
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const soundToggle = document.getElementById('soundToggle');
+    const soundIconOn = document.getElementById('soundIconOn');
+    const soundIconOff = document.getElementById('soundIconOff');
+    const finalScore = document.getElementById('finalScore');
+    const finalHighScore = document.getElementById('finalHighScore');
+    const deathCause = document.getElementById('deathCause');
+
+    // Canvas internal resolution setup
+    let width = 400;
+    let height = 650;
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      width = rect.width;
+      height = rect.height;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.resetTransform ? ctx.resetTransform() : ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    let gameState = 'START'; // 'START' | 'PLAYING' | 'GAMEOVER'
+    let score = 0;
+    let highScore = parseInt(localStorage.getItem('flappy_twist_highscore') || '0', 10);
+    bestScoreText.innerText = highScore;
+
+    // Hazard Event Definitions
+    const HAZARDS = [
+      {
+        id: 'GALE_FORCE',
+        name: 'GALE FORCE WIND',
+        desc: 'Blinding storm wind is pushing forward with high speed!',
+        badgeClass: 'bg-cyan-950/80 border-cyan-400 text-cyan-300',
+        duration: 9000,
+        pipeSpeedMultiplier: 1.7,
+        gravityMultiplier: 0.95,
+        jumpMultiplier: 1.05
+      },
+      {
+        id: 'ZERO_GRAVITY',
+        name: 'GRAVITY ANOMALY',
+        desc: 'Lunar Zero-G! Tap gently or risk floating off-screen!',
+        badgeClass: 'bg-purple-950/80 border-purple-400 text-purple-300',
+        duration: 8500,
+        pipeSpeedMultiplier: 0.9,
+        gravityMultiplier: 0.35,
+        jumpMultiplier: 0.65
+      },
+      {
+        id: 'BLACKOUT',
+        name: 'FOG / BLACKOUT',
+        desc: 'Power failure! Vision limited to your headlamp flashlight!',
+        badgeClass: 'bg-slate-900 border-amber-400 text-amber-300',
+        duration: 9500,
+        pipeSpeedMultiplier: 1.0,
+        gravityMultiplier: 1.0,
+        jumpMultiplier: 1.0
+      },
+      {
+        id: 'HUNGRY_PIPES',
+        name: 'HUNGRY PIPES',
+        desc: 'Sensors detected live pipes oscillating & chomping!',
+        badgeClass: 'bg-red-950/80 border-rose-400 text-rose-300',
+        duration: 9000,
+        pipeSpeedMultiplier: 1.1,
+        gravityMultiplier: 1.0,
+        jumpMultiplier: 1.0
+      },
+      {
+        id: 'REVERSE_GRAVITY',
+        name: 'INVERTED FLUX',
+        desc: 'Up is down! Anti-gravity pulls ceilingward, flap to descend!',
+        badgeClass: 'bg-emerald-950/80 border-emerald-400 text-emerald-300',
+        duration: 8000,
+        pipeSpeedMultiplier: 1.0,
+        gravityMultiplier: -1.0,
+        jumpMultiplier: -1.0
+      }
+    ];
+
+    let activeHazard = null;
+    let hazardTimeRemaining = 0;
+    let hazardTotalDuration = 0;
+    let nextHazardScoreThreshold = 5; // triggers first twist at 5 points
+
+    const bird = {
+      x: 80,
+      y: height / 2,
+      radius: 14,
+      velocity: 0,
+      baseGravity: 0.35,
+      baseJump: -7.2,
+      rotation: 0,
+      wingCycle: 0,
+
+      reset() {
+        this.x = Math.max(65, width * 0.22);
+        this.y = height * 0.45;
+        this.velocity = 0;
+        this.rotation = 0;
+        this.wingCycle = 0;
+      },
+
+      jump() {
+        let impulse = this.baseJump;
+        if (activeHazard) {
+          impulse *= activeHazard.jumpMultiplier;
+        }
+        this.velocity = impulse;
+        audio.playFlap();
+
+        // Spawn jump exhaust/wind particles
+        for (let i = 0; i < 6; i++) {
+          particles.push(new Particle(
+            this.x - 10,
+            this.y + (activeHazard && activeHazard.id === 'REVERSE_GRAVITY' ? -8 : 8),
+            (Math.random() - 0.5) * 2 - 1.5,
+            (activeHazard && activeHazard.id === 'REVERSE_GRAVITY' ? -1 : 1) * (Math.random() * 2 + 1),
+            '#e2e8f0',
+            3,
+            20
+          ));
+        }
+      },
+
+      update() {
+        let effectiveGravity = this.baseGravity;
+        if (activeHazard) {
+          effectiveGravity *= activeHazard.gravityMultiplier;
+        }
+        this.velocity += effectiveGravity;
+        this.y += this.velocity;
+
+        // Wing flap animation speed tied to velocity
+        this.wingCycle += 0.25;
+
+        // Smooth rotation angle
+        const targetRot = Math.max(-0.6, Math.min(1.1, this.velocity * 0.08));
+        this.rotation += (targetRot - this.rotation) * 0.2;
+      },
+
+      draw(c) {
+        c.save();
+        c.translate(this.x, this.y);
+        
+        // Tilt inversion if reverse gravity
+        if (activeHazard && activeHazard.id === 'REVERSE_GRAVITY') {
+          c.scale(1, -1);
+        }
+        c.rotate(this.rotation);
+
+        // Bird shadow under body
+        c.fillStyle = 'rgba(0,0,0,0.18)';
+        c.beginPath();
+        c.ellipse(0, 4, 15, 12, 0, 0, Math.PI * 2);
+        c.fill();
+
+        // Bird main body
+        c.fillStyle = activeHazard && activeHazard.id === 'ZERO_GRAVITY' ? '#c084fc' : '#f59e0b';
+        c.beginPath();
+        c.ellipse(0, 0, 15, 12, 0, 0, Math.PI * 2);
+        c.fill();
+
+        // Belly highlight
+        c.fillStyle = '#fde68a';
+        c.beginPath();
+        c.ellipse(-3, 3, 9, 7, 0, 0, Math.PI * 2);
+        c.fill();
+
+        // Big animated Wing
+        const wingOffset = Math.sin(this.wingCycle) * 5;
+        c.fillStyle = '#d97706';
+        c.beginPath();
+        c.ellipse(-5, wingOffset, 7, 5, -0.2, 0, Math.PI * 2);
+        c.fill();
+
+        // Big retro cartoon eye
+        c.fillStyle = '#ffffff';
+        c.beginPath();
+        c.arc(7, -4, 5.5, 0, Math.PI * 2);
+        c.fill();
+
+        // Pupil
+        c.fillStyle = '#0f172a';
+        c.beginPath();
+        c.arc(9, -4, 2.5, 0, Math.PI * 2);
+        c.fill();
+
+        // Catchlight
+        c.fillStyle = '#ffffff';
+        c.beginPath();
+        c.arc(10, -5, 1, 0, Math.PI * 2);
+        c.fill();
+
+        // Beak
+        c.fillStyle = '#ea580c';
+        c.beginPath();
+        c.moveTo(11, 0);
+        c.lineTo(20, 2);
+        c.lineTo(11, 6);
+        c.closePath();
+        c.fill();
+
+        c.restore();
+      }
+    };
+
+    class Pipe {
+      constructor(x) {
+        this.x = x;
+        this.width = 54;
+        this.baseGap = 135;
+        this.gap = this.baseGap;
+        // Gap position centered randomly
+        const minHeight = 65;
+        const maxHeight = height - 120 - this.gap;
+        this.topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
+        this.passed = false;
+        this.oscillationPhase = Math.random() * Math.PI * 2;
+      }
+
+      update(deltaTime, speed) {
+        this.x -= speed;
+
+        // Dynamic behavior for 'HUNGRY_PIPES' hazard
+        if (activeHazard && activeHazard.id === 'HUNGRY_PIPES') {
+          this.oscillationPhase += 0.05;
+          // Animate gap breathing & shifting
+          const verticalShift = Math.sin(this.oscillationPhase) * 1.6;
+          this.topHeight += verticalShift;
+          this.gap = this.baseGap - 22 + Math.sin(this.oscillationPhase * 1.5) * 16;
+        } else {
+          this.gap = this.baseGap;
+        }
+      }
+
+      draw(c) {
+        const bottomY = this.topHeight + this.gap;
+        const bottomHeight = height - bottomY;
+
+        // Pipe colors adapt to active event
+        let pipeColor = '#16a34a';
+        let capColor = '#22c55e';
+        let lipEdgeColor = '#14532d';
+
+        if (activeHazard) {
+          if (activeHazard.id === 'HUNGRY_PIPES') {
+            pipeColor = '#dc2626';
+            capColor = '#ef4444';
+            lipEdgeColor = '#7f1d1d';
+          } else if (activeHazard.id === 'ZERO_GRAVITY') {
+            pipeColor = '#7e22ce';
+            capColor = '#a855f7';
+            lipEdgeColor = '#3b0764';
+          }
+        }
+
+        // TOP PIPE
+        c.fillStyle = pipeColor;
+        c.fillRect(this.x, 0, this.width, this.topHeight);
+        // Pipe Highlight
+        c.fillStyle = 'rgba(255,255,255,0.18)';
+        c.fillRect(this.x + 4, 0, 7, this.topHeight);
+        // Pipe Lip / Cap
+        c.fillStyle = capColor;
+        c.fillRect(this.x - 3, this.topHeight - 24, this.width + 6, 24);
+        c.fillStyle = lipEdgeColor;
+        c.fillRect(this.x - 3, this.topHeight - 3, this.width + 6, 3);
+
+        // Hungry teeth spikes if hazard is HUNGRY_PIPES
+        if (activeHazard && activeHazard.id === 'HUNGRY_PIPES') {
+          c.fillStyle = '#fef08a';
+          for (let tx = this.x; tx < this.x + this.width; tx += 12) {
+            c.beginPath();
+            c.moveTo(tx, this.topHeight);
+            c.lineTo(tx + 6, this.topHeight + 10);
+            c.lineTo(tx + 12, this.topHeight);
+            c.fill();
+          }
+        }
+
+        // BOTTOM PIPE
+        c.fillStyle = pipeColor;
+        c.fillRect(this.x, bottomY, this.width, bottomHeight);
+        c.fillStyle = 'rgba(255,255,255,0.18)';
+        c.fillRect(this.x + 4, bottomY, 7, bottomHeight);
+        // Pipe Lip / Cap
+        c.fillStyle = capColor;
+        c.fillRect(this.x - 3, bottomY, this.width + 6, 24);
+        c.fillStyle = lipEdgeColor;
+        c.fillRect(this.x - 3, bottomY, this.width + 6, 3);
+
+        // Bottom Hungry teeth spikes
+        if (activeHazard && activeHazard.id === 'HUNGRY_PIPES') {
+          c.fillStyle = '#fef08a';
+          for (let tx = this.x; tx < this.x + this.width; tx += 12) {
+            c.beginPath();
+            c.moveTo(tx, bottomY);
+            c.lineTo(tx + 6, bottomY - 10);
+            c.lineTo(tx + 12, bottomY);
+            c.fill();
+          }
+        }
+      }
+    }
+
+    class Particle {
+      constructor(x, y, vx, vy, color, size, life) {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.color = color;
+        this.size = size;
+        this.maxLife = life;
+        this.life = life;
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.life--;
+      }
+
+      draw(c) {
+        const alpha = Math.max(0, this.life / this.maxLife);
+        c.save();
+        c.globalAlpha = alpha;
+        c.fillStyle = this.color;
+        c.beginPath();
+        c.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
+      }
+    }
+
+    let pipes = [];
+    let particles = [];
+    let weatherSnow = [];
+
+    // Initialize snow / wind particle field
+    for (let i = 0; i < 40; i++) {
+      weatherSnow.push({
+        x: Math.random() * 500,
+        y: Math.random() * 700,
+        speedX: -2.5 - Math.random() * 3,
+        speedY: 1 + Math.random() * 2,
+        size: Math.random() * 2.2 + 0.8
+      });
+    }
+
+    // Parallax background clouds
+    const clouds = [
+      { x: 30, y: 70, scale: 1.1, speed: 0.3 },
+      { x: 220, y: 110, scale: 0.8, speed: 0.2 },
+      { x: 340, y: 45, scale: 1.3, speed: 0.4 }
+    ];
+
+    function drawBackground(c) {
+      // Sky gradient shifting dynamically based on hazard
+      let skyTop = '#38bdf8';
+      let skyBottom = '#bae6fd';
+
+      if (activeHazard) {
+        if (activeHazard.id === 'GALE_FORCE') {
+          skyTop = '#475569';
+          skyBottom = '#94a3b8';
+        } else if (activeHazard.id === 'ZERO_GRAVITY') {
+          skyTop = '#1e1b4b';
+          skyBottom = '#4c1d95';
+        } else if (activeHazard.id === 'BLACKOUT') {
+          skyTop = '#020617';
+          skyBottom = '#0f172a';
+        } else if (activeHazard.id === 'REVERSE_GRAVITY') {
+          skyTop = '#064e3b';
+          skyBottom = '#022c22';
+        }
+      }
+
+      const skyGrad = c.createLinearGradient(0, 0, 0, height);
+      skyGrad.addColorStop(0, skyTop);
+      skyGrad.addColorStop(1, skyBottom);
+      c.fillStyle = skyGrad;
+      c.fillRect(0, 0, width, height);
+
+      // Distant Stars / Cosms during Zero Gravity
+      if (activeHazard && activeHazard.id === 'ZERO_GRAVITY') {
+        c.fillStyle = 'rgba(255,255,255,0.7)';
+        for (let i = 0; i < 30; i++) {
+          const sx = (i * 37) % width;
+          const sy = (i * 47) % (height - 120);
+          c.fillRect(sx, sy, 1.5, 1.5);
+        }
+      }
+
+      // Parallax Clouds
+      c.fillStyle = 'rgba(255, 255, 255, 0.65)';
+      clouds.forEach(cloud => {
+        cloud.x -= cloud.speed;
+        if (cloud.x < -80) cloud.x = width + 50;
+        c.beginPath();
+        c.arc(cloud.x, cloud.y, 22 * cloud.scale, 0, Math.PI * 2);
+        c.arc(cloud.x + 18 * cloud.scale, cloud.y - 6 * cloud.scale, 18 * cloud.scale, 0, Math.PI * 2);
+        c.arc(cloud.x + 35 * cloud.scale, cloud.y, 20 * cloud.scale, 0, Math.PI * 2);
+        c.fill();
+      });
+
+      // City / Hill Silhouette Line
+      c.fillStyle = activeHazard && activeHazard.id === 'ZERO_GRAVITY' ? '#2e1065' : '#0284c7';
+      c.globalAlpha = 0.25;
+      c.beginPath();
+      c.moveTo(0, height - 70);
+      c.lineTo(50, height - 110);
+      c.lineTo(110, height - 85);
+      c.lineTo(190, height - 130);
+      c.lineTo(270, height - 90);
+      c.lineTo(350, height - 120);
+      c.lineTo(width, height - 80);
+      c.lineTo(width, height);
+      c.lineTo(0, height);
+      c.fill();
+      c.globalAlpha = 1.0;
+
+      // Ground Base
+      c.fillStyle = '#15803d';
+      c.fillRect(0, height - 25, width, 25);
+      c.fillStyle = '#86efac';
+      c.fillRect(0, height - 25, width, 4);
+    }
+
+    function triggerRandomHazard() {
+      // Pick random event differing from current
+      const available = HAZARDS.filter(h => !activeHazard || h.id !== activeHazard.id);
+      const chosen = available[Math.floor(Math.random() * available.length)];
+
+      activeHazard = chosen;
+      hazardTotalDuration = chosen.duration;
+      hazardTimeRemaining = chosen.duration;
+
+      // Update HUD & Badges
+      hazardBadge.className = `pointer-events-auto flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold border backdrop-blur-md ${chosen.badgeClass}`;
+      hazardName.innerText = chosen.name;
+      hazardBadge.classList.remove('hidden');
+      eventTimerContainer.classList.remove('hidden');
+
+      // Pop Warning Alert Banner
+      bannerTitle.innerText = `SURPRISE: ${chosen.name}!`;
+      bannerDesc.innerText = chosen.desc;
+      alertBanner.classList.remove('opacity-0', '-translate-y-24');
+      alertBanner.classList.add('opacity-100', 'translate-y-0');
+
+      audio.playHazardAlert();
+
+      setTimeout(() => {
+        alertBanner.classList.remove('opacity-100', 'translate-y-0');
+        alertBanner.classList.add('opacity-0', '-translate-y-24');
+      }, 3500);
+    }
+
+    function clearActiveHazard() {
+      activeHazard = null;
+      hazardBadge.classList.add('hidden');
+      eventTimerContainer.classList.add('hidden');
+    }
+
+    function drawHazardOverlays(c) {
+      if (!activeHazard) return;
+
+      // 1. GALE FORCE: Horizontal Wind & Blizzard flakes
+      if (activeHazard.id === 'GALE_FORCE') {
+        c.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        weatherSnow.forEach(flake => {
+          flake.x += flake.speedX * 2.2;
+          flake.y += flake.speedY;
+          if (flake.x < 0) flake.x = width + 20;
+          if (flake.y > height) flake.y = 0;
+          c.fillRect(flake.x, flake.y, flake.size * 2, flake.size);
+        });
+
+        // Wind streaks
+        c.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        c.lineWidth = 1.5;
+        for (let i = 0; i < 6; i++) {
+          const wy = (i * 95 + Date.now() * 0.1) % (height - 50);
+          c.beginPath();
+          c.moveTo(width, wy);
+          c.lineTo(width - 120, wy + 8);
+          c.stroke();
+        }
+      }
+
+      // 2. BLACKOUT / FOG OF WAR: Dynamic circular mask centered on bird
+      if (activeHazard.id === 'BLACKOUT') {
+        c.save();
+        const spotlightRadius = 90;
+        const grad = c.createRadialGradient(
+          bird.x, bird.y, spotlightRadius * 0.25,
+          bird.x, bird.y, spotlightRadius
+        );
+        grad.addColorStop(0, 'rgba(0,0,0,0)');
+        grad.addColorStop(0.7, 'rgba(3, 7, 18, 0.7)');
+        grad.addColorStop(1, 'rgba(3, 7, 18, 0.98)');
+
+        c.fillStyle = grad;
+        c.fillRect(0, 0, width, height);
+
+        // Surrounding total darkness ring
+        c.fillStyle = 'rgba(3, 7, 18, 0.98)';
+        c.beginPath();
+        c.rect(0, 0, width, height);
+        c.arc(bird.x, bird.y, spotlightRadius, 0, Math.PI * 2, true);
+        c.fill();
+        c.restore();
+      }
+
+      // 3. REVERSE GRAVITY: Subtle floating upward arrows
+      if (activeHazard.id === 'REVERSE_GRAVITY') {
+        c.fillStyle = 'rgba(16, 185, 129, 0.2)';
+        for (let i = 0; i < 5; i++) {
+          const ay = (height - ((Date.now() * 0.08 + i * 120) % height));
+          const ax = (i * 80 + 30) % width;
+          c.beginPath();
+          c.moveTo(ax, ay);
+          c.lineTo(ax - 8, ay + 14);
+          c.lineTo(ax + 8, ay + 14);
+          c.fill();
+        }
+      }
+    }
+
+    function checkCollision() {
+      // Screen floor and ceiling bounds
+      if (bird.y + bird.radius >= height - 25) {
+        endGame('Ground impact! Gravity was unforgiving.');
+        return true;
+      }
+      if (bird.y - bird.radius <= 0) {
+        if (activeHazard && activeHazard.id === 'REVERSE_GRAVITY') {
+          endGame('Launched into orbit by Inverted Gravity!');
+          return true;
+        }
+        bird.y = bird.radius;
+        bird.velocity = 0;
+      }
+
+      // Check pipes
+      for (const pipe of pipes) {
+        const inHorizontalZone = (bird.x + bird.radius > pipe.x) && (bird.x - bird.radius < pipe.x + pipe.width);
+        if (inHorizontalZone) {
+          const hitTopPipe = bird.y - bird.radius < pipe.topHeight;
+          const hitBottomPipe = bird.y + bird.radius > (pipe.topHeight + pipe.gap);
+          if (hitTopPipe || hitBottomPipe) {
+            endGame(activeHazard ? `Smashed during ${activeHazard.name}!` : 'Crashed into an industrial pipe!');
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function endGame(reason) {
+      if (gameState === 'GAMEOVER') return;
+      gameState = 'GAMEOVER';
+      audio.playCrash();
+
+      // Explode collision particles
+      for (let i = 0; i < 25; i++) {
+        particles.push(new Particle(
+          bird.x, bird.y,
+          (Math.random() - 0.5) * 8,
+          (Math.random() - 0.5) * 8,
+          Math.random() > 0.5 ? '#ef4444' : '#f59e0b',
+          Math.random() * 4 + 2,
+          35
+        ));
+      }
+
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('flappy_twist_highscore', highScore.toString());
+        bestScoreText.innerText = highScore;
+      }
+
+      finalScore.innerText = score;
+      finalHighScore.innerText = highScore;
+      deathCause.innerText = reason;
+
+      setTimeout(() => {
+        gameOverOverlay.classList.remove('hidden');
+      }, 400);
+    }
+
+    function resetGame() {
+      score = 0;
+      scoreText.innerText = '0';
+      pipes = [];
+      particles = [];
+      nextHazardScoreThreshold = Math.floor(Math.random() * 3) + 5; // First hazard between 5-7 points
+      clearActiveHazard();
+      bird.reset();
+
+      // Seed initial pipes
+      const pipeSpacing = 220;
+      for (let i = 0; i < 3; i++) {
+        pipes.push(new Pipe(width + 120 + i * pipeSpacing));
+      }
+
+      gameOverOverlay.classList.add('hidden');
+      startOverlay.classList.add('hidden');
+      gameState = 'PLAYING';
+    }
+
+    let lastTimestamp = performance.now();
+
+    function gameLoop(now) {
+      const dt = Math.min(40, now - lastTimestamp);
+      lastTimestamp = now;
+
+      // Clear & Background
+      ctx.clearRect(0, 0, width, height);
+      drawBackground(ctx);
+
+      if (gameState === 'PLAYING') {
+        // Update Hazard Timer Bar
+        if (activeHazard) {
+          hazardTimeRemaining -= dt;
+          const percent = Math.max(0, (hazardTimeRemaining / hazardTotalDuration) * 100);
+          eventTimerBar.style.width = `${percent}%`;
+
+          if (hazardTimeRemaining <= 0) {
+            clearActiveHazard();
+            // Schedule next hazard 6-8 points later
+            nextHazardScoreThreshold = score + Math.floor(Math.random() * 3) + 5;
+          }
+        }
+
+        bird.update();
+
+        // Calculate pipe scrolling speed based on current hazard
+        let basePipeSpeed = 2.4;
+        if (activeHazard) {
+          basePipeSpeed *= activeHazard.pipeSpeedMultiplier;
+        }
+
+        // Update Pipes
+        for (let i = pipes.length - 1; i >= 0; i--) {
+          const pipe = pipes[i];
+          pipe.update(dt, basePipeSpeed);
+
+          // Scoring Check
+          if (!pipe.passed && pipe.x + pipe.width < bird.x) {
+            pipe.passed = true;
+            score++;
+            scoreText.innerText = score;
+            audio.playScore();
+
+            // Point Pop Particles
+            for (let p = 0; p < 8; p++) {
+              particles.push(new Particle(
+                bird.x, bird.y,
+                (Math.random() - 0.5) * 3,
+                (Math.random() - 0.5) * 3,
+                '#facc15',
+                2.5,
+                20
+              ));
+            }
+
+            // Trigger Twist Check
+            if (score >= nextHazardScoreThreshold && !activeHazard) {
+              triggerRandomHazard();
+            }
+          }
+
+          // Respawn pipes that scrolled off left screen
+          if (pipe.x + pipe.width < -10) {
+            const furthestPipeX = Math.max(...pipes.map(p => p.x));
+            pipe.x = furthestPipeX + 215;
+            const minHeight = 65;
+            const maxHeight = height - 120 - pipe.baseGap;
+            pipe.topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
+            pipe.gap = pipe.baseGap;
+            pipe.passed = false;
+          }
+        }
+
+        checkCollision();
+      }
+
+      // Draw Pipes
+      pipes.forEach(pipe => pipe.draw(ctx));
+
+      // Draw Bird
+      bird.draw(ctx);
+
+      // Draw active weather/vision modifiers over everything
+      drawHazardOverlays(ctx);
+
+      // Update & Draw Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.update();
+        p.draw(ctx);
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function handleFlapAction(e) {
+      if (e) {
+        if (e.target.closest('#soundToggle') || e.target.closest('#restartBtn') || e.target.closest('#startBtn')) {
+          return;
+        }
+      }
+
+      audio.init();
+
+      if (gameState === 'START') {
+        resetGame();
+        bird.jump();
+      } else if (gameState === 'PLAYING') {
+        bird.jump();
+      }
+    }
+
+    // Canvas click & touch interactions
+    canvas.addEventListener('mousedown', handleFlapAction);
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      handleFlapAction();
+    }, { passive: false });
+
+    // Keyboard Spacebar / Arrow Up
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' || e.code === 'ArrowUp') {
+        e.preventDefault();
+        handleFlapAction();
+      }
+    });
+
+    // Start & Restart Button Listeners
+    startBtn.addEventListener('click', () => {
+      audio.init();
+      resetGame();
+    });
+
+    restartBtn.addEventListener('click', () => {
+      audio.init();
+      resetGame();
+    });
+
+    // Audio Toggle Logic
+    soundToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      audio.init();
+      audio.isMuted = !audio.isMuted;
+      if (audio.isMuted) {
+        soundIconOn.classList.add('hidden');
+        soundIconOff.classList.remove('hidden');
+      } else {
+        soundIconOn.classList.remove('hidden');
+        soundIconOff.classList.add('hidden');
+      }
+    });
+
+    // Start animation loop on window load
+    window.onload = function() {
+      resizeCanvas();
+      bird.reset();
+      requestAnimationFrame(gameLoop);
+    };
+  </script>
+</body>
+</html>
